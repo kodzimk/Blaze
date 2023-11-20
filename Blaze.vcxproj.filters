@@ -1,12 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="src\Blaze\Core.h" />
-    <ClInclude Include="src\Blaze\Application.h" />
-    <ClInclude Include="src\Blaze.h" />
-    <ClInclude Include="src\Blaze\EntryPoint.h" />
+    <ClInclude Include="Blaze\src\Blaze\Application.h" />
+    <ClInclude Include="Blaze\src\Blaze\Core.h" />
+    <ClInclude Include="Blaze\src\Blaze\EntryPoint.h" />
+    <ClInclude Include="Blaze\src\Blaze.h" />
+    <ClInclude Include="Blaze\src\Blaze\Log.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Application.cpp" />
+    <ClCompile Include="Blaze\src\Blaze\Application.cpp" />
+    <ClCompile Include="Blaze\src\Blaze\Log.cpp" />
   </ItemGroup>
 </Project>

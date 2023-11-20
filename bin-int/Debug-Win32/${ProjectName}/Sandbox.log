@@ -1,195 +1,199 @@
 ﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(531,5): warning MSB8028: промежуточный каталог (C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\bin-int\Debug-Win32\${ProjectName}\) содержит файлы, которые используются совместно с другим проектом (Blaze.vcxproj).  Это может привести к ошибкам очистки и перестроения.
   SandBoxApp.cpp
+C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze\src\Blaze\Log.h(20,42): warning C4251: Blaze::Log::s_CoreLogger: class "std::shared_ptr<spdlog::logger>" должен иметь dll-интерфейс для использования клиентами class "Blaze::Log"
+C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze\vendor\spdlog\include\spdlog\details\registry.h(33,31): message : см. объявление "std::shared_ptr<spdlog::logger>"
+C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze\src\Blaze\Log.h(21,42): warning C4251: Blaze::Log::s_ClientLogger: class "std::shared_ptr<spdlog::logger>" должен иметь dll-интерфейс для использования клиентами class "Blaze::Log"
+C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze\vendor\spdlog\include\spdlog\details\registry.h(33,31): message : см. объявление "std::shared_ptr<spdlog::logger>"
      Создается библиотека C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\bin\Debug-Win32\${ProjectName}\Sandbox.lib и объект C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\bin\Debug-Win32\${ProjectName}\Sandbox.exp
   Sandbox.vcxproj -> C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\bin\Debug-Win32\${ProjectName}\Sandbox.exe
 
 Итоги по проекту:
-        3 мс вызовов   4 C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze.vcxproj
-                  1 мс вызовов   1 GetTargetPath                           
-                  0 мс вызовов   1 GetNativeManifest                       
-                  2 мс вызовов   1 GetProjectInfoForReference              
+        8 мс вызовов   4 C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Blaze.vcxproj
+                  0 мс вызовов   1 GetTargetPath                           
+                  8 мс вызовов   1 GetNativeManifest                       
+                  0 мс вызовов   1 GetProjectInfoForReference              
                   0 мс вызовов   1 GetCopyToOutputDirectoryItems           
-      452 мс вызовов   1 C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Sandbox\Sandbox.vcxproj
-                452 мс вызовов   1 Rebuild                                 
+     2659 мс вызовов   1 C:\Users\Кайсар Санжар Мама\Desktop\C++Project\Blaze\Sandbox\Sandbox.vcxproj
+               2659 мс вызовов   1 Rebuild                                 
 
 Итоги по целям:
         0 мс вызовов   1 _CheckForInvalidConfigurationAndPlatform
-        0 мс вызовов   1 PrepareResourceNames                    
-        0 мс вызовов   1 CreateCustomManifestResourceNames       
-        0 мс вызовов   1 SplitResourcesByCulture                 
-        0 мс вызовов   1 AssignTargetPaths                       
-        0 мс вызовов   1 ComputeManifestInputsTargets            
-        0 мс вызовов   1 ComputeResolveLinkObj                   
-        0 мс вызовов   1 ResolvedLinkLib                         
         0 мс вызовов   1 ComputeLinkInputsFromProject            
+        0 мс вызовов   1 ResolvedLinkLib                         
+        0 мс вызовов   1 ComputeResolveLinkObj                   
+        0 мс вызовов   1 ComputeReferenceLinkInputs              
+        0 мс вызовов   1 ComputeManifestInputsTargets            
+        0 мс вызовов   1 AssignTargetPaths                       
         0 мс вызовов   1 ComputeCLGeneratedLinkInputs            
+        0 мс вызовов   1 SplitResourcesByCulture                 
+        0 мс вызовов   1 PrepareResourceNames                    
+        0 мс вызовов   1 MakeDirsForLink                         
+        0 мс вызовов   1 DoLinkOutputFilesMatch                  
+        0 мс вызовов   1 PreLinkEvent                            
+        0 мс вызовов   1 ComputeLinkSwitches                     
+        0 мс вызовов   1 ComputeLinkImportLibraryOutputsForClean 
+        0 мс вызовов   1 CreateCustomManifestResourceNames       
         0 мс вызовов   1 ComputeCLOutputs                        
         0 мс вызовов   1 ComputeManifestGeneratedLinkerInputs    
         0 мс вызовов   1 ComputeRCGeneratedLinkInputs            
-        0 мс вызовов   1 ComputeRCOutputs                        
-        0 мс вызовов   1 BeforeLink                              
-        0 мс вызовов   1 ComputeLegacyManifestEmbedding          
-        0 мс вызовов   1 BuildLinkTraverse                       
-        0 мс вызовов   1 BuildCompile                            
-        0 мс вызовов   1 GetProjectInfoForReference              
-        0 мс вызовов   1 WarnCompileDuplicatedFilename           
-        0 мс вызовов   1 ComputeStdModulesCompileInputs          
-        0 мс вызовов   1 AfterRebuild                            
         0 мс вызовов   1 MakeDirsForCl                           
         0 мс вызовов   1 SelectClCompile                         
-        0 мс вызовов   1 DoLinkOutputFilesMatch                  
         0 мс вызовов   1 AfterClCompile                          
+        0 мс вызовов   1 _ClCompile                              
         0 мс вызовов   1 BeforeResourceCompile                   
         0 мс вызовов   1 MakeDirsForResourceCompile              
         0 мс вызовов   1 AfterResourceCompile                    
         0 мс вызовов   1 _ResourceCompile                        
         0 мс вызовов   1 AfterBuildCompileEvent                  
         0 мс вызовов   1 _BuildCompileAction                     
-        0 мс вызовов   1 _ClCompile                              
-        0 мс вызовов   1 GetResolvedLinkLibs                     
-        0 мс вызовов   1 PreLinkEvent                            
+        0 мс вызовов   1 BuildCompile                            
+        0 мс вызовов   1 BuildLinkTraverse                       
+        0 мс вызовов   1 ComputeLegacyManifestEmbedding          
+        0 мс вызовов   1 BeforeLink                              
+        0 мс вызовов   1 ComputeRCOutputs                        
+        0 мс вызовов   1 AfterLink                               
         0 мс вызовов   1 _Link                                   
-        0 мс вызовов   1 Build                                   
-        0 мс вызовов   1 _CleanGetCurrentAndPriorFileWrites      
-        0 мс вызовов   1 AfterBuild                              
-        0 мс вызовов   1 BuildLink                               
-        0 мс вызовов   1 _BuildLinkAction                        
-        0 мс вызовов   1 PostBuildEvent                          
-        0 мс вызовов   1 PrepareForRun                           
-        0 мс вызовов   1 CopyFilesToOutputDirectory              
-        0 мс вызовов   1 _CheckForCompileOutputs                 
-        0 мс вызовов   1 _CopySourceItemsToOutputDirectory       
-        0 мс вызовов   1 _GetCopyToOutputDirectoryItemsFromTransitiveProjectReferences
-        0 мс вызовов   1 GetCopyToOutputDirectoryXamlAppDefs     
-        0 мс вызовов   1 _PopulateCommonStateForGetCopyToOutputDirectoryItems
-        0 мс вызовов   1 _Deploy                                 
-        0 мс вызовов   1 _Appverifier                            
-        0 мс вызовов   1 CreateSatelliteAssemblies               
-        0 мс вызовов   1 _GenerateSatelliteAssemblyInputs        
         0 мс вызовов   1 _ALink                                  
         0 мс вызовов   1 _Manifest                               
+        0 мс вызовов   1 _GetCopyToOutputDirectoryItemsFromTransitiveProjectReferences
+        0 мс вызовов   1 _GetCopyToOutputDirectoryItemsFromThisProject
+        0 мс вызовов   1 _CopySourceItemsToOutputDirectory       
+        0 мс вызовов   1 _CheckForCompileOutputs                 
+        0 мс вызовов   1 CopyFilesToOutputDirectory              
+        0 мс вызовов   1 PrepareForRun                           
+        0 мс вызовов   1 PostBuildEvent                          
+        0 мс вызовов   1 _BuildLinkAction                        
+        0 мс вызовов   1 BuildLink                               
+        0 мс вызовов   1 AfterBuild                              
+        0 мс вызовов   1 _CleanGetCurrentAndPriorFileWrites      
+        0 мс вызовов   1 IncrementalClean                        
+        0 мс вызовов   1 TlogCleanup                             
+        0 мс вызовов   1 FinalizeBuildStatus                     
+        0 мс вызовов   1 Build                                   
+        0 мс вызовов   1 GetCopyToOutputDirectoryItems           
+        0 мс вызовов   1 AfterRebuild                            
+        0 мс вызовов   1 GetCopyToOutputDirectoryXamlAppDefs     
+        0 мс вызовов   1 _Deploy                                 
         0 мс вызовов   1 RegisterOutput                          
         0 мс вызовов   1 ResolvedXDCMake                         
         0 мс вызовов   1 ComputeCLCompileGeneratedXDCFiles       
         0 мс вызовов   1 MakeDirsForXdcMake                      
-        0 мс вызовов   1 AfterLink                               
         0 мс вызовов   1 _XdcMake                                
+        0 мс вызовов   1 ComputeCLCompileGeneratedSbrFiles       
         0 мс вызовов   1 MakeDirsForBscMake                      
         0 мс вызовов   1 _BscMake                                
         0 мс вызовов   1 BuiltProjectOutputGroup                 
         0 мс вызовов   1 SatelliteDllsProjectOutputGroup         
         0 мс вызовов   1 MakeDirsForFxc                          
         0 мс вызовов   1 ContentFilesProjectOutputGroup          
-        0 мс вызовов   1 ComputeCLCompileGeneratedSbrFiles       
-        0 мс вызовов   1 AddDeployRecipeFileToProjectsInfoForReference
+        0 мс вызовов   1 _GenerateSatelliteAssemblyInputs        
+        0 мс вызовов   1 CreateSatelliteAssemblies               
+        0 мс вызовов   1 _Appverifier                            
+        0 мс вызовов   1 _PopulateCommonStateForGetCopyToOutputDirectoryItems
+        0 мс вызовов   1 ComputeStdModulesCompileInputs          
         0 мс вызовов   1 FixupCLCompileOptions                   
-        0 мс вызовов   1 Rebuild                                 
-        0 мс вызовов   1 CleanPublishFolder                      
-        0 мс вызовов   1 ExpandSDKReferences                     
-        0 мс вызовов   1 ResolveSDKReferences                    
-        0 мс вызовов   1 AssignProjectConfiguration              
-        0 мс вызовов   1 _SplitProjectReferencesByFileExistence  
-        0 мс вызовов   1 SetCABuildNativeEnvironmentVariables    
-        0 мс вызовов   1 AddPublicBMIsToProjectsInfoForReference 
-        0 мс вызовов   1 GetResolvedWinMD                        
-        0 мс вызовов   1 SetBuildDefaultEnvironmentVariables     
-        0 мс вызовов   1 AddExternalIncludDirectoriesToPaths     
-        0 мс вызовов   1 _GetProjectReferenceTargetFrameworkProperties
-        0 мс вызовов   1 GetFrameworkPaths                       
-        0 мс вызовов   1 AfterResolveReferences                  
-        0 мс вызовов   1 GetNativeManifest                       
-        0 мс вызовов   1 GetTargetPathWithTargetPlatformMoniker  
-        0 мс вызовов   1 _RemoveNameMetadataFromProjectReferenceItems
-        0 мс вызовов   1 BeforeResolveReferences                 
-        0 мс вызовов   1 _PrepareForReferenceResolution          
+        0 мс вызовов   1 ComputeReferenceCLInput                 
         0 мс вызовов   1 _PrepareForBuild                        
-        0 мс вызовов   1 Clean                                   
-        0 мс вызовов   1 CppClean                                
-        0 мс вызовов   1 PGInstrumentedClean                     
-        0 мс вызовов   1 AfterCppClean                           
-        0 мс вызовов   1 PrepareProjectReferences                
-        0 мс вызовов   1 BeforeCppClean                          
-        0 мс вызовов   1 AfterClean                              
+        0 мс вызовов   1 _PrepareForReferenceResolution          
+        0 мс вызовов   1 BeforeResolveReferences                 
+        0 мс вызовов   1 _RemoveNameMetadataFromProjectReferenceItems
+        0 мс вызовов   1 GetTargetPathWithTargetPlatformMoniker  
         0 мс вызовов   1 GetTargetPath                           
-        0 мс вызовов   1 ResolveReferences                       
-        0 мс вызовов   1 ResolveAssemblyReferences               
-        0 мс вызовов   1 AfterBuildGenerateSources               
-        0 мс вызовов   1 GetPublicIncludeDirectories             
-        0 мс вызовов   1 DisableProjectReferenceRecursionForClInputs
-        0 мс вызовов   1 FindReferenceAssembliesForReferences    
-        0 мс вызовов   1 ComputeCLInputPDBName                   
-        0 мс вызовов   1 BeforeClCompile                         
+        0 мс вызовов   1 Clean                                   
+        0 мс вызовов   1 GetFrameworkPaths                       
+        0 мс вызовов   1 AddExternalIncludDirectoriesToPaths     
+        0 мс вызовов   1 SetBuildDefaultEnvironmentVariables     
+        0 мс вызовов   1 GetResolvedWinMD                        
+        0 мс вызовов   1 _CheckWindowsSDKInstalled               
+        0 мс вызовов   1 SetCABuildNativeEnvironmentVariables    
+        0 мс вызовов   1 WarnCompileDuplicatedFilename           
+        0 мс вызовов   1 GetReferenceAssemblyPaths               
+        0 мс вызовов   1 ExpandSDKReferences                     
+        0 мс вызовов   1 CppClean                                
+        0 мс вызовов   1 AfterCppClean                           
+        0 мс вызовов   1 SetTelemetryEnvironmentVariables        
         0 мс вызовов   1 _PrepareForRebuild                      
-        0 мс вызовов   1 BuildCompileTraverse                    
-        0 мс вызовов   1 BuildGenerateSources                    
+        0 мс вызовов   1 BeforeRebuild                           
+        0 мс вызовов   1 _PrepareForClean                        
+        0 мс вызовов   1 BeforeClean                             
+        0 мс вызовов   1 CoreClean                               
+        0 мс вызовов   1 PGInstrumentedClean                     
+        0 мс вызовов   1 AssignProjectConfiguration              
+        0 мс вызовов   1 _AddOutputPathToGlobalPropertiesToRemove
+        0 мс вызовов   1 PrepareProjectReferences                
+        0 мс вызовов   1 CleanReferencedProjects                 
+        0 мс вызовов   1 CleanPublishFolder                      
+        0 мс вызовов   1 AfterClean                              
+        0 мс вызовов   1 BeforeCppClean                          
+        0 мс вызовов   1 _SplitProjectReferencesByFileExistence  
+        0 мс вызовов   1 ResolveAssemblyReferences               
+        0 мс вызовов   1 ResolveSDKReferences                    
+        0 мс вызовов   1 AfterResolveReferences                  
         0 мс вызовов   1 _BuildGenerateSourcesAction             
+        0 мс вызовов   1 BuildGenerateSources                    
+        0 мс вызовов   1 BuildCompileTraverse                    
+        0 мс вызовов   1 BeforeClCompile                         
+        0 мс вызовов   1 ComputeCLInputPDBName                   
+        0 мс вызовов   1 FindReferenceAssembliesForReferences    
+        0 мс вызовов   1 GetReferencedVCProjectsInfo             
+        0 мс вызовов   1 DisableProjectReferenceRecursionForClInputs
+        0 мс вызовов   1 GetPublicIncludeDirectories             
+        0 мс вызовов   1 AddPublicIncludeDirectoriesToProjectsInfoForReference
+        0 мс вызовов   1 AddPublicBMIsToProjectsInfoForReference 
+        0 мс вызовов   1 AddDeployRecipeFileToProjectsInfoForReference
+        0 мс вызовов   1 GetResolvedLinkLibs                     
+        0 мс вызовов   1 AddLibrariesToProjectsInfoForReference  
+        0 мс вызовов   1 GetProjectInfoForReference              
         0 мс вызовов   1 AfterBuildGenerateSourcesEvent          
         0 мс вызовов   1 _Midl                                   
-        0 мс вызовов   1 AfterMidl                               
+        0 мс вызовов   1 AfterBuildGenerateSources               
+        0 мс вызовов   1 Rebuild                                 
+        0 мс вызовов   1 ResolveReferences                       
         0 мс вызовов   1 ComputeMIDLGeneratedCompileInputs       
-        0 мс вызовов   1 CleanReferencedProjects                 
+        0 мс вызовов   1 MakeDirsForMidl                         
+        0 мс вызовов   1 InitializeBuildStatus                   
+        0 мс вызовов   1 BuildGenerateSourcesTraverse            
         0 мс вызовов   1 _Xsd                                    
-        0 мс вызовов   1 BeforeClean                             
-        0 мс вызовов   1 BeforeBuildGenerateSources              
-        0 мс вызовов   1 PreBuildEvent                           
-        0 мс вызовов   1 _SelectedFiles                          
-        0 мс вызовов   1 BeforeRebuild                           
-        0 мс вызовов   1 ComputeCustomBuildOutput                
-        0 мс вызовов   1 SelectCustomBuild                       
         0 мс вызовов   1 CopyFileToFolders                       
+        0 мс вызовов   1 BeforeBuildGenerateSources              
         0 мс вызовов   1 CustomBuild                             
-        1 мс вызовов   1 IncrementalClean                        
-        1 мс вызовов   1 ComputeLinkSwitches                     
-        1 мс вызовов   1 _AddOutputPathToGlobalPropertiesToRemove
-        1 мс вызовов   1 _GetCopyToOutputDirectoryItemsFromThisProject
-        1 мс вызовов   1 _CheckWindowsSDKInstalled               
-        1 мс вызовов   1 InitializeBuildStatus                   
-        1 мс вызовов   1 TlogCleanup                             
-        1 мс вызовов   1 CreateRecipeFile                        
-        1 мс вызовов   1 FinalizeBuildStatus                     
-        1 мс вызовов   1 CoreClean                               
-        1 мс вызовов   1 ComputeLinkImportLibraryOutputsForClean 
-        1 мс вызовов   1 ComputeReferenceLinkInputs              
-        1 мс вызовов   1 GetReferenceAssemblyPaths               
-        1 мс вызовов   1 MakeDirsForMidl                         
-        1 мс вызовов   1 BuildGenerateSourcesTraverse            
-        1 мс вызовов   1 ComputeReferenceCLInput                 
-        1 мс вызовов   1 AddPublicIncludeDirectoriesToProjectsInfoForReference
-        1 мс вызовов   1 AddLibrariesToProjectsInfoForReference  
-        1 мс вызовов   1 MakeDirsForLink                         
-        2 мс вызовов   1 SetTelemetryEnvironmentVariables        
-        2 мс вызовов   1 GetCopyToOutputDirectoryItems           
-        2 мс вызовов   1 _PrepareForClean                        
-        3 мс вызовов   1 PrepareForBuild                         
-        4 мс вызовов   1 GetReferencedVCProjectsInfo             
-        7 мс вызовов   1 ResolveProjectReferences                
-        9 мс вызовов   1 CoreCppClean                            
-      183 мс вызовов   1 ClCompile                               
-      218 мс вызовов   1 Link                                    
+        0 мс вызовов   1 ComputeCustomBuildOutput                
+        0 мс вызовов   1 AfterMidl                               
+        0 мс вызовов   1 SelectCustomBuild                       
+        0 мс вызовов   1 _SelectedFiles                          
+        0 мс вызовов   1 PreBuildEvent                           
+        8 мс вызовов   1 CreateRecipeFile                        
+        8 мс вызовов   1 _GetProjectReferenceTargetFrameworkProperties
+        8 мс вызовов   1 CoreCppClean                            
+        8 мс вызовов   1 GetNativeManifest                       
+       10 мс вызовов   1 PrepareForBuild                         
+       64 мс вызовов   1 ResolveProjectReferences                
+      265 мс вызовов   1 Link                                    
+     2290 мс вызовов   1 ClCompile                               
 
 Итоги по задачам:
-        0 мс вызовов   3 ReadLinesFromFile                       
-        0 мс вызовов   3 RemoveDuplicates                        
+        0 мс вызовов   3 Message                                 
+        0 мс вызовов   2 CallTarget                              
         0 мс вызовов   1 AssignCulture                           
         0 мс вызовов   7 AssignTargetPath                        
-        0 мс вызовов   1 AssignProjectConfiguration              
-        0 мс вызовов   1 ResolveNonMSBuildProjectOutput          
-        0 мс вызовов   1 SetRidAgnosticValueForProjects          
         0 мс вызовов   3 GetOutOfDateItems                       
-        0 мс вызовов   1 ConvertToAbsolutePath                   
-        0 мс вызовов   1 CheckVCToolsetVersion                   
         0 мс вызовов   2 Touch                                   
-        1 мс вызовов   7 FindUnderPath                           
-        1 мс вызовов   2 CallTarget                              
-        1 мс вызовов   1 CleanupStaleTlogItems                   
-        1 мс вызовов   1 VCMessage                               
-        1 мс вызовов   1 GenerateDesktopDeployRecipe             
-        1 мс вызовов   3 Message                                 
-        2 мс вызовов   9 SetEnv                                  
-        2 мс вызовов  12 MakeDir                                 
-        3 мс вызовов   7 Delete                                  
-        4 мс вызовов   4 WriteLinesToFile                        
-        7 мс вызовов   1 CppClean                                
-       11 мс вызовов   4 MSBuild                                 
-      182 мс вызовов   1 CL                                      
-      217 мс вызовов   1 Link                                    
+        0 мс вызовов   1 CheckVCToolsetVersion                   
+        0 мс вызовов   1 ConvertToAbsolutePath                   
+        0 мс вызовов   1 SetRidAgnosticValueForProjects          
+        0 мс вызовов   1 CleanupStaleTlogItems                   
+        0 мс вызовов   1 AssignProjectConfiguration              
+        0 мс вызовов   4 WriteLinesToFile                        
+        0 мс вызовов  12 MakeDir                                 
+        0 мс вызовов   3 RemoveDuplicates                        
+        0 мс вызовов   7 FindUnderPath                           
+        0 мс вызовов   3 ReadLinesFromFile                       
+        0 мс вызовов   7 Delete                                  
+        0 мс вызовов   9 SetEnv                                  
+        0 мс вызовов   1 ResolveNonMSBuildProjectOutput          
+        2 мс вызовов   1 VCMessage                               
+        8 мс вызовов   1 GenerateDesktopDeployRecipe             
+        8 мс вызовов   1 CppClean                                
+       64 мс вызовов   4 MSBuild                                 
+      265 мс вызовов   1 Link                                    
+     2282 мс вызовов   1 CL                                      

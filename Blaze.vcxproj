@@ -11,13 +11,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Blaze\Application.h" />
-    <ClInclude Include="src\Blaze\Core.h" />
-    <ClInclude Include="src\Blaze.h" />
-    <ClInclude Include="src\Blaze\EntryPoint.h" />
+    <ClInclude Include="Blaze\src\Blaze.h" />
+    <ClInclude Include="Blaze\src\Blaze\Application.h" />
+    <ClInclude Include="Blaze\src\Blaze\Core.h" />
+    <ClInclude Include="Blaze\src\Blaze\EntryPoint.h" />
+    <ClInclude Include="Blaze\src\Blaze\Log.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Application.cpp" />
+    <ClCompile Include="Blaze\src\Blaze\Application.cpp" />
+    <ClCompile Include="Blaze\src\Blaze\Log.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -64,8 +66,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;BLAZE_API;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Blaze\vendor\spdlog\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -78,8 +81,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;BLAZE_API;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Blaze\vendor\spdlog\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
