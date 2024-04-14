@@ -15,6 +15,7 @@ Engine based on 2d games but i have a plans to do for 3d also.<br>It depend on t
 To build you need cmake :
 
 ```cmake
+git clone --recursive https://github.com/kodzimk/Blaze.git
 cd build/
 cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
 cmake --build .
