@@ -1,0 +1,7 @@
+# CMake generation dependency list for this directory.
+C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/vendor/glew-cmake/build/cmake/CMakeLists.txt
+C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/vendor/glew-cmake/glew.pc.in
+C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindOpenGL.cmake
+C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindPackageHandleStandardArgs.cmake
+C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindPackageMessage.cmake
+C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/GNUInstallDirs.cmake

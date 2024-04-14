@@ -20,8 +20,6 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
- 
-
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     {
@@ -34,8 +32,6 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
     }
-
-  
 
     glfwTerminate();
     return 0;
