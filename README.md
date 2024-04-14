@@ -12,9 +12,10 @@ And end of the all this features multiplayer
 
 # Build
 
-To build you need cmake 
+To build you need cmake :
 
 ```cmake
+cd build/
 cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
 cmake --build .
 ```
