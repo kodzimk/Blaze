@@ -20,4 +20,7 @@ cd build/
 cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
 cmake --build .
 ```
+Then go to the build folder and find project thats main project<br>
+Dont use BlazeEngine.sin its not that project<br>
+Good luck!
 
