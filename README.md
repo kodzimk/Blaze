@@ -10,4 +10,12 @@ Third audio and ui in the game
 Then basic scripting and input handler with  event system
 And end of the all this features multiplayer
 
+# Build
+
+To build you need cmake 
+
+```cmake
+cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
+cmake --build .
+```
 
