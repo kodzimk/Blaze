@@ -17,8 +17,9 @@ To build you need cmake :
 ```cmake
 git clone --recursive https://github.com/kodzimk/Blaze.git
 go to glew-cmake submodule and start cmake-testbuild
+then to the main folder and delete all from build folder
+then  do this commands:
 cd build/
-delete all from build folder
 cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
 cmake --build .
 ```
