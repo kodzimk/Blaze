@@ -12,6 +12,10 @@ Engine based on 2d games but i have a plans to do for 3d also.<br>It depend on t
 
 # Build
 
+Requirements:<br>
+* git (new version optional)<br>
+* cmake (at-least 3.29.0)<br>
+
 To build you need cmake :
 
 ```cmake
