@@ -14,7 +14,7 @@ Engine based on 2d games but i have a plans to do for 3d also.<br>It depend on t
 
 First Way:<br>
 1) You can go to the script folder then Setup folder and start setup shell script<br>
-2) Then find project in buildd folder<br>
+2) Then find project in build folder<br>
 
 
 Second Way: <br>
