@@ -24,7 +24,7 @@ events:
       The output was:
       0
       MSBuild version 17.9.8+b34f75857 for .NET Framework
-      Build started 4/14/2024 9:06:25 PM.
+      Build started 4/16/2024 4:08:10 PM.
       
       Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\3.29.0-rc2\\CompilerIdC\\CompilerIdC.vcxproj" on node 1 (default targets).
       PrepareForBuild:
@@ -53,7 +53,7 @@ events:
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.37
+      Time Elapsed 00:00:00.36
       
       
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "CompilerIdC.exe"
@@ -79,7 +79,7 @@ events:
       The output was:
       0
       MSBuild version 17.9.8+b34f75857 for .NET Framework
-      Build started 4/14/2024 9:06:25 PM.
+      Build started 4/16/2024 4:08:11 PM.
       
       Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\3.29.0-rc2\\CompilerIdCXX\\CompilerIdCXX.vcxproj" on node 1 (default targets).
       PrepareForBuild:
@@ -108,7 +108,7 @@ events:
           0 Warning(s)
           0 Error(s)
       
-      Time Elapsed 00:00:00.39
+      Time Elapsed 00:00:00.38
       
       
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "CompilerIdCXX.exe"
@@ -127,8 +127,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hnst7c"
-      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hnst7c"
+      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-aepfvd"
+      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-aepfvd"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -137,40 +137,40 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hnst7c'
+        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-aepfvd'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_585c8.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_38160.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.9.8+b34f75857 for .NET Framework
-        Build started 4/14/2024 9:06:26 PM.
+        Build started 4/16/2024 4:08:11 PM.
         
-        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hnst7c\\cmTC_585c8.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-aepfvd\\cmTC_38160.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_585c8.dir\\Debug\\".
+          Creating directory "cmTC_38160.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hnst7c\\Debug\\".
-          Creating directory "cmTC_585c8.dir\\Debug\\cmTC_585c8.tlog\\".
+          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-aepfvd\\Debug\\".
+          Creating directory "cmTC_38160.dir\\Debug\\cmTC_38160.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_585c8.dir\\Debug\\cmTC_585c8.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_585c8.dir\\Debug\\cmTC_585c8.tlog\\unsuccessfulbuild".
+          Creating "cmTC_38160.dir\\Debug\\cmTC_38160.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_38160.dir\\Debug\\cmTC_38160.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_585c8.dir\\Debug\\\\" /Fd"cmTC_585c8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCCompilerABI.c"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_38160.dir\\Debug\\\\" /Fd"cmTC_38160.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCCompilerABI.c"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_585c8.dir\\Debug\\\\" /Fd"cmTC_585c8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCCompilerABI.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_38160.dir\\Debug\\\\" /Fd"cmTC_38160.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCCompilerABI.c"
           CMakeCCompilerABI.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hnst7c\\Debug\\cmTC_585c8.exe" /INCREMENTAL /ILK:"cmTC_585c8.dir\\Debug\\cmTC_585c8.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hnst7c/Debug/cmTC_585c8.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hnst7c/Debug/cmTC_585c8.lib" /MACHINE:X64  /machine:x64 cmTC_585c8.dir\\Debug\\CMakeCCompilerABI.obj
-          cmTC_585c8.vcxproj -> C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hnst7c\\Debug\\cmTC_585c8.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-aepfvd\\Debug\\cmTC_38160.exe" /INCREMENTAL /ILK:"cmTC_38160.dir\\Debug\\cmTC_38160.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-aepfvd/Debug/cmTC_38160.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-aepfvd/Debug/cmTC_38160.lib" /MACHINE:X64  /machine:x64 cmTC_38160.dir\\Debug\\CMakeCCompilerABI.obj
+          cmTC_38160.vcxproj -> C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-aepfvd\\Debug\\cmTC_38160.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_585c8.dir\\Debug\\cmTC_585c8.tlog\\unsuccessfulbuild".
-          Touching "cmTC_585c8.dir\\Debug\\cmTC_585c8.tlog\\cmTC_585c8.lastbuildstate".
-        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hnst7c\\cmTC_585c8.vcxproj" (default targets).
+          Deleting file "cmTC_38160.dir\\Debug\\cmTC_38160.tlog\\unsuccessfulbuild".
+          Touching "cmTC_38160.dir\\Debug\\cmTC_38160.tlog\\cmTC_38160.lastbuildstate".
+        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-aepfvd\\cmTC_38160.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
             0 Error(s)
         
-        Time Elapsed 00:00:00.39
+        Time Elapsed 00:00:00.35
         
       exitCode: 0
   -
@@ -210,8 +210,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-ylfc86"
-      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-ylfc86"
+      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-34ok06"
+      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-34ok06"
     cmakeVariables:
       CMAKE_CXX_FLAGS: "/DWIN32 /D_WINDOWS /EHsc"
       CMAKE_CXX_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -220,34 +220,34 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-ylfc86'
+        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-34ok06'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_b7a6d.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_85e09.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.9.8+b34f75857 for .NET Framework
-        Build started 4/14/2024 9:06:26 PM.
+        Build started 4/16/2024 4:08:12 PM.
         
-        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ylfc86\\cmTC_b7a6d.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-34ok06\\cmTC_85e09.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_b7a6d.dir\\Debug\\".
+          Creating directory "cmTC_85e09.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ylfc86\\Debug\\".
-          Creating directory "cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.tlog\\".
+          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-34ok06\\Debug\\".
+          Creating directory "cmTC_85e09.dir\\Debug\\cmTC_85e09.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.tlog\\unsuccessfulbuild".
+          Creating "cmTC_85e09.dir\\Debug\\cmTC_85e09.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_85e09.dir\\Debug\\cmTC_85e09.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b7a6d.dir\\Debug\\\\" /Fd"cmTC_b7a6d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCXXCompilerABI.cpp"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_85e09.dir\\Debug\\\\" /Fd"cmTC_85e09.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCXXCompilerABI.cpp"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b7a6d.dir\\Debug\\\\" /Fd"cmTC_b7a6d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCXXCompilerABI.cpp"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_85e09.dir\\Debug\\\\" /Fd"cmTC_85e09.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TP /errorReport:queue "C:\\Users\\STARLINECOMP\\Downloads\\cmake-3.29.0-rc2-windows-x86_64\\cmake-3.29.0-rc2-windows-x86_64\\share\\cmake-3.29\\Modules\\CMakeCXXCompilerABI.cpp"
           CMakeCXXCompilerABI.cpp
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ylfc86\\Debug\\cmTC_b7a6d.exe" /INCREMENTAL /ILK:"cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-ylfc86/Debug/cmTC_b7a6d.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-ylfc86/Debug/cmTC_b7a6d.lib" /MACHINE:X64  /machine:x64 cmTC_b7a6d.dir\\Debug\\CMakeCXXCompilerABI.obj
-          cmTC_b7a6d.vcxproj -> C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ylfc86\\Debug\\cmTC_b7a6d.exe
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-34ok06\\Debug\\cmTC_85e09.exe" /INCREMENTAL /ILK:"cmTC_85e09.dir\\Debug\\cmTC_85e09.ilk" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-34ok06/Debug/cmTC_85e09.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-34ok06/Debug/cmTC_85e09.lib" /MACHINE:X64  /machine:x64 cmTC_85e09.dir\\Debug\\CMakeCXXCompilerABI.obj
+          cmTC_85e09.vcxproj -> C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-34ok06\\Debug\\cmTC_85e09.exe
         FinalizeBuildStatus:
-          Deleting file "cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.tlog\\unsuccessfulbuild".
-          Touching "cmTC_b7a6d.dir\\Debug\\cmTC_b7a6d.tlog\\cmTC_b7a6d.lastbuildstate".
-        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-ylfc86\\cmTC_b7a6d.vcxproj" (default targets).
+          Deleting file "cmTC_85e09.dir\\Debug\\cmTC_85e09.tlog\\unsuccessfulbuild".
+          Touching "cmTC_85e09.dir\\Debug\\cmTC_85e09.tlog\\cmTC_85e09.lastbuildstate".
+        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-34ok06\\cmTC_85e09.vcxproj" (default targets).
         
         Build succeeded.
             0 Warning(s)
@@ -295,8 +295,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-35np40"
-      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-35np40"
+      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hn6p6w"
+      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hn6p6w"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -306,94 +306,35 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-35np40'
+        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-hn6p6w'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_340bd.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_80ae9.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.9.8+b34f75857 for .NET Framework
-        Build started 4/14/2024 9:06:27 PM.
+        Build started 4/16/2024 4:08:13 PM.
         
-        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\cmTC_340bd.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\cmTC_80ae9.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_340bd.dir\\Debug\\".
+          Creating directory "cmTC_80ae9.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\Debug\\".
-          Creating directory "cmTC_340bd.dir\\Debug\\cmTC_340bd.tlog\\".
+          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\Debug\\".
+          Creating directory "cmTC_80ae9.dir\\Debug\\cmTC_80ae9.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_340bd.dir\\Debug\\cmTC_340bd.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_340bd.dir\\Debug\\cmTC_340bd.tlog\\unsuccessfulbuild".
+          Creating "cmTC_80ae9.dir\\Debug\\cmTC_80ae9.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_80ae9.dir\\Debug\\cmTC_80ae9.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_340bd.dir\\Debug\\\\" /Fd"cmTC_340bd.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\src.c"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_80ae9.dir\\Debug\\\\" /Fd"cmTC_80ae9.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\src.c"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_340bd.dir\\Debug\\\\" /Fd"cmTC_340bd.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\src.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CMAKE_HAVE_LIBC_PTHREAD /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_80ae9.dir\\Debug\\\\" /Fd"cmTC_80ae9.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\src.c"
           src.c
-        C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\cmTC_340bd.vcxproj]
-        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\cmTC_340bd.vcxproj" (default targets) -- FAILED.
+        C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\cmTC_80ae9.vcxproj]
+        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\cmTC_80ae9.vcxproj" (default targets) -- FAILED.
         
         Build FAILED.
         
-        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\cmTC_340bd.vcxproj" (default target) (1) ->
+        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\cmTC_80ae9.vcxproj" (default target) (1) ->
         (ClCompile target) -> 
-          C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-35np40\\cmTC_340bd.vcxproj]
-        
-            0 Warning(s)
-            1 Error(s)
-        
-        Time Elapsed 00:00:00.26
-        
-      exitCode: 1
-  -
-    kind: "try_compile-v1"
-    backtrace:
-      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/CheckLibraryExists.cmake:69 (try_compile)"
-      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:112 (CHECK_LIBRARY_EXISTS)"
-      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:175 (_threads_check_lib)"
-      - "vendor/glfw/CMakeLists.txt:60 (find_package)"
-    checks:
-      - "Looking for pthread_create in pthreads"
-    directories:
-      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-umibf9"
-      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-umibf9"
-    cmakeVariables:
-      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
-      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
-      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
-      CMAKE_MODULE_PATH: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/vendor/glfw/CMake/modules"
-    buildResult:
-      variable: "CMAKE_HAVE_PTHREADS_CREATE"
-      cached: true
-      stdout: |
-        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-umibf9'
-        
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_3c17d.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
-        MSBuild version 17.9.8+b34f75857 for .NET Framework
-        Build started 4/14/2024 9:06:27 PM.
-        
-        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\cmTC_3c17d.vcxproj" on node 1 (default targets).
-        PrepareForBuild:
-          Creating directory "cmTC_3c17d.dir\\Debug\\".
-          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\Debug\\".
-          Creating directory "cmTC_3c17d.dir\\Debug\\cmTC_3c17d.tlog\\".
-        InitializeBuildStatus:
-          Creating "cmTC_3c17d.dir\\Debug\\cmTC_3c17d.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_3c17d.dir\\Debug\\cmTC_3c17d.tlog\\unsuccessfulbuild".
-        ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_3c17d.dir\\Debug\\\\" /Fd"cmTC_3c17d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\CheckFunctionExists.c"
-          Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
-          Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_3c17d.dir\\Debug\\\\" /Fd"cmTC_3c17d.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\CheckFunctionExists.c"
-          CheckFunctionExists.c
-        Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\Debug\\cmTC_3c17d.exe" /INCREMENTAL /ILK:"cmTC_3c17d.dir\\Debug\\cmTC_3c17d.ilk" /NOLOGO pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-umibf9/Debug/cmTC_3c17d.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-umibf9/Debug/cmTC_3c17d.lib" /MACHINE:X64  /machine:x64 cmTC_3c17d.dir\\Debug\\CheckFunctionExists.obj
-        LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\cmTC_3c17d.vcxproj]
-        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\cmTC_3c17d.vcxproj" (default targets) -- FAILED.
-        
-        Build FAILED.
-        
-        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\cmTC_3c17d.vcxproj" (default target) (1) ->
-        (Link target) -> 
-          LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-umibf9\\cmTC_3c17d.vcxproj]
+          C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\src.c(1,10): error C1083: Cannot open include file: 'pthread.h': No such file or directory [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-hn6p6w\\cmTC_80ae9.vcxproj]
         
             0 Warning(s)
             1 Error(s)
@@ -406,13 +347,72 @@ events:
     backtrace:
       - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/CheckLibraryExists.cmake:69 (try_compile)"
       - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:112 (CHECK_LIBRARY_EXISTS)"
+      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:175 (_threads_check_lib)"
+      - "vendor/glfw/CMakeLists.txt:60 (find_package)"
+    checks:
+      - "Looking for pthread_create in pthreads"
+    directories:
+      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-les4zb"
+      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-les4zb"
+    cmakeVariables:
+      CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
+      CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
+      CMAKE_EXE_LINKER_FLAGS: "/machine:x64"
+      CMAKE_MODULE_PATH: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/vendor/glfw/CMake/modules"
+    buildResult:
+      variable: "CMAKE_HAVE_PTHREADS_CREATE"
+      cached: true
+      stdout: |
+        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-les4zb'
+        
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_76cb4.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        MSBuild version 17.9.8+b34f75857 for .NET Framework
+        Build started 4/16/2024 4:08:13 PM.
+        
+        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\cmTC_76cb4.vcxproj" on node 1 (default targets).
+        PrepareForBuild:
+          Creating directory "cmTC_76cb4.dir\\Debug\\".
+          Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\Debug\\".
+          Creating directory "cmTC_76cb4.dir\\Debug\\cmTC_76cb4.tlog\\".
+        InitializeBuildStatus:
+          Creating "cmTC_76cb4.dir\\Debug\\cmTC_76cb4.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_76cb4.dir\\Debug\\cmTC_76cb4.tlog\\unsuccessfulbuild".
+        ClCompile:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_76cb4.dir\\Debug\\\\" /Fd"cmTC_76cb4.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\CheckFunctionExists.c"
+          Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
+          Copyright (C) Microsoft Corporation.  All rights reserved.
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_76cb4.dir\\Debug\\\\" /Fd"cmTC_76cb4.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\CheckFunctionExists.c"
+          CheckFunctionExists.c
+        Link:
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\Debug\\cmTC_76cb4.exe" /INCREMENTAL /ILK:"cmTC_76cb4.dir\\Debug\\cmTC_76cb4.ilk" /NOLOGO pthreads.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-les4zb/Debug/cmTC_76cb4.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-les4zb/Debug/cmTC_76cb4.lib" /MACHINE:X64  /machine:x64 cmTC_76cb4.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\cmTC_76cb4.vcxproj]
+        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\cmTC_76cb4.vcxproj" (default targets) -- FAILED.
+        
+        Build FAILED.
+        
+        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\cmTC_76cb4.vcxproj" (default target) (1) ->
+        (Link target) -> 
+          LINK : fatal error LNK1104: cannot open file 'pthreads.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-les4zb\\cmTC_76cb4.vcxproj]
+        
+            0 Warning(s)
+            1 Error(s)
+        
+        Time Elapsed 00:00:00.29
+        
+      exitCode: 1
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/CheckLibraryExists.cmake:69 (try_compile)"
+      - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:112 (CHECK_LIBRARY_EXISTS)"
       - "C:/Users/STARLINECOMP/Downloads/cmake-3.29.0-rc2-windows-x86_64/cmake-3.29.0-rc2-windows-x86_64/share/cmake-3.29/Modules/FindThreads.cmake:176 (_threads_check_lib)"
       - "vendor/glfw/CMakeLists.txt:60 (find_package)"
     checks:
       - "Looking for pthread_create in pthread"
     directories:
-      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-bqu0ab"
-      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-bqu0ab"
+      source: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-4q4gyn"
+      binary: "C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-4q4gyn"
     cmakeVariables:
       CMAKE_C_FLAGS: "/DWIN32 /D_WINDOWS"
       CMAKE_C_FLAGS_DEBUG: "/Ob0 /Od /RTC1"
@@ -422,42 +422,42 @@ events:
       variable: "CMAKE_HAVE_PTHREAD_CREATE"
       cached: true
       stdout: |
-        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-bqu0ab'
+        Change Dir: 'C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-4q4gyn'
         
-        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_5110b.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
+        Run Build Command(s): "C:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/amd64/MSBuild.exe" cmTC_b43a8.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:VisualStudioVersion=17.0 /v:n
         MSBuild version 17.9.8+b34f75857 for .NET Framework
-        Build started 4/14/2024 9:06:28 PM.
+        Build started 4/16/2024 4:08:13 PM.
         
-        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\cmTC_5110b.vcxproj" on node 1 (default targets).
+        Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\cmTC_b43a8.vcxproj" on node 1 (default targets).
         PrepareForBuild:
-          Creating directory "cmTC_5110b.dir\\Debug\\".
+          Creating directory "cmTC_b43a8.dir\\Debug\\".
           Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
-          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\Debug\\".
-          Creating directory "cmTC_5110b.dir\\Debug\\cmTC_5110b.tlog\\".
+          Creating directory "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\Debug\\".
+          Creating directory "cmTC_b43a8.dir\\Debug\\cmTC_b43a8.tlog\\".
         InitializeBuildStatus:
-          Creating "cmTC_5110b.dir\\Debug\\cmTC_5110b.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
-          Touching "cmTC_5110b.dir\\Debug\\cmTC_5110b.tlog\\unsuccessfulbuild".
+          Creating "cmTC_b43a8.dir\\Debug\\cmTC_b43a8.tlog\\unsuccessfulbuild" because "AlwaysCreate" was specified.
+          Touching "cmTC_b43a8.dir\\Debug\\cmTC_b43a8.tlog\\unsuccessfulbuild".
         ClCompile:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5110b.dir\\Debug\\\\" /Fd"cmTC_5110b.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\CheckFunctionExists.c"
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\CL.exe /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b43a8.dir\\Debug\\\\" /Fd"cmTC_b43a8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\CheckFunctionExists.c"
           Microsoft (R) C/C++ Optimizing Compiler Version 19.39.33523 for x64
           Copyright (C) Microsoft Corporation.  All rights reserved.
-          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_5110b.dir\\Debug\\\\" /Fd"cmTC_5110b.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\CheckFunctionExists.c"
+          cl /c /Zi /W1 /WX- /diagnostics:column /Od /Ob0 /D _MBCS /D WIN32 /D _WINDOWS /D CHECK_FUNCTION_EXISTS=pthread_create /D "CMAKE_INTDIR=\\"Debug\\"" /Gm- /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"cmTC_b43a8.dir\\Debug\\\\" /Fd"cmTC_b43a8.dir\\Debug\\vc143.pdb" /external:W1 /Gd /TC /errorReport:queue "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\CheckFunctionExists.c"
           CheckFunctionExists.c
         Link:
-          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\Debug\\cmTC_5110b.exe" /INCREMENTAL /ILK:"cmTC_5110b.dir\\Debug\\cmTC_5110b.ilk" /NOLOGO pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-bqu0ab/Debug/cmTC_5110b.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-bqu0ab/Debug/cmTC_5110b.lib" /MACHINE:X64  /machine:x64 cmTC_5110b.dir\\Debug\\CheckFunctionExists.obj
-        LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\cmTC_5110b.vcxproj]
-        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\cmTC_5110b.vcxproj" (default targets) -- FAILED.
+          C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.39.33519\\bin\\HostX64\\x64\\link.exe /ERRORREPORT:QUEUE /OUT:"C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\Debug\\cmTC_b43a8.exe" /INCREMENTAL /ILK:"cmTC_b43a8.dir\\Debug\\cmTC_b43a8.ilk" /NOLOGO pthread.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-4q4gyn/Debug/cmTC_b43a8.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:/Users/STARLINECOMP/Desktop/C++/BlazeEngine/build/CMakeFiles/CMakeScratch/TryCompile-4q4gyn/Debug/cmTC_b43a8.lib" /MACHINE:X64  /machine:x64 cmTC_b43a8.dir\\Debug\\CheckFunctionExists.obj
+        LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\cmTC_b43a8.vcxproj]
+        Done Building Project "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\cmTC_b43a8.vcxproj" (default targets) -- FAILED.
         
         Build FAILED.
         
-        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\cmTC_5110b.vcxproj" (default target) (1) ->
+        "C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\cmTC_b43a8.vcxproj" (default target) (1) ->
         (Link target) -> 
-          LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-bqu0ab\\cmTC_5110b.vcxproj]
+          LINK : fatal error LNK1104: cannot open file 'pthread.lib' [C:\\Users\\STARLINECOMP\\Desktop\\C++\\BlazeEngine\\build\\CMakeFiles\\CMakeScratch\\TryCompile-4q4gyn\\cmTC_b43a8.vcxproj]
         
             0 Warning(s)
             1 Error(s)
         
-        Time Elapsed 00:00:00.29
+        Time Elapsed 00:00:00.30
         
       exitCode: 1
 ...
