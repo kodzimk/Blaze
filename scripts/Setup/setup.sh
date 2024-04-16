@@ -1,4 +1,4 @@
-cd ../
+cd ../../
 
 cd vendor/glew-cmake/
 
