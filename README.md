@@ -13,7 +13,7 @@ Engine based on 2d games but i have a plans to do for 3d also.<br>It depend on t
 # Build
 
 First Way:<br>
-1) You can go to the script folder and start build shell script<br>
+1) You can go to the script folder then Setup folder and start setup shell script<br>
 2) Then find project in buildd folder<br>
 
 
@@ -34,5 +34,7 @@ cmake -S ../ -DCMAKE_BUILD_TYPE=Debug
 cmake --build .
 ```
 Then go to the build folder and find project thats main project<br>
+
+to build your project without using terminal you can with build shell script(Direction:script/build/)<br>
 Good luck!
 
