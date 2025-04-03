@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "../Core/Core.h"
+#include "Blaze/Core/Core.h"
 #include "spdlog/spdlog.h"
 
 namespace Blaze {

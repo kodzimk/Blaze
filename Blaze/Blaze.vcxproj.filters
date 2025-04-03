@@ -10,6 +10,9 @@
     <Filter Include="Blaze\Error">
       <UniqueIdentifier>{8C80C98D-F835-4283-812A-3C5AEDDE3887}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Blaze\Event">
+      <UniqueIdentifier>{A47ACB8D-1030-4483-9924-3E5A05D93A87}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Blaze\Logging">
       <UniqueIdentifier>{A97A3839-153B-B46F-DE75-FDEC4AF5F84B}</UniqueIdentifier>
     </Filter>
@@ -30,6 +33,12 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
       <Filter>Blaze\Error</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Event\KeyEvent.h">
+      <Filter>Blaze\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Event\MouseEvent.h">
+      <Filter>Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Logging\Log.h">
       <Filter>Blaze\Logging</Filter>

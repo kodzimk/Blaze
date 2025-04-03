@@ -1,6 +1,8 @@
 
 #include "Core.h"
 
+#include"Blaze/Core/Window.h"
+
 namespace Blaze {
 
 	class BLAZE_API Application
@@ -11,9 +13,9 @@ namespace Blaze {
 
 		void Run();
 
-	
+	public:
+		Window *window;
 	};
 	// To be defined in CLIENT
 	Application* CreateApplication();
-
 }

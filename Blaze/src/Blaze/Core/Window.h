@@ -8,9 +8,10 @@ namespace Blaze
 	struct WindowProp {
 		std::string title;
 		unsigned int width, height;
+		bool vSync;
 
 		WindowProp(unsigned int width, unsigned int height, std::string title)
-			: width(width), height(height), title(title)
+			: width(width), height(height), title(title),vSync(false)
 		{
 
 		}
@@ -25,10 +26,15 @@ namespace Blaze
 		void DestroyWindow();
 		void OnUpdate();
 		void Init(WindowProp& prop);
-		Window* Create();
+
+		void SetVSync(bool enabled);
+		bool IsVSync() const;
+
 	private:
 		GLFWwindow* window;
 		WindowProp prop;
 	};
+
+	Window* Create();
 }
 

@@ -2,23 +2,27 @@
 #include"bzpch.h"
 #include "Application.h"
 
-#include"Window.h"
-
 namespace Blaze {
 	Application::Application()
 	{
-		
+		window = Create();
 	}
 
 
 	Application::~Application()
 	{
+		window->DestroyWindow();
+		delete window;
 	}
 
 	void Application::Run()
 	{	
-		Window window(1600,900,"Blaze Engine");
-		window.DestroyWindow();
+		int index = 10000000;
+		while (index > 0)
+		{
+			window->OnUpdate();
+			index--;
+		}
 		glfwTerminate();
 	}
 
