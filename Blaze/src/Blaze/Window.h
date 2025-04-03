@@ -1,8 +1,6 @@
 #pragma once
 
-#include<iostream>
-
-struct GLFWwindow;
+#include<GLFW/glfw3.h>
 
 namespace Blaze
 {

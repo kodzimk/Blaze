@@ -1,8 +1,7 @@
+#include"hzpch.h"
+
 #include"Window.h"
 #include"ErrorHandler.h"
-#include"Log.h"
-
-#include<GLFW/glfw3.h>
 
 namespace Blaze {
 	Window::Window(unsigned int width, int height, std::string title)
@@ -31,13 +30,11 @@ namespace Blaze {
 		{
 			BZ_CORE_INFO("Creating window {0} ({1}, {2})", prop.title, prop.width, prop.height);
 		}
-
-		glfwMakeContextCurrent(window);
 	}
 
 	Window* Window::Create()
 	{
-		return new Window(1600, 900, "Blaze Engine");
+		return new Window(1600,900,"Blaze Engine");
 	}
 
 	Window::~Window()
@@ -52,7 +49,6 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
-		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 }
