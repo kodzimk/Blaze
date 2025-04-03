@@ -1,5 +1,5 @@
 #pragma once
-#include"Log.h"
+#include"bzpch.h"
 
 void GLFWErrorCallback(int error, const char* description)
 {

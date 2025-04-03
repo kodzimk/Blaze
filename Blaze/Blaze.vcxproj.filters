@@ -4,35 +4,48 @@
     <Filter Include="Blaze">
       <UniqueIdentifier>{1337E60C-7F4B-0EBE-48CD-B11DB4A00AEF}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Blaze\Core">
+      <UniqueIdentifier>{4BBF2B88-3777-6DD5-A07E-46318C5508C6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blaze\Error">
+      <UniqueIdentifier>{8C80C98D-F835-4283-812A-3C5AEDDE3887}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blaze\Logging">
+      <UniqueIdentifier>{A97A3839-153B-B46F-DE75-FDEC4AF5F84B}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Blaze.h" />
-    <ClInclude Include="src\Blaze\Application.h">
-      <Filter>Blaze</Filter>
+    <ClInclude Include="src\Blaze\Core\Application.h">
+      <Filter>Blaze\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Core.h">
-      <Filter>Blaze</Filter>
+    <ClInclude Include="src\Blaze\Core\Core.h">
+      <Filter>Blaze\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\EntryPoint.h">
-      <Filter>Blaze</Filter>
+    <ClInclude Include="src\Blaze\Core\EntryPoint.h">
+      <Filter>Blaze\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\ErrorHandler.h">
-      <Filter>Blaze</Filter>
+    <ClInclude Include="src\Blaze\Core\Window.h">
+      <Filter>Blaze\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Log.h">
-      <Filter>Blaze</Filter>
+    <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
+      <Filter>Blaze\Error</Filter>
     </ClInclude>
-    <ClInclude Include="src\hzpch.h" />
-    <ClInclude Include="src\Blaze\Window.h" />
+    <ClInclude Include="src\Blaze\Logging\Log.h">
+      <Filter>Blaze\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bzpch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Application.cpp">
-      <Filter>Blaze</Filter>
+    <ClCompile Include="src\Blaze\Core\Application.cpp">
+      <Filter>Blaze\Core</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\Log.cpp">
-      <Filter>Blaze</Filter>
+    <ClCompile Include="src\Blaze\Core\Window.cpp">
+      <Filter>Blaze\Core</Filter>
     </ClCompile>
-    <ClCompile Include="src\hzpch.cpp" />
-    <ClCompile Include="src\Blaze\Window.cpp" />
+    <ClCompile Include="src\Blaze\Logging\Log.cpp">
+      <Filter>Blaze\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bzpch.cpp" />
   </ItemGroup>
 </Project>

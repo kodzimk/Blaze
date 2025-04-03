@@ -156,19 +156,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\Blaze.h" />
-    <ClInclude Include="src\Blaze\Application.h" />
-    <ClInclude Include="src\Blaze\Core.h" />
-    <ClInclude Include="src\Blaze\EntryPoint.h" />
-    <ClInclude Include="src\Blaze\ErrorHandler.h" />
-    <ClInclude Include="src\Blaze\Log.h" />
-    <ClInclude Include="src\Blaze\Window.h" />
-    <ClInclude Include="src\hzpch.h" />
+    <ClInclude Include="src\Blaze\Core\Application.h" />
+    <ClInclude Include="src\Blaze\Core\Core.h" />
+    <ClInclude Include="src\Blaze\Core\EntryPoint.h" />
+    <ClInclude Include="src\Blaze\Core\Window.h" />
+    <ClInclude Include="src\Blaze\Error\ErrorHandler.h" />
+    <ClInclude Include="src\Blaze\Logging\Log.h" />
+    <ClInclude Include="src\bzpch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Application.cpp" />
-    <ClCompile Include="src\Blaze\Log.cpp" />
-    <ClCompile Include="src\Blaze\Window.cpp" />
-    <ClCompile Include="src\hzpch.cpp" />
+    <ClCompile Include="src\Blaze\Core\Application.cpp" />
+    <ClCompile Include="src\Blaze\Core\Window.cpp" />
+    <ClCompile Include="src\Blaze\Logging\Log.cpp" />
+    <ClCompile Include="src\bzpch.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

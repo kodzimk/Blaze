@@ -1,5 +1,6 @@
 #pragma once
 
+#include"bzpch.h"
 #include<GLFW/glfw3.h>
 
 namespace Blaze

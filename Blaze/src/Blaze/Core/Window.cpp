@@ -1,7 +1,6 @@
-#include"hzpch.h"
+#include"bzpch.h"
 
 #include"Window.h"
-#include"ErrorHandler.h"
 
 namespace Blaze {
 	Window::Window(unsigned int width, int height, std::string title)

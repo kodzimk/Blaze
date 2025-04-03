@@ -12,5 +12,4 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include"Blaze/Window.h"
-#include "Blaze/Log.h"
+#include"Blaze/Logging/Log.h"

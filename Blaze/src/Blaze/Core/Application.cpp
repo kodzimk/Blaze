@@ -1,7 +1,8 @@
 
-#include"../hzpch.h"
+#include"bzpch.h"
 #include "Application.h"
 
+#include"Window.h"
 
 namespace Blaze {
 	Application::Application()
@@ -17,7 +18,6 @@ namespace Blaze {
 	void Application::Run()
 	{	
 		Window window(1600,900,"Blaze Engine");
-
 		window.DestroyWindow();
 		glfwTerminate();
 	}

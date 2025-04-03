@@ -1,8 +1,8 @@
 #pragma once
-#include "Blaze/Application.h"
-#include"Blaze/Log.h"
-#include "Blaze/ErrorHandler.h"
+#include "Blaze/Core/Application.h"
+#include"Blaze/Logging/Log.h"
+#include "Blaze/Error/ErrorHandler.h"
 
 // ---Entry Point---------------------
-#include "Blaze/EntryPoint.h"
+#include "Blaze/Core/EntryPoint.h"
 // -----------------------------------
