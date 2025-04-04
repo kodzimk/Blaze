@@ -1,7 +1,7 @@
 #include"bzpch.h"
 
 #include"Window.h"
-
+#include<glad/glad.h>
 #include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Event/MouseEvent.h"
 
@@ -20,8 +20,9 @@ namespace Blaze {
 			BZ_CORE_ERROR("Cant initialize 'glfw' library");
 		}
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 		window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
 
@@ -33,6 +34,7 @@ namespace Blaze {
 		{
 			BZ_CORE_INFO("Creating window {0} ({1}, {2})", prop.title, prop.width, prop.height);
 		}
+
 
 		glfwSetKeyCallback(window,[](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
@@ -81,6 +83,13 @@ namespace Blaze {
 				mouse.ToString();
 		});
 		
+		glfwMakeContextCurrent(window);
+		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+		{
+			BZ_CORE_ERROR("Failed to load 'Glad' library");
+		}
+
+		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	void Window::SetVSync(bool enabled) 
@@ -105,6 +114,9 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 

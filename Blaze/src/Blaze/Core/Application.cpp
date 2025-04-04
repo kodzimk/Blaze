@@ -8,7 +8,6 @@ namespace Blaze {
 		window = Create();
 	}
 
-
 	Application::~Application()
 	{
 		window->DestroyWindow();
@@ -23,7 +22,6 @@ namespace Blaze {
 			window->OnUpdate();
 			index--;
 		}
-		glfwTerminate();
 	}
 
 }

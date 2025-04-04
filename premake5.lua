@@ -13,10 +13,9 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 -- Include directories relative to root folder (solution directory)
 
 IncludeDir = {}
-IncludeDir["GLFW"] = "Blaze/vendor/GLFW/include"
+IncludeDir["ImGui"] = "Blaze/vendor/imgui/include"
 
-include "Blaze/vendor/GLFW"
-
+include "Blaze/vendor/imgui"
 
 project "Blaze"
 	location "Blaze"
@@ -33,6 +32,7 @@ project "Blaze"
 
 	files
 	{
+		"%{prj.name}/vendor/GLAD/src/**.c",
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp"
 	}
@@ -41,7 +41,9 @@ project "Blaze"
 	{
 		"%{prj.name}/vendor/spdlog/include",
 		"%{prj.name}/src",
-		"%{prj.name}/vendor/glfw3/include"
+		"%{prj.name}/vendor/glfw3/include",
+		"%{IncludeDir.imgui}",
+		"%{prj.name}/vendor/GLAD/include",
 	}
 
 	libdirs
@@ -51,6 +53,7 @@ project "Blaze"
 
 	links
 	{
+	   "ImGui",
        "glfw3_mt.lib",
 	   "glfw3.lib",
 	   "opengl32.lib"
@@ -64,7 +67,8 @@ project "Blaze"
 		defines
 		{
 			"BZ_PLATFORM_WINDOWS",
-			"BZ_BUILD_DLL"
+			"BZ_BUILD_DLL",
+			"GLFW_INCLUDE_NONE"
 		}
 
 		postbuildcommands
@@ -107,6 +111,7 @@ project "Sandbox"
 	{
 		"Blaze/vendor/spdlog/include",
 		"Blaze/vendor/glfw3/include",
+		"Blaze/vendor/GLAD/include",
 		"Blaze/src"
 	}
 

@@ -1,60 +1,81 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Blaze">
-      <UniqueIdentifier>{1337E60C-7F4B-0EBE-48CD-B11DB4A00AEF}</UniqueIdentifier>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Blaze\Core">
-      <UniqueIdentifier>{4BBF2B88-3777-6DD5-A07E-46318C5508C6}</UniqueIdentifier>
+    <Filter Include="src\Blaze">
+      <UniqueIdentifier>{6A45A3B2-D6AF-5729-1FEE-08CF8B97357E}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Blaze\Error">
-      <UniqueIdentifier>{8C80C98D-F835-4283-812A-3C5AEDDE3887}</UniqueIdentifier>
+    <Filter Include="src\Blaze\Core">
+      <UniqueIdentifier>{025C32BF-EE29-26C5-D7BD-96EBC32A022A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Blaze\Event">
-      <UniqueIdentifier>{A47ACB8D-1030-4483-9924-3E5A05D93A87}</UniqueIdentifier>
+    <Filter Include="src\Blaze\Error">
+      <UniqueIdentifier>{23B4A3A5-8F3F-116A-9850-945E045B6D6A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Blaze\Logging">
-      <UniqueIdentifier>{A97A3839-153B-B46F-DE75-FDEC4AF5F84B}</UniqueIdentifier>
+    <Filter Include="src\Blaze\Event">
+      <UniqueIdentifier>{3BAEA5A5-A739-136A-B04A-965E1C556F6A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\Logging">
+      <UniqueIdentifier>{00F06DB0-6C06-6C46-B57D-F76721D33CCE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor">
+      <UniqueIdentifier>{B3738122-9F15-ACF8-88D0-BF4C74113349}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\GLAD">
+      <UniqueIdentifier>{1A7667C1-862B-E0B6-0F20-DA8D7BD4D6BA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\GLAD\src">
+      <UniqueIdentifier>{31B12476-9D3C-923A-A64D-152F1258EE3A}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Blaze.h" />
+    <ClInclude Include="src\Blaze.h">
+      <Filter>src</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Core\Application.h">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\Core.h">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\EntryPoint.h">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\Window.h">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
-      <Filter>Blaze\Error</Filter>
+      <Filter>src\Blaze\Error</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\KeyEvent.h">
-      <Filter>Blaze\Event</Filter>
+      <Filter>src\Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\MouseEvent.h">
-      <Filter>Blaze\Event</Filter>
+      <Filter>src\Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Logging\Log.h">
-      <Filter>Blaze\Logging</Filter>
+      <Filter>src\Blaze\Logging</Filter>
     </ClInclude>
-    <ClInclude Include="src\bzpch.h" />
+    <ClInclude Include="src\bzpch.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Core\Window.cpp">
-      <Filter>Blaze\Core</Filter>
+      <Filter>src\Blaze\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Logging\Log.cpp">
-      <Filter>Blaze\Logging</Filter>
+      <Filter>src\Blaze\Logging</Filter>
     </ClCompile>
-    <ClCompile Include="src\bzpch.cpp" />
+    <ClCompile Include="src\bzpch.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\GLAD\src\glad.c">
+      <Filter>vendor\GLAD\src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
