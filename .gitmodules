@@ -4,3 +4,6 @@
 [submodule "Blaze/vendor/GLFW"]
 	path = Blaze/vendor/GLFW
 	url = https://github.com/TheCherno/glfw.git
+[submodule "Blaze/vendor/imgui"]
+	path = Blaze/vendor/imgui
+	url = https://github.com/TheCherno/imgui.git
