@@ -28,6 +28,12 @@
     <Filter Include="vendor\GLAD\src">
       <UniqueIdentifier>{31B12476-9D3C-923A-A64D-152F1258EE3A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="vendor\imgui">
+      <UniqueIdentifier>{5D3BD0F0-499E-5F95-F223-984BDE652B18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\imgui\src">
+      <UniqueIdentifier>{F45F240B-E058-435D-098B-28E2F5E22269}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Blaze.h">
@@ -60,6 +66,21 @@
     <ClInclude Include="src\bzpch.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imgui.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imgui_internal.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imstb_rectpack.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imstb_textedit.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -76,6 +97,21 @@
     </ClCompile>
     <ClCompile Include="vendor\GLAD\src\glad.c">
       <Filter>vendor\GLAD\src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\src\imgui.cpp">
+      <Filter>vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\src\imgui_demo.cpp">
+      <Filter>vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\src\imgui_draw.cpp">
+      <Filter>vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\src\imgui_tables.cpp">
+      <Filter>vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
+      <Filter>vendor\imgui\src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

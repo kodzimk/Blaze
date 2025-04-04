@@ -1,7 +1,10 @@
 #include"bzpch.h"
 
 #include"Window.h"
+
 #include<glad/glad.h>
+#include<GLFW/glfw3.h>
+
 #include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Event/MouseEvent.h"
 

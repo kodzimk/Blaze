@@ -12,11 +12,6 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 
-IncludeDir = {}
-IncludeDir["ImGui"] = "Blaze/vendor/imgui/include"
-
-include "Blaze/vendor/imgui"
-
 project "Blaze"
 	location "Blaze"
 	kind "SharedLib"
@@ -34,7 +29,9 @@ project "Blaze"
 	{
 		"%{prj.name}/vendor/GLAD/src/**.c",
 		"%{prj.name}/src/**.h",
-		"%{prj.name}/src/**.cpp"
+		"%{prj.name}/src/**.cpp",
+		"%{prj.name}/vendor/imgui/src/**.h",
+		"%{prj.name}/vendor/imgui/src/**.cpp",
 	}
 
 	includedirs
@@ -42,8 +39,8 @@ project "Blaze"
 		"%{prj.name}/vendor/spdlog/include",
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/glfw3/include",
-		"%{IncludeDir.imgui}",
 		"%{prj.name}/vendor/GLAD/include",
+		"%{prj.name}/vendor/imgui/include"
 	}
 
 	libdirs
@@ -53,7 +50,6 @@ project "Blaze"
 
 	links
 	{
-	   "ImGui",
        "glfw3_mt.lib",
 	   "glfw3.lib",
 	   "opengl32.lib"
