@@ -2,6 +2,7 @@
 #include "Core.h"
 
 #include"Blaze/Core/Window.h"
+#include"Blaze/Renderer/Renderer.h"
 
 namespace Blaze {
 
@@ -14,7 +15,11 @@ namespace Blaze {
 		void Run();
 
 	public:
-		Window *window;
+		Renderer* m_renderer;
+		Window *m_window;
+
+	private:
+		bool m_running;
 	};
 	// To be defined in CLIENT
 	Application* CreateApplication();

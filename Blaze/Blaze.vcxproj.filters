@@ -66,6 +66,9 @@
     <ClInclude Include="src\bzpch.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\imgui\src\imconfig.h">
+      <Filter>vendor\imgui\src</Filter>
+    </ClInclude>
     <ClInclude Include="vendor\imgui\src\imgui.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
@@ -81,6 +84,8 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
+    <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -113,5 +118,7 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
   </ItemGroup>
 </Project>

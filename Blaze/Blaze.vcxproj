@@ -155,6 +155,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
+    <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
@@ -165,6 +167,7 @@
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\bzpch.h" />
+    <ClInclude Include="vendor\imgui\src\imconfig.h" />
     <ClInclude Include="vendor\imgui\src\imgui.h" />
     <ClInclude Include="vendor\imgui\src\imgui_internal.h" />
     <ClInclude Include="vendor\imgui\src\imstb_rectpack.h" />
@@ -172,6 +175,8 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
     <ClCompile Include="src\Blaze\Logging\Log.cpp" />

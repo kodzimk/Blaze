@@ -1,31 +1,36 @@
 
 #include"bzpch.h"
 #include "Application.h"
-#include<GLFW/glfw3.h>
-#include<imgui.h>
-#include<imgui_impl_glfw.h>
-#include<imgui_impl_opengl3.h>
 
 namespace Blaze {
 	Application::Application()
+		: m_running(true)
 	{
-		IMGUI_CHECKVERSION();
-		window = Create();
+		m_renderer = new Renderer();
+		m_window = Create();
 	}
 
 	Application::~Application()
 	{
-		window->DestroyWindow();
-		delete window;
+		m_window->DestroyWindow();
+		delete m_window;
+		delete m_renderer;
 	}
 
 	void Application::Run()
 	{	
-		int index = 10000000;
-		while (index > 0)
+		std::vector<float> vertices = {
+			-0.5f,-0.5f,
+			-0.5f,0.5f,
+			0.0f,0.5f
+		};
+
+		m_renderer->CreateObject(vertices);
+		while(m_running)
 		{   
-			window->OnUpdate();
-			index--;
+			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
+			m_renderer->Render();
+			m_window->OnUpdate();
 		}
 	}
 

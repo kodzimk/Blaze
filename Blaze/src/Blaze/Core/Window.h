@@ -26,14 +26,15 @@ namespace Blaze
 
 		void DestroyWindow();
 		void OnUpdate();
+		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f);
 		void Init(WindowProp& prop);
 
 		void SetVSync(bool enabled);
 		bool IsVSync() const;
 
 	private:
-		GLFWwindow* window;
-		WindowProp prop;
+		GLFWwindow* m_window;
+		WindowProp m_prop;
 	};
 
 	Window* Create();

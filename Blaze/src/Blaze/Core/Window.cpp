@@ -11,9 +11,9 @@
 
 namespace Blaze {
 	Window::Window(unsigned int width, int height, std::string title)
-		: prop(width, height, title)
+		: m_prop(width, height, title)
 	{
-		Init(prop);
+		Init(m_prop);
 	}
 
 	void Window::Init(WindowProp& prop)
@@ -27,9 +27,9 @@ namespace Blaze {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-		window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
+		m_window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
 
-		if (window == NULL)
+		if (m_window == NULL)
 		{
 			BZ_CORE_ERROR("Cant create window", "Invalid Title symbol");
 		}
@@ -39,7 +39,7 @@ namespace Blaze {
 		}
 
 
-		glfwSetKeyCallback(window,[](GLFWwindow* window, int key, int scancode, int action, int mods)
+		glfwSetKeyCallback(m_window,[](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				switch (action)
@@ -65,7 +65,7 @@ namespace Blaze {
 				}
 		});
 
-		glfwSetMouseButtonCallback(window, [](GLFWwindow* window, int button, int action, int mods)
+		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
 		{
 
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
@@ -73,36 +73,34 @@ namespace Blaze {
 				mouse.ToString();
 		});
 
-		glfwSetCursorPosCallback(window, [](GLFWwindow* window, double Xpos, double Ypos) 
+		glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double Xpos, double Ypos) 
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				MouseEventMoved mouse(Xpos, Ypos);
 		});
 
-		glfwSetScrollCallback(window, [](GLFWwindow* window, double Xoffset, double Yoffset)
+		glfwSetScrollCallback(m_window, [](GLFWwindow* window, double Xoffset, double Yoffset)
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				MouseScrollEvent mouse(Xoffset, Yoffset);
 				mouse.ToString();
 		});
 		
-		glfwMakeContextCurrent(window);
+		glfwMakeContextCurrent(m_window);
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
 			BZ_CORE_ERROR("Failed to load 'Glad' library");
 		}
-
-		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	void Window::SetVSync(bool enabled) 
 	{
-		prop.vSync = enabled;
+		m_prop.vSync = enabled;
 	}
 
 	bool Window::IsVSync() const
 	{
-		return prop.vSync;
+		return m_prop.vSync;
 	}
 
 	Window::~Window()
@@ -111,15 +109,20 @@ namespace Blaze {
 
 	void Window::DestroyWindow()
 	{
-		glfwDestroyWindow(window);
+		glfwDestroyWindow(m_window);
 		BZ_INFO("Window Destroyed");
+	}
+
+	void Window::Clear(float r, float b, float g, float a)
+	{
+		glClearColor(r, g, b, a);
+		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	void Window::OnUpdate()
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
 
-		glfwSwapBuffers(window);
+		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}
 
