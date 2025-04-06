@@ -13,7 +13,7 @@ namespace Blaze
 		bool vSync;
 
 		WindowProp(unsigned int width, unsigned int height, std::string title)
-			: width(width), height(height), title(title),vSync(false)
+			: width(width), height(height), title(title), vSync(false)
 		{
 
 		}
@@ -42,4 +42,3 @@ namespace Blaze
 
 	Window* Create(Application* app);
 }
-
