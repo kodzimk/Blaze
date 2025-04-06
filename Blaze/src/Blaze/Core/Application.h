@@ -12,13 +12,13 @@ namespace Blaze {
 		Application();
 		virtual ~Application();
 
+		void WindowResize();
+		void WindowClose();
 		void Run();
 
 	public:
 		Renderer* m_renderer;
 		Window *m_window;
-
-	private:
 		bool m_running;
 	};
 	// To be defined in CLIENT

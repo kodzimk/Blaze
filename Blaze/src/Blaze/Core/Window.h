@@ -6,6 +6,7 @@ struct GLFWwindow;
 
 namespace Blaze
 {
+	class Application;
 	struct WindowProp {
 		std::string title;
 		unsigned int width, height;
@@ -21,7 +22,7 @@ namespace Blaze
 	class Window
 	{
 	public:
-		Window(unsigned int width, int height, std::string title);
+		Window(unsigned int width, int height, std::string title, Application* app);
 		virtual ~Window();
 
 		void DestroyWindow();
@@ -35,8 +36,10 @@ namespace Blaze
 	private:
 		GLFWwindow* m_window;
 		WindowProp m_prop;
+	public:
+		Application* app;
 	};
 
-	Window* Create();
+	Window* Create(Application* app);
 }
 

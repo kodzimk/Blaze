@@ -7,7 +7,7 @@ namespace Blaze {
 		: m_running(true)
 	{
 		m_renderer = new Renderer();
-		m_window = Create();
+		m_window = Create(this);
 	}
 
 	Application::~Application()
@@ -15,6 +15,17 @@ namespace Blaze {
 		m_window->DestroyWindow();
 		delete m_window;
 		delete m_renderer;
+	}
+
+	void Application::WindowResize()
+	{
+
+	}
+
+	void Application::WindowClose()
+	{
+		BZ_INFO("Window close");
+		m_running = false;
 	}
 
 	void Application::Run()

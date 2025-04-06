@@ -155,17 +155,18 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
-    <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
     <ClInclude Include="src\Blaze\Core\EntryPoint.h" />
     <ClInclude Include="src\Blaze\Core\Window.h" />
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h" />
+    <ClInclude Include="src\Blaze\Event\EventCallBack.h" />
     <ClInclude Include="src\Blaze\Event\KeyEvent.h" />
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
+    <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
+    <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\bzpch.h" />
     <ClInclude Include="vendor\imgui\src\imconfig.h" />
     <ClInclude Include="vendor\imgui\src\imgui.h" />
@@ -175,11 +176,11 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
-    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
     <ClCompile Include="src\Blaze\Logging\Log.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\bzpch.cpp" />
     <ClCompile Include="vendor\GLAD\src\glad.c" />
     <ClCompile Include="vendor\imgui\src\imgui.cpp" />

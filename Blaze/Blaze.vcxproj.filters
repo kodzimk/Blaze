@@ -19,6 +19,9 @@
     <Filter Include="src\Blaze\Logging">
       <UniqueIdentifier>{00F06DB0-6C06-6C46-B57D-F76721D33CCE}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Renderer">
+      <UniqueIdentifier>{50400C56-3C24-CDAB-A584-C7FE9187B72D}</UniqueIdentifier>
+    </Filter>
     <Filter Include="vendor">
       <UniqueIdentifier>{B3738122-9F15-ACF8-88D0-BF4C74113349}</UniqueIdentifier>
     </Filter>
@@ -54,6 +57,9 @@
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
       <Filter>src\Blaze\Error</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Event\EventCallBack.h">
+      <Filter>src\Blaze\Event</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Event\KeyEvent.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
@@ -62,6 +68,12 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Logging\Log.h">
       <Filter>src\Blaze\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\GameObject.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Renderer.h">
+      <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\bzpch.h">
       <Filter>src</Filter>
@@ -84,8 +96,6 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
-    <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -96,6 +106,12 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Logging\Log.cpp">
       <Filter>src\Blaze\Logging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\bzpch.cpp">
       <Filter>src</Filter>
@@ -118,7 +134,5 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
-    <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
   </ItemGroup>
 </Project>
