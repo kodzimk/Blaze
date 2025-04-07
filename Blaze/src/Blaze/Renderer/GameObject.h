@@ -2,13 +2,14 @@
 
 namespace Blaze
 {
+	struct CameraProp;
 	class GameObject
 	{
 	public:
-		GameObject(std::vector<float> vertices);
+		GameObject(std::vector<float> vertices, CameraProp prop);
 		virtual ~GameObject();
 
-		void Draw();
+		void Draw(CameraProp prop);
 	private:
 		std::vector<float> vertices;
 		unsigned int m_vaID; // vertex array ID
@@ -16,6 +17,7 @@ namespace Blaze
 		unsigned int m_vertexshaderID; // vertex shader ID
 		unsigned int m_fragmentshaderID; // fragment shader ID
 		unsigned int m_shaderProg; // shader Program
+		unsigned int vboId;
 	};
 }
 

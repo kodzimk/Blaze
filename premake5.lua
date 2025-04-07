@@ -32,6 +32,8 @@ project "Blaze"
 		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/imgui/src/**.h",
 		"%{prj.name}/vendor/imgui/src/**.cpp",
+		"%{prj.name}/vendor/glm/glm/**.hpp",
+		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
 
 	includedirs
@@ -40,7 +42,8 @@ project "Blaze"
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/glfw3/include",
 		"%{prj.name}/vendor/GLAD/include",
-		"%{prj.name}/vendor/imgui/include"
+		"%{prj.name}/vendor/imgui/include",
+		"%{prj.name}/vendor/glm/glm"
 	}
 
 	libdirs

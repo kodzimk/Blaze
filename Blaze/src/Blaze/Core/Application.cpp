@@ -1,6 +1,7 @@
 
 #include"bzpch.h"
 #include "Application.h"
+#include<glm.hpp>
 
 namespace Blaze {
 	Application::Application()
@@ -12,6 +13,7 @@ namespace Blaze {
 
 	Application::~Application()
 	{
+		glm::vec3 a = { 1,2,3 };
 		m_window->DestroyWindow();
 		delete m_window;
 		delete m_renderer;
@@ -36,6 +38,7 @@ namespace Blaze {
 			0.0f,0.5f
 		};
 
+		m_renderer->CreateCamera(0.5f,1.0f);
 		m_renderer->CreateObject(vertices);
 		while(m_running)
 		{   
