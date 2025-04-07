@@ -1,4 +1,5 @@
 #include"bzpch.h"
+#include<glfw/glfw3.h>
 
 namespace Blaze
 {
@@ -34,7 +35,7 @@ namespace Blaze
 		KeyReleasedEvent(int key)
 			:key(key)
 		{
-
+			
 		};
 		virtual ~KeyReleasedEvent() = default;
 
@@ -46,4 +47,6 @@ namespace Blaze
 	private:
 		int key;
 	};
+
+#define Is_Key_Pressed(symbol) if(GetKeyState(symbol)) BZ_INFO("Pressed",symbol);
 }

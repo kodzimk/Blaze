@@ -111,7 +111,8 @@ project "Sandbox"
 		"Blaze/vendor/spdlog/include",
 		"Blaze/vendor/glfw3/include",
 		"Blaze/vendor/GLAD/include",
-		"Blaze/src"
+		"Blaze/src",
+		"Blaze/vendor/glm/glm"
 	}
 
 	links

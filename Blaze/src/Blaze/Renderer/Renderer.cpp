@@ -26,9 +26,9 @@ namespace Blaze {
 		m_objects.push_back(object);
 	}
 
-	void Renderer::CreateCamera(float x, float y,double zoom)
+	void Renderer::CreateCamera(float x, float y, float zoom)
 	{
-		m_camera = new Camera(x,y,zoom);
+		m_camera = new Camera({ x,y ,0.0f}, zoom);
 	}
 
 	void Renderer::Render()

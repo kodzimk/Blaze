@@ -10,7 +10,7 @@ namespace Blaze {
 
 		void CreateObject(std::vector<float> vertices);
 		void CreateObject(GameObject *object);
-		void CreateCamera(float x = 0.0, float y = 0.0,double zoom = 1.0);
+		void CreateCamera(float x = 0.0f, float y = 0.0f, float zoom = 1.0f);
 		void Render();
 
 	private:

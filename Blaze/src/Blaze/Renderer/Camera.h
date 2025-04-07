@@ -1,16 +1,17 @@
 #pragma once
 #include"bzpch.h"
+#include<glm.hpp>
 
 namespace Blaze {
 	typedef struct CameraProp{
-		std::vector<float> pos;
-		double zoom = 1.0;
+		glm::vec3 pos;
+		float zoom = 1.0;
 	}CameraProp;
 
 	class Camera
 	{
 	public:
-		Camera(float x, float y, double zoom);
+		Camera(glm::vec3 pos, float zoom);
 		virtual ~Camera();
 
 		CameraProp GetCameraProp() const;

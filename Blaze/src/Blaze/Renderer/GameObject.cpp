@@ -1,6 +1,7 @@
 #include "GameObject.h"
 #include<glad/glad.h>
 #include"Blaze/Renderer/Camera.h"
+#include<gtc/type_ptr.hpp>
 
 namespace Blaze {
 	Blaze::GameObject::GameObject(std::vector<float> vertices, CameraProp prop)
@@ -8,10 +9,11 @@ namespace Blaze {
 	{
 		const char* vertexSource = "#version 330 core\n"
 			"layout (location = 0) in vec3 position;\n"
-			"in vec3 camera_pos;\n"
+			"uniform vec3 camera_pos;\n"
+			"uniform float zoom;"
 			"out vec3 currentPos;\n"
 			"void main() {\n"
-			"gl_Position = vec4(position.x + camera_pos.x, position.y + camera_pos.y, position.z, 1.0f);\n"
+			"gl_Position = zoom * vec4(position.x + camera_pos.x, position.y + camera_pos.y, position.z, 1.0f);\n"
 			"currentPos = position;\n"
 			"}\0";
 
@@ -31,10 +33,6 @@ namespace Blaze {
 
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 		glEnableVertexAttribArray(0);
-
-		glGenBuffers(1, &vboId);
-		glBindBuffer(GL_ARRAY_BUFFER, vboId);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(prop.pos), prop.pos.data(), GL_STATIC_DRAW);
 
 		m_vertexshaderID = glCreateShader(GL_VERTEX_SHADER);
 		glShaderSource(m_vertexshaderID, 1, &vertexSource, NULL);
@@ -61,7 +59,9 @@ namespace Blaze {
 
 	void GameObject::Draw(CameraProp prop)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, vboId);
+		glUniform3fv(glGetUniformLocation(m_shaderProg, "camera_pos"), 1,glm::value_ptr(prop.pos));
+		glUniform1f(glGetUniformLocation(m_shaderProg, "zoom"),prop.zoom);
+
 		glBindVertexArray(m_vaID);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}

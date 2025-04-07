@@ -17,7 +17,7 @@ namespace Blaze
 		unsigned int m_vertexshaderID; // vertex shader ID
 		unsigned int m_fragmentshaderID; // fragment shader ID
 		unsigned int m_shaderProg; // shader Program
-		unsigned int vboId;
+		unsigned int m_cvboId;
 	};
 }
 

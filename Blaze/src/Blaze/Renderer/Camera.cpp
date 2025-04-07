@@ -2,11 +2,10 @@
 
 namespace Blaze
 {
-	Camera::Camera(float x, float y, double zoom)
+	Camera::Camera(glm::vec3 pos, float zoom)
 	{
-		m_prop.pos.push_back(x);
-		m_prop.pos.push_back(y);
-		m_prop.zoom =zoom;
+		m_prop.pos = pos;
+		m_prop.zoom = zoom;
 	}
 
 	Camera::~Camera()

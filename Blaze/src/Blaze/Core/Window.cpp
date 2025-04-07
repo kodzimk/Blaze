@@ -45,19 +45,21 @@ namespace Blaze {
 
 		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
-				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
+				WindowProp* prop = (WindowProp*)glfwGetWindowUserPointer(window);
 				switch (action)
 				{
 				case GLFW_PRESS:
 				{
 					KeyPressedEvent event_press(key, false);
 					event_press.ToString();
+					prop->lastKeySymbol = (char)key;
 					break;
 				}
 				case GLFW_RELEASE:
 				{
 					KeyReleasedEvent event_release(key);
 					event_release.ToString();
+					prop->lastKeySymbol = (char)key;
 					break;
 				}
 				case GLFW_REPEAT:
@@ -67,6 +69,7 @@ namespace Blaze {
 					break;
 				}
 				}
+				std::cout << prop->lastKeySymbol << std::endl;
 			});
 
 		glfwSetWindowUserPointer(m_window, this);
@@ -104,6 +107,11 @@ namespace Blaze {
 		}
 	}
 
+	bool Window::IsKeyPressed(char symbol)
+	{
+		return symbol == m_prop.lastKeySymbol;
+	}
+
 	void Window::SetVSync(bool enabled)
 	{
 		m_prop.vSync = enabled;
@@ -132,9 +140,8 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
-
-		glfwSwapBuffers(m_window);
 		glfwPollEvents();
+		glfwSwapBuffers(m_window);
 	}
 
 	Window* Create(Application* app)
