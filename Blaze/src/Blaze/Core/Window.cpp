@@ -5,6 +5,7 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include"Blaze/Core/Application.h"
+#include"Blaze/Event/ApplicationEvent.h"
 #include"Blaze/Event/MouseEvent.h"
 
 
@@ -76,26 +77,25 @@ namespace Blaze {
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MouseEventPressed mouse(button, mods);
-				mouse.ToString();
+				MousePressedEvent mouse(button);
 			});
 
 		glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double Xpos, double Ypos)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MouseEventMoved mouse(Xpos, Ypos);
+				MouseMovedEvent mouse(Xpos, Ypos);
 			});
 
 		glfwSetScrollCallback(m_window, [](GLFWwindow* window, double Xoffset, double Yoffset)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MouseScrollEvent mouse(Xoffset, Yoffset);
-				mouse.ToString();
+				MouseScrollEvent mouse(Xoffset);
 			});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
 			Window& win = *(Window*)glfwGetWindowUserPointer(window);
 			win.app->WindowClose();
+			WindowCloseEvent event();
 			});
 
 
@@ -104,11 +104,6 @@ namespace Blaze {
 		{
 			BZ_CORE_ERROR("Failed to load 'Glad' library");
 		}
-	}
-
-	bool Window::IsKeyPressed(char symbol)
-	{
-		return symbol == m_prop.lastKeySymbol;
 	}
 
 	void Window::SetVSync(bool enabled)
