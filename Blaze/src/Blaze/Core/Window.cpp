@@ -5,7 +5,6 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include"Blaze/Core/Application.h"
-#include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Event/MouseEvent.h"
 
 
@@ -43,34 +42,34 @@ namespace Blaze {
 		}
 
 
-		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
-			{
-				WindowProp* prop = (WindowProp*)glfwGetWindowUserPointer(window);
-				switch (action)
-				{
-				case GLFW_PRESS:
-				{
-					KeyPressedEvent event_press(key, false);
-					event_press.ToString();
-					prop->lastKeySymbol = (char)key;
-					break;
-				}
-				case GLFW_RELEASE:
-				{
-					KeyReleasedEvent event_release(key);
-					event_release.ToString();
-					prop->lastKeySymbol = (char)key;
-					break;
-				}
-				case GLFW_REPEAT:
-				{
-					KeyPressedEvent event(key, true);
-					event.ToString();
-					break;
-				}
-				}
-				std::cout << prop->lastKeySymbol << std::endl;
-			});
+		//glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+		//	{
+		//		WindowProp* prop = (WindowProp*)glfwGetWindowUserPointer(window);
+		//		switch (action)
+		//		{
+		//		case GLFW_PRESS:
+		//		{
+		//			KeyPressedEvent event_press(key, false);
+		//			event_press.ToString();
+		//			prop->lastKeySymbol = (char)key;
+		//			break;
+		//		}
+		//		case GLFW_RELEASE:
+		//		{
+		//			KeyReleasedEvent event_release(key);
+		//			event_release.ToString();
+		//			prop->lastKeySymbol = (char)key;
+		//			break;
+		//		}
+		//		case GLFW_REPEAT:
+		//		{
+		//			KeyPressedEvent event(key, true);
+		//			event.ToString();
+		//			break;
+		//		}
+		//		}
+		//		std::cout << prop->lastKeySymbol << std::endl;
+		//	});
 
 		glfwSetWindowUserPointer(m_window, this);
 

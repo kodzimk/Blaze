@@ -1,52 +1,75 @@
-#include"bzpch.h"
+#include"Blaze/Event/Event.h"
 #include<glfw/glfw3.h>
 
 namespace Blaze
 {
-	class KeyPressedEvent
+	class BLAZE_API KeyEvent : public Event
 	{
 	public:
-		KeyPressedEvent(int key,bool repeated)
-			:key(key) , repeated(repeated)
+		inline int GetKeyCode() const { return m_KeyCode; }
+		int GetCategoryFlags() const override
 		{
-
-		};
-
-		virtual ~KeyPressedEvent() = default;
-
-		bool isRepeated() const
-		{
-			return repeated;
+			return EventCategoryKeyboard | EventCategoryInput;
 		}
+	protected:
+		KeyEvent(int keyCode) :
+			m_KeyCode(keyCode) {}
 
-		void ToString()
-		{
-			BZ_INFO("Key was pressed: {0}", (char)key);
-		}
-
-	private:
-		bool repeated;
-		int key;
+		int m_KeyCode;
 	};
 
-	class KeyReleasedEvent
+	class BLAZE_API KeyPressedEvent : public KeyEvent
 	{
 	public:
-		KeyReleasedEvent(int key)
-			:key(key)
+		KeyPressedEvent(int key,int repeatCount)
+			:KeyEvent(key),m_repeatCount(repeatCount)
 		{
 			
 		};
-		virtual ~KeyReleasedEvent() = default;
 
-		void ToString()
+		EventType GetEventType() const override
 		{
-			BZ_INFO("Key was released: {0}", (char)key);
+			return EventType::KeyPressed;
+		}
+		const char* GetName() const override
+		{
+			return "KeyPressed";
+		}
+		inline int GetRepeatCount() const { return m_repeatCount; }
+
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "KeyPressedEvent: " << m_KeyCode << " repeatedCount: " << m_repeatCount;
+			return ss.str();
 		}
 
-	private:
-		int key;
+	protected:
+		int m_repeatCount;
 	};
 
-#define Is_Key_Pressed(symbol) if(GetKeyState(symbol)) BZ_INFO("Pressed",symbol);
+	class BLAZE_API KeyPressedEvent : public KeyEvent
+	{
+	public:
+		KeyPressedEvent(int key)
+			:KeyEvent(key)
+		{
+
+		};
+		
+		EventType GetEventType() const override
+		{
+			return EventType::KeyReleased;
+		}
+		const char* GetName() const override
+		{
+			return "KeyRelease";
+		}
+		std::string ToString() const override
+		{
+			std::stringstream ss;
+			ss << "KeyReleasedEvent: " << m_KeyCode;
+			return ss.str();
+		}
+	};
 }

@@ -75,7 +75,7 @@
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
       <Filter>src\Blaze\Error</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Event\EventCallBack.h">
+    <ClInclude Include="src\Blaze\Event\Event.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\KeyEvent.h">
@@ -1371,6 +1371,7 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Event\ApplicationEvent.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">

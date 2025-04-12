@@ -161,7 +161,8 @@
     <ClInclude Include="src\Blaze\Core\EntryPoint.h" />
     <ClInclude Include="src\Blaze\Core\Window.h" />
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h" />
-    <ClInclude Include="src\Blaze\Event\EventCallBack.h" />
+    <ClInclude Include="src\Blaze\Event\ApplicationEvent.h" />
+    <ClInclude Include="src\Blaze\Event\Event.h" />
     <ClInclude Include="src\Blaze\Event\KeyEvent.h" />
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />

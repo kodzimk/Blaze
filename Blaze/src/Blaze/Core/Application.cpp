@@ -2,7 +2,6 @@
 #include"bzpch.h"
 #include "Application.h"
 #include<glm.hpp>
-#include"Blaze/Event/KeyEvent.h"
 
 namespace Blaze {
 	Application::Application()
@@ -44,10 +43,6 @@ namespace Blaze {
 		{   
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
 			m_renderer->Render();
-			if (m_window->IsKeyPressed('A'))
-			{
-				std::cout << "sdadas" << std::endl;
-			}
 			m_window->OnUpdate();
 		}
 	}
