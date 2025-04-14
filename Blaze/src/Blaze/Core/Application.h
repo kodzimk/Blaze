@@ -14,6 +14,7 @@ namespace Blaze {
 
 		void WindowResize();
 		void WindowClose();
+		void BindEvent(Event& e);
 		void Run();
 
 	public:

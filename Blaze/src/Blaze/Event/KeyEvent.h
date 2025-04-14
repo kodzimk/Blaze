@@ -48,10 +48,10 @@ namespace Blaze
 		int m_repeatCount;
 	};
 
-	class BLAZE_API KeyPressedEvent : public KeyEvent
+	class BLAZE_API KeyReleasedEvent : public KeyEvent
 	{
 	public:
-		KeyPressedEvent(int key)
+		KeyReleasedEvent(int key)
 			:KeyEvent(key)
 		{
 
