@@ -128,11 +128,8 @@ namespace Blaze {
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
-	void Window::OnUpdate(ObjectWindow* objectWindow)
+	void Window::OnUpdate()
 	{
-		objectWindow->NewFrame();
-		objectWindow->OnUpdate();
-		objectWindow->EndFrame();
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}

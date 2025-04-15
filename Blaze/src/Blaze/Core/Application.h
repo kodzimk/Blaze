@@ -24,6 +24,5 @@ namespace Blaze {
 		Window *m_window;
 		bool m_running;
 	};
-	// To be defined in CLIENT
 	Application* CreateApplication();
 }

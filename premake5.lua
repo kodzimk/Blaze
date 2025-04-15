@@ -104,8 +104,6 @@ project "Sandbox"
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
-		"Blaze/vendor/imgui/src/**.h",
-		"Blaze/vendor/imgui/src/**.cpp",
 	}
 
 	includedirs
@@ -113,6 +111,7 @@ project "Sandbox"
 		"Blaze/vendor/spdlog/include",
 		"Blaze/vendor/glfw3/include",
 		"Blaze/vendor/GLAD/include",
+		"Blaze/vendor/imgui/include",
 		"Blaze/src",
 		"Blaze/vendor/glm/glm"
 	}
