@@ -14,11 +14,13 @@ namespace Blaze {
 		m_renderer = new Renderer();
 		m_window = Create(this);
 		m_objectWindow = new ObjectWindow(m_window->GetWindow());
+		m_objectWindow->AddObject("Object1", ImVec2(70, 20), ImVec2(20, 50));
 	}
 
 	Application::~Application()
 	{
 		m_window->DestroyWindow();
+
 		delete m_objectWindow;
 		delete m_window;
 		delete m_renderer;

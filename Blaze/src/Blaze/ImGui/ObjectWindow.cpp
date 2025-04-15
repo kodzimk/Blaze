@@ -16,9 +16,10 @@ namespace Blaze
 	{
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
+		ImGui::DestroyContext(io_cntxt);
 		delete io;
 		delete io_style;
+		delete io_cntxt;
 	}
 	void ObjectWindow::OnUpdate()
 	{
@@ -27,9 +28,11 @@ namespace Blaze
 		ImGui::SetWindowPos(ImVec2(0, 0));
 		ImGui::SetWindowSize(ImVec2(400, 700));
 		
-		ImDrawList* list = ImGui::GetWindowDrawList();
-
-		ImGui::Button("Object1");
+		for (size_t i = 0; i < m_objects.size(); i++)
+		{
+			ImGui::SetCursorPos(m_objects[i].pos);
+			ImGui::Button(m_objects[i].name.c_str(), m_objects[i].size);
+		}
 
 	
 		ImGui::End();
@@ -64,5 +67,9 @@ namespace Blaze
 	{
 		ImGui::UpdatePlatformWindows();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+	void ObjectWindow::AddObject(const char* name, ImVec2 size, ImVec2 pos)
+	{
+		m_objects.push_back(ObjectProp(name, size, pos));
 	}
 }

@@ -113,7 +113,6 @@ namespace Blaze {
 
 	Window::~Window()
 	{
-
 	}
 
 	void Window::DestroyWindow()

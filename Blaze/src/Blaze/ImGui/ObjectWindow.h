@@ -1,18 +1,24 @@
 #pragma once
 #include"bzpch.h"
+#include "../vendor/imgui/src/imgui.h"   
 
-struct ImGuiIO;
-struct ImGuiStyle;
+
 struct GLFWwindow;
-struct ImGuiContext;
-struct ImVec2;
+
 
 namespace Blaze
 {
 	struct ObjectProp
 	{
 		std::string name;
-		int size;
+		ImVec2 size;
+		ImVec2 pos;
+
+		ObjectProp(std::string name, ImVec2 size, ImVec2 pos) :
+			name(name), size(size), pos(pos)
+		{
+
+		}
 	};
 
 	class ObjectWindow
@@ -25,7 +31,7 @@ namespace Blaze
 		void Init(GLFWwindow* window);
 		void NewFrame();
 		void EndFrame();
-
+		void AddObject(const char* name, ImVec2 size, ImVec2 pos);
 		
 		bool OnFocus() const { return onFocus; }
 		ImGuiContext* GetContext() const { return io_cntxt; }
@@ -34,7 +40,7 @@ namespace Blaze
 		ImGuiContext* io_cntxt;
 		ImGuiIO* io;
 		ImGuiStyle* io_style;
-		std::vector< ObjectProp> m_objects;
+		std::vector<ObjectProp> m_objects;
 		bool onFocus;
 	};
 }
