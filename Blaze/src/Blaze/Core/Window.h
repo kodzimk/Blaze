@@ -2,6 +2,7 @@
 
 #include"bzpch.h"
 
+struct ImGuiIO;
 struct GLFWwindow;
 
 namespace Blaze
@@ -28,7 +29,9 @@ namespace Blaze
 		void DestroyWindow();
 		void OnUpdate();
 		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f);
-		void Init(WindowProp& prop);
+		void Init(WindowProp& prop, ImGuiIO* io);
+
+		GLFWwindow* GetWindow() const { return m_window; }
 
 		void SetVSync(bool enabled);
 		bool IsVSync() const;
@@ -38,6 +41,7 @@ namespace Blaze
 		WindowProp m_prop;
 
 	public:
+		ImGuiIO* io;
 		Application* app;
 	};
 

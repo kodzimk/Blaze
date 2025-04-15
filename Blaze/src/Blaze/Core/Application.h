@@ -3,6 +3,7 @@
 
 #include"Blaze/Core/Window.h"
 #include"Blaze/Renderer/Renderer.h"
+#include"Blaze/ImGui/ObjectWindow.h"
 
 namespace Blaze {
 
@@ -12,12 +13,13 @@ namespace Blaze {
 		Application();
 		virtual ~Application();
 
+		void KeyButtonEvent(int key);
 		void WindowResize();
 		void WindowClose();
-		void BindEvent(Event& e);
 		void Run();
 
 	public:
+		ObjectWindow* m_objectWindow;
 		Renderer* m_renderer;
 		Window *m_window;
 		bool m_running;

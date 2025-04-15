@@ -6,8 +6,6 @@
 #include<GLFW/glfw3.h>
 #include"Blaze/Core/Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
-#include"Blaze/Event/MouseEvent.h"
-#include"Blaze/Event/KeyEvent.h"
 
 
 namespace Blaze {
@@ -16,11 +14,11 @@ namespace Blaze {
 		: m_prop(width, height, title)
 	{
 		this->app = app;
-		Init(m_prop);
+		Init(m_prop,io);
 
 	}
 
-	void Window::Init(WindowProp& prop)
+	void Window::Init(WindowProp& prop,ImGuiIO* io)
 	{
 		if (!glfwInit())
 		{
@@ -46,12 +44,13 @@ namespace Blaze {
 
 		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
-				WindowProp* prop = (WindowProp*)glfwGetWindowUserPointer(window);
+				Window& win = *(Window*)glfwGetWindowUserPointer(window);
 				switch (action)
 				{
 				    case GLFW_PRESS:
 				    {
 				    	KeyPressedEvent event_press(key, 0);
+						win.app->KeyButtonEvent(key);
 				    	break;
 				    }
 				    case GLFW_RELEASE:
@@ -114,6 +113,7 @@ namespace Blaze {
 
 	Window::~Window()
 	{
+
 	}
 
 	void Window::DestroyWindow()
@@ -130,8 +130,8 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
-		glfwPollEvents();
 		glfwSwapBuffers(m_window);
+		glfwPollEvents();
 	}
 
 	Window* Create(Application* app)

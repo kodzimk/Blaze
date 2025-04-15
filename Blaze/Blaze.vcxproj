@@ -165,6 +165,7 @@
     <ClInclude Include="src\Blaze\Event\Event.h" />
     <ClInclude Include="src\Blaze\Event\KeyEvent.h" />
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
+    <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
@@ -588,6 +589,8 @@
     <ClInclude Include="vendor\glm\glm\vec3.hpp" />
     <ClInclude Include="vendor\glm\glm\vec4.hpp" />
     <ClInclude Include="vendor\glm\glm\vector_relational.hpp" />
+    <ClInclude Include="vendor\imgui\include\imgui_impl_glfw.h" />
+    <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h" />
     <ClInclude Include="vendor\imgui\src\imconfig.h" />
     <ClInclude Include="vendor\imgui\src\imgui.h" />
     <ClInclude Include="vendor\imgui\src\imgui_internal.h" />
@@ -598,12 +601,15 @@
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />
     <ClCompile Include="src\Blaze\Logging\Log.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\bzpch.cpp" />
     <ClCompile Include="vendor\GLAD\src\glad.c" />
+    <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp" />
+    <ClCompile Include="vendor\imgui\include\imgui_impl_opengl3.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_demo.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_draw.cpp" />

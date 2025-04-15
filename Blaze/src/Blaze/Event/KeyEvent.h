@@ -7,7 +7,7 @@ namespace Blaze
 	{
 	public:
 		inline int GetKeyCode() const { return m_KeyCode; }
-		int GetCategoryFlags() const override
+		int GetCategoryFlags() const 
 		{
 			return EventCategoryKeyboard | EventCategoryInput;
 		}
@@ -27,17 +27,17 @@ namespace Blaze
 			
 		};
 
-		EventType GetEventType() const override
+		EventType GetEventType() const
 		{
 			return EventType::KeyPressed;
 		}
-		const char* GetName() const override
+		const char* GetName() const
 		{
 			return "KeyPressed";
 		}
 		inline int GetRepeatCount() const { return m_repeatCount; }
 
-		std::string ToString() const override
+		std::string ToString() const
 		{
 			std::stringstream ss;
 			ss << "KeyPressedEvent: " << m_KeyCode << " repeatedCount: " << m_repeatCount;
@@ -57,15 +57,15 @@ namespace Blaze
 
 		};
 		
-		EventType GetEventType() const override
+		EventType GetEventType() const 
 		{
 			return EventType::KeyReleased;
 		}
-		const char* GetName() const override
+		const char* GetName() const 
 		{
 			return "KeyRelease";
 		}
-		std::string ToString() const override
+		std::string ToString() const 
 		{
 			std::stringstream ss;
 			ss << "KeyReleasedEvent: " << m_KeyCode;

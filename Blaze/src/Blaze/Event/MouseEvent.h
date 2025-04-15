@@ -1,4 +1,4 @@
-#include"Blaze/Event/Event.h"
+#include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Core/Core.h"
 
 namespace Blaze
@@ -11,20 +11,20 @@ namespace Blaze
 
 		inline float GetX() const { return m_MouseX; }
 		inline float GetY() const { return m_MouseY; }
-		EventType GetEventType() const override
+		EventType GetEventType() const 
 		{
 			return EventType::MouseMoved;
 		}
-		const char* GetName() const override
+		const char* GetName() const 
 		{
 			return "MouseMoved";
 		}
-		int GetCategoryFlags() const override
+		int GetCategoryFlags() const 
 		{
 			return  EventCategoryMouse;
 		}
 
-		std::string ToString() const override
+		std::string ToString() const 
 		{
 			std::stringstream ss;
 			ss << "MouseMoved X: " << m_MouseX << " Y: " << m_MouseY;
@@ -42,19 +42,19 @@ namespace Blaze
 			: m_offset(offset) {}
 
 		inline float GetMouseOffset() const { return m_offset; }
-		EventType GetEventType() const override
+		EventType GetEventType() const 
 		{
 			return EventType::MouseButtonRelease;
 		}
-		const char* GetName() const override
+		const char* GetName() const 
 		{
 			return "MouseButtonReleased";
 		}
-		int GetCategoryFlags() const override
+		int GetCategoryFlags() const 
 		{
 			return EventCategoryInput | EventCategoryMouse;
 		}
-		std::string ToString() const override
+		std::string ToString() const
 		{
 			std::stringstream ss;
 			ss << "MouseScrolled:" << m_offset;
@@ -72,19 +72,19 @@ namespace Blaze
 			: m_MouseCode(button) {}
 
 		inline int GetMouseCode() const { return m_MouseCode; }
-		EventType GetEventType() const override
+		EventType GetEventType() const 
 		{
 			return EventType::MouseButtonPressed;
 		}
-		const char* GetName() const override
+		const char* GetName() const 
 		{
 			return "MouseButtonPressed";
 		}
-		int GetCategoryFlags() const override
+		int GetCategoryFlags() const
 		{
 			return EventCategoryMouseButton | EventCategoryInput;
 		}
-		std::string ToString() const override
+		std::string ToString() const 
 		{
 			std::stringstream ss;
 			ss << "MousePressed: " << m_MouseCode;
@@ -102,19 +102,19 @@ namespace Blaze
 			: m_MouseCode(button) {}
 
 		inline int GetMouseCode() const { return m_MouseCode; }
-		EventType GetEventType() const override
+		EventType GetEventType() const 
 		{
 			return EventType::MouseButtonRelease;
 		}
-		const char* GetName() const override
+		const char* GetName() const 
 		{
 			return "MouseButtonReleased";
 		}
-		int GetCategoryFlags() const override
+		int GetCategoryFlags() const 
 		{
 			return EventCategoryMouseButton | EventCategoryInput;
 		}
-		std::string ToString() const override
+		std::string ToString() const 
 		{
 			std::stringstream ss;
 			ss << "MouseReleased: " << m_MouseCode;

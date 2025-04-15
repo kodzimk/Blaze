@@ -13,13 +13,21 @@ namespace Blaze {
 	{
 		m_renderer = new Renderer();
 		m_window = Create(this);
+		m_objectWindow = new ObjectWindow(m_window->GetWindow());
 	}
 
 	Application::~Application()
 	{
 		m_window->DestroyWindow();
+		delete m_objectWindow;
 		delete m_window;
 		delete m_renderer;
+	}
+
+	void Application::KeyButtonEvent(int key)
+	{
+		if (char(key) == 'A')
+			BZ_INFO("A was pressed");
 	}
 
 	void Application::WindowResize()
@@ -33,13 +41,6 @@ namespace Blaze {
 		m_running = false;
 	}
 
-	void Application::BindEvent(Event& e)
-	{
-		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(BZ_BIND_EVENT_FN(Application::WindowClose));
-		dispatcher.Dispatch<WindowResizeEvent>(BZ_BIND_EVENT_FN(Application::WindowResize));
-	}
-
 	void Application::Run()
 	{	
 		std::vector<float> vertices = {
@@ -48,12 +49,17 @@ namespace Blaze {
 			0.0f,0.5f
 		};
 
-		m_renderer->CreateCamera(0.5f,0.0f,0.5f);
+		m_renderer->CreateCamera(0.0f,0.0f,1.0f);
 		m_renderer->CreateObject(vertices);
 		while(m_running)
 		{   
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
 			m_renderer->Render();
+
+			m_objectWindow->NewFrame();
+			m_objectWindow->OnUpdate();
+			m_objectWindow->EndFrame();
+
 			m_window->OnUpdate();
 		}
 	}

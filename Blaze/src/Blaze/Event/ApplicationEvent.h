@@ -1,4 +1,4 @@
-#include"Blaze/Event/Event.h"
+#include"Blaze/Event/MouseEvent.h"
 
 namespace Blaze
 {
