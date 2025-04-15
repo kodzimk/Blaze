@@ -22,7 +22,7 @@ namespace Blaze
 	}
 	void ObjectWindow::OnUpdate()
 	{
-		ImGui::Begin("Components", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_None);
+		ImGui::Begin("Objects");
 
 		ImGui::SetWindowPos(ImVec2(0, 0));
 		ImGui::SetWindowSize(ImVec2(400, 700));
@@ -33,12 +33,12 @@ namespace Blaze
 
 	void ObjectWindow::Init(GLFWwindow* window)
 	{
-		ImGui::SetCurrentContext(ImGui::CreateContext());
-		io = &ImGui::GetIO(); (void)io;
-		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		io = &ImGui::GetIO(); 
 		ImGui::StyleColorsDark();
-		ImGui_ImplOpenGL3_Init();
-		ImGui_ImplGlfw_CursorEnterCallback(window, true);
+		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplOpenGL3_Init("#version 330");
 	}
 	void ObjectWindow::NewFrame()
 	{
@@ -49,7 +49,7 @@ namespace Blaze
 
 	void ObjectWindow::EndFrame()
 	{
-		ImGui::EndFrame();
+		ImGui::UpdatePlatformWindows();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 }

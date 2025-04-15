@@ -137,6 +137,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imconfig.h" />
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui.h" />
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui_internal.h" />
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_rectpack.h" />
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_textedit.h" />
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_truetype.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui.cpp" />
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_demo.cpp" />
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_draw.cpp" />
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_tables.cpp" />
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_widgets.cpp" />
     <ClCompile Include="src\Application.cpp" />
   </ItemGroup>
   <ItemGroup>

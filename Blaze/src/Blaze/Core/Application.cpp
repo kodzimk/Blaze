@@ -55,12 +55,7 @@ namespace Blaze {
 		{   
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
 			m_renderer->Render();
-
-			m_objectWindow->NewFrame();
-			m_objectWindow->OnUpdate();
-			m_objectWindow->EndFrame();
-
-			m_window->OnUpdate();
+			m_window->OnUpdate(m_objectWindow);
 		}
 	}
 

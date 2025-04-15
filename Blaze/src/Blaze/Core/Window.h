@@ -8,6 +8,7 @@ struct GLFWwindow;
 namespace Blaze
 {
 	class Application;
+	class ObjectWindow;
 	struct WindowProp {
 		std::string title;
 		unsigned int width, height;
@@ -27,7 +28,7 @@ namespace Blaze
 		virtual ~Window();
 
 		void DestroyWindow();
-		void OnUpdate();
+		void OnUpdate(ObjectWindow* objectWindow);
 		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f);
 		void Init(WindowProp& prop, ImGuiIO* io);
 

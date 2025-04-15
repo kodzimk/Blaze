@@ -103,7 +103,9 @@ project "Sandbox"
 	files
 	{
 		"%{prj.name}/src/**.h",
-		"%{prj.name}/src/**.cpp"
+		"%{prj.name}/src/**.cpp",
+		"Blaze/vendor/imgui/src/**.h",
+		"Blaze/vendor/imgui/src/**.cpp",
 	}
 
 	includedirs

@@ -1,22 +1,60 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="Blaze">
+      <UniqueIdentifier>{1337E60C-7F4B-0EBE-48CD-B11DB4A00AEF}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="Blaze\vendor">
+      <UniqueIdentifier>{10BA58B8-FC1C-E85C-A5A2-201391E4B3DF}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Blaze\vendor\imgui">
+      <UniqueIdentifier>{7A136CAF-66F7-2C05-CF57-2758BB5A1787}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blaze\vendor\imgui\src">
+      <UniqueIdentifier>{91FEF8E5-7DF8-2138-6665-B84852FE87A4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imconfig.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui_internal.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_rectpack.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_textedit.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_truetype.h">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui.cpp">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_demo.cpp">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_draw.cpp">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_tables.cpp">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_widgets.cpp">
+      <Filter>Blaze\vendor\imgui\src</Filter>
+    </ClCompile>
     <ClCompile Include="src\Application.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

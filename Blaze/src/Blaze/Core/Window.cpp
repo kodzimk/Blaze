@@ -6,6 +6,7 @@
 #include<GLFW/glfw3.h>
 #include"Blaze/Core/Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
+#include"Blaze/ImGui/ObjectWindow.h"
 
 
 namespace Blaze {
@@ -90,7 +91,6 @@ namespace Blaze {
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
 			Window& win = *(Window*)glfwGetWindowUserPointer(window);
 			win.app->WindowClose();
-			WindowCloseEvent event();
 			});
 
 
@@ -128,8 +128,11 @@ namespace Blaze {
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
-	void Window::OnUpdate()
+	void Window::OnUpdate(ObjectWindow* objectWindow)
 	{
+		objectWindow->NewFrame();
+		objectWindow->OnUpdate();
+		objectWindow->EndFrame();
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}
