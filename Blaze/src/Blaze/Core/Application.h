@@ -1,8 +1,8 @@
-
 #include "Core.h"
 
 #include"Blaze/Core/Window.h"
 #include"Blaze/Renderer/Renderer.h"
+#include"Blaze/ImGui/ImGuiContext.h"
 
 namespace Blaze {
 
@@ -18,8 +18,11 @@ namespace Blaze {
 		void Run();
 
 	public:
-		Renderer* m_renderer;
 		Window *m_window;
+		Renderer* m_renderer;
+		Context* m_context;
+
+	private:
 		bool m_running;
 	};
 	Application* CreateApplication();

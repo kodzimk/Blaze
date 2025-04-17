@@ -4,7 +4,9 @@
 
 namespace Blaze
 {
+
 	ObjectWindow::ObjectWindow()
+		: onFocus(false)
 	{
 
 	}
@@ -15,7 +17,6 @@ namespace Blaze
 
 	void ObjectWindow::OnUpdate()
 	{
-
 		ImGui::Begin("Objects", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_None);
 
 		ImGui::SetWindowPos(ImVec2(0, 0));
@@ -26,7 +27,6 @@ namespace Blaze
 			ImGui::SetCursorPos(m_objects[i].pos);
 			ImGui::Button(m_objects[i].name.c_str(), m_objects[i].size);
 		}
-
 	
 		ImGui::End();
 	}

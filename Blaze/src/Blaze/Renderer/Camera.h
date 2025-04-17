@@ -8,7 +8,7 @@ namespace Blaze {
 		float zoom = 1.0;
 	}CameraProp;
 
-	class Camera
+	class  Camera
 	{
 	public:
 		Camera(glm::vec3 pos, float zoom);

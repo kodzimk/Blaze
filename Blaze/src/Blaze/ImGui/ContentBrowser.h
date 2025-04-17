@@ -16,9 +16,7 @@ namespace Blaze
 		virtual ~ContentBrowser();
 
 		void OnUpdate();
-
 		bool OnFocus() const { return onFocus; }
-
 	private:
 		bool onFocus;
 	};

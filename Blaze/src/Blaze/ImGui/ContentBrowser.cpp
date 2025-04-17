@@ -19,9 +19,6 @@ namespace Blaze
 		ImGui::SetWindowPos(ImVec2(300, 700));
 		ImGui::SetWindowSize(ImVec2(700, 300));
 
-		if (ImGui::Button("click me"))
-			std::cout << "sdasda" << std::endl;
-
 
 		ImGui::End();
 	}

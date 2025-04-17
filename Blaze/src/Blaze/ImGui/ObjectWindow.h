@@ -1,6 +1,6 @@
 #pragma once
 #include"bzpch.h"
-#include "../vendor/imgui/src/imgui.h"   
+#include"../vendor/imgui/src/imgui.h"
 
 namespace Blaze
 {
@@ -17,7 +17,7 @@ namespace Blaze
 		}
 	};
 
-	class ObjectWindow
+	class  ObjectWindow
 	{
 	public:
 		ObjectWindow();
@@ -27,9 +27,6 @@ namespace Blaze
 		void AddObject(const char* name, ImVec2 size, ImVec2 pos);
 		
 		bool OnFocus() const { return onFocus; }
-		ImVec2 GetWindowSize() {
-			return ImVec2(300, 900);
-		}
 	private:
 		bool onFocus;
 		std::vector<ObjectProp> m_objects;

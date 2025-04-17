@@ -6,20 +6,19 @@
 
 namespace Blaze {
 
-#define BZ_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
-
 	Application::Application()
 		: m_running(true)
 	{
 		m_renderer = new Renderer();
 		m_window = Create(this);
-		
+		m_context = new Context(m_window->GetWindow());
 	}
 
 	Application::~Application()
 	{
 		m_window->DestroyWindow();
 
+		delete m_context;
 		delete m_window;
 		delete m_renderer;
 	}
@@ -55,6 +54,7 @@ namespace Blaze {
 		{   
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
 			m_renderer->Render();
+			m_context->OnUpdate();
 			m_window->OnUpdate();
 		}
 	}
