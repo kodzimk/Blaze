@@ -3,7 +3,6 @@
 
 #include"Blaze/Core/Window.h"
 #include"Blaze/Renderer/Renderer.h"
-#include"Blaze/ImGui/ObjectWindow.h"
 
 namespace Blaze {
 
@@ -19,7 +18,6 @@ namespace Blaze {
 		void Run();
 
 	public:
-		ObjectWindow* m_objectWindow;
 		Renderer* m_renderer;
 		Window *m_window;
 		bool m_running;
