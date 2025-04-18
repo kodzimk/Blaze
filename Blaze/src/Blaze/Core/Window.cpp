@@ -1,25 +1,18 @@
-#include"bzpch.h"
-
 #include"Window.h"
 
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
-#include"Blaze/Core/Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
-#include"Blaze/ImGui/ObjectWindow.h"
-
 
 namespace Blaze {
 
-	Window::Window(unsigned int width, int height, std::string title, Application* app)
+	Window::Window(unsigned int width, int height, std::string title)
 		: m_prop(width, height, title)
 	{
-		this->app = app;
-		Init(m_prop,io);
-
+		Init(m_prop);
 	}
 
-	void Window::Init(WindowProp& prop,ImGuiIO* io)
+	void Window::Init(WindowProp& prop)
 	{
 		if (!glfwInit())
 		{
@@ -50,19 +43,18 @@ namespace Blaze {
 				{
 				    case GLFW_PRESS:
 				    {
-				    	KeyPressedEvent event_press(key, 0);
-						win.app->KeyButtonEvent(key);
+				    	
+
 				    	break;
 				    }
 				    case GLFW_RELEASE:
 				    {
-				    	KeyReleasedEvent event_release(key);
+				    	
 				    	break;
 				    }
 				    case GLFW_REPEAT:
 				    {
-				    	KeyPressedEvent event(key, true);
-				    	event.ToString();
+				    	
 				    	break;
 				    }
 				}
@@ -73,24 +65,25 @@ namespace Blaze {
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MousePressedEvent mouse(button);
+				
 			});
 
 		glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double Xpos, double Ypos)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MouseMovedEvent mouse(Xpos, Ypos);
+			
 			});
 
 		glfwSetScrollCallback(m_window, [](GLFWwindow* window, double Xoffset, double Yoffset)
 			{
 				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				MouseScrollEvent mouse(Xoffset);
+			
 			});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
 			Window& win = *(Window*)glfwGetWindowUserPointer(window);
-			win.app->WindowClose();
+			WindowCloseEvent e;
+			win.m_callback(e);
 			});
 
 
@@ -133,8 +126,8 @@ namespace Blaze {
 		glfwPollEvents();
 	}
 
-	Window* Create(Application* app)
+	Window* Create()
 	{
-		return new Window(1600, 900, "Blaze Engine", app);
+		return new Window(1600, 900, "Blaze Engine");
 	}
 }

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <memory>
-
 #include "Blaze/Core/Core.h"
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/ostr.h"
 
 namespace Blaze {
 

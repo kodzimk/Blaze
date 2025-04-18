@@ -1,9 +1,10 @@
-#include"Blaze/Event/KeyEvent.h"
-#include"Blaze/Core/Core.h"
+#pragma once
 
-namespace Blaze
-{
-	class BLAZE_API MouseMovedEvent : public Event 
+#include "Event.h"
+
+namespace Blaze {
+
+	class BLAZE_API MouseMovedEvent : public Event
 	{
 	public:
 		MouseMovedEvent(float x, float y)
@@ -11,117 +12,85 @@ namespace Blaze
 
 		inline float GetX() const { return m_MouseX; }
 		inline float GetY() const { return m_MouseY; }
-		EventType GetEventType() const 
-		{
-			return EventType::MouseMoved;
-		}
-		const char* GetName() const 
-		{
-			return "MouseMoved";
-		}
-		int GetCategoryFlags() const 
-		{
-			return  EventCategoryMouse;
-		}
 
-		std::string ToString() const 
+		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "MouseMoved X: " << m_MouseX << " Y: " << m_MouseY;
+			ss << "MouseMovedEvent: " << m_MouseX << ", " << m_MouseY;
 			return ss.str();
 		}
 
+		EVENT_CLASS_TYPE(MouseMoved)
+			EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
 		float m_MouseX, m_MouseY;
 	};
 
-	class BLAZE_API MouseScrollEvent : public Event
+	class BLAZE_API MouseScrolledEvent : public Event
 	{
 	public:
-		MouseScrollEvent(float offset)
-			: m_offset(offset) {}
+		MouseScrolledEvent(float xOffset, float yOffset)
+			: m_XOffset(xOffset), m_YOffset(yOffset) {}
 
-		inline float GetMouseOffset() const { return m_offset; }
-		EventType GetEventType() const 
-		{
-			return EventType::MouseButtonRelease;
-		}
-		const char* GetName() const 
-		{
-			return "MouseButtonReleased";
-		}
-		int GetCategoryFlags() const 
-		{
-			return EventCategoryInput | EventCategoryMouse;
-		}
-		std::string ToString() const
+		inline float GetXOffset() const { return m_XOffset; }
+		inline float GetYOffset() const { return m_YOffset; }
+
+		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "MouseScrolled:" << m_offset;
+			ss << "MouseScrolledEvent: " << GetXOffset() << ", " << GetYOffset();
 			return ss.str();
 		}
 
+		EVENT_CLASS_TYPE(MouseScrolled)
+			EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 	private:
-		float m_offset;
+		float m_XOffset, m_YOffset;
 	};
 
-	class BLAZE_API MousePressedEvent : public Event
+	class BLAZE_API MouseButtonEvent : public Event
 	{
 	public:
-		MousePressedEvent(int button)
-			: m_MouseCode(button) {}
+		inline int GetMouseButton() const { return m_Button; }
 
-		inline int GetMouseCode() const { return m_MouseCode; }
-		EventType GetEventType() const 
-		{
-			return EventType::MouseButtonPressed;
-		}
-		const char* GetName() const 
-		{
-			return "MouseButtonPressed";
-		}
-		int GetCategoryFlags() const
-		{
-			return EventCategoryMouseButton | EventCategoryInput;
-		}
-		std::string ToString() const 
+		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+	protected:
+		MouseButtonEvent(int button)
+			: m_Button(button) {}
+
+		int m_Button;
+	};
+
+	class BLAZE_API MouseButtonPressedEvent : public MouseButtonEvent
+	{
+	public:
+		MouseButtonPressedEvent(int button)
+			: MouseButtonEvent(button) {}
+
+		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "MousePressed: " << m_MouseCode;
+			ss << "MouseButtonPressedEvent: " << m_Button;
 			return ss.str();
 		}
 
-	private:
-		int m_MouseCode;
+		EVENT_CLASS_TYPE(MouseButtonPressed)
 	};
 
-	class BLAZE_API MouseReleasedEvent : public Event
+	class BLAZE_API MouseButtonReleasedEvent : public MouseButtonEvent
 	{
 	public:
-		MouseReleasedEvent(int button)
-			: m_MouseCode(button) {}
+		MouseButtonReleasedEvent(int button)
+			: MouseButtonEvent(button) {}
 
-		inline int GetMouseCode() const { return m_MouseCode; }
-		EventType GetEventType() const 
-		{
-			return EventType::MouseButtonRelease;
-		}
-		const char* GetName() const 
-		{
-			return "MouseButtonReleased";
-		}
-		int GetCategoryFlags() const 
-		{
-			return EventCategoryMouseButton | EventCategoryInput;
-		}
-		std::string ToString() const 
+		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "MouseReleased: " << m_MouseCode;
+			ss << "MouseButtonReleasedEvent: " << m_Button;
 			return ss.str();
 		}
 
-	private:
-		int m_MouseCode;
+		EVENT_CLASS_TYPE(MouseButtonReleased)
 	};
+
 }

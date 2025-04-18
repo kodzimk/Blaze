@@ -1,19 +1,18 @@
-#include"Blaze/Event/Event.h"
-#include<glfw/glfw3.h>
+#pragma once
 
-namespace Blaze
-{
+#include "Event.h"
+
+namespace Blaze {
+
 	class BLAZE_API KeyEvent : public Event
 	{
 	public:
 		inline int GetKeyCode() const { return m_KeyCode; }
-		int GetCategoryFlags() const 
-		{
-			return EventCategoryKeyboard | EventCategoryInput;
-		}
+
+		EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
 	protected:
-		KeyEvent(int keyCode) :
-			m_KeyCode(keyCode) {}
+		KeyEvent(int keycode)
+			: m_KeyCode(keycode) {}
 
 		int m_KeyCode;
 	};
@@ -21,55 +20,36 @@ namespace Blaze
 	class BLAZE_API KeyPressedEvent : public KeyEvent
 	{
 	public:
-		KeyPressedEvent(int key,int repeatCount)
-			:KeyEvent(key),m_repeatCount(repeatCount)
-		{
-			
-		};
+		KeyPressedEvent(int keycode, int repeatCount)
+			: KeyEvent(keycode), m_RepeatCount(repeatCount) {}
 
-		EventType GetEventType() const
-		{
-			return EventType::KeyPressed;
-		}
-		const char* GetName() const
-		{
-			return "KeyPressed";
-		}
-		inline int GetRepeatCount() const { return m_repeatCount; }
+		inline int GetRepeatCount() const { return m_RepeatCount; }
 
-		std::string ToString() const
+		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "KeyPressedEvent: " << m_KeyCode << " repeatedCount: " << m_repeatCount;
+			ss << "KeyPressedEvent: " << m_KeyCode << " (" << m_RepeatCount << " repeats)";
 			return ss.str();
 		}
 
-	protected:
-		int m_repeatCount;
+		EVENT_CLASS_TYPE(KeyPressed)
+	private:
+		int m_RepeatCount;
 	};
 
 	class BLAZE_API KeyReleasedEvent : public KeyEvent
 	{
 	public:
-		KeyReleasedEvent(int key)
-			:KeyEvent(key)
-		{
+		KeyReleasedEvent(int keycode)
+			: KeyEvent(keycode) {}
 
-		};
-		
-		EventType GetEventType() const 
-		{
-			return EventType::KeyReleased;
-		}
-		const char* GetName() const 
-		{
-			return "KeyRelease";
-		}
-		std::string ToString() const 
+		std::string ToString() const override
 		{
 			std::stringstream ss;
 			ss << "KeyReleasedEvent: " << m_KeyCode;
 			return ss.str();
 		}
+
+		EVENT_CLASS_TYPE(KeyReleased)
 	};
 }

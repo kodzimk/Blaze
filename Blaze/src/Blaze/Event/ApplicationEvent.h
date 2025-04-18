@@ -1,40 +1,64 @@
-#include"Blaze/Event/MouseEvent.h"
+#pragma once
 
-namespace Blaze
-{
-	class WindowCloseEvent : public Event
+#include "Event.h"
+
+namespace Blaze {
+
+	class BLAZE_API WindowResizeEvent : public Event
 	{
-		WindowCloseEvent() {}
+	public:
+		WindowResizeEvent(unsigned int width, unsigned int height)
+			: m_Width(width), m_Height(height) {}
 
-		EventType GetEventType() const override
+		inline unsigned int GetWidth() const { return m_Width; }
+		inline unsigned int GetHeight() const { return m_Height; }
+
+		std::string ToString() const override
 		{
-			return EventType::WindowClose;
+			std::stringstream ss;
+			ss << "WindowResizeEvent: " << m_Width << ", " << m_Height;
+			return ss.str();
 		}
-		const char* GetName() const override
-		{
-			return "WindowClose";
-		}
-		int GetCategoryFlags() const override
-		{
-			return  EventCategoryApplication;
-		}
+
+		EVENT_CLASS_TYPE(WindowResize)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	private:
+		unsigned int m_Width, m_Height;
 	};
 
-	class WindowResizeEvent : public Event
+	class BLAZE_API WindowCloseEvent : public Event
 	{
-		WindowResizeEvent() {}
+	public:
+		WindowCloseEvent() {}
 
-		EventType GetEventType() const override
-		{
-			return EventType::WindowResize;
-		}
-		const char* GetName() const override
-		{
-			return "WindowResize";
-		}
-		int GetCategoryFlags() const override
-		{
-			return  EventCategoryApplication;
-		}
+		EVENT_CLASS_TYPE(WindowClose)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class BLAZE_API AppTickEvent : public Event
+	{
+	public:
+		AppTickEvent() {}
+
+		EVENT_CLASS_TYPE(AppTick)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class BLAZE_API AppUpdateEvent : public Event
+	{
+	public:
+		AppUpdateEvent() {}
+
+		EVENT_CLASS_TYPE(AppUpdate)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class BLAZE_API AppRenderEvent : public Event
+	{
+	public:
+		AppRenderEvent() {}
+
+		EVENT_CLASS_TYPE(AppRender)
+			EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 }

@@ -1,18 +1,20 @@
 #pragma once
 
 #include"bzpch.h"
+#include <functional>
 
-struct ImGuiIO;
 struct GLFWwindow;
 
 namespace Blaze
 {
-	class Application;
-	class ObjectWindow;
+	class Event;
+
 	struct WindowProp {
 		std::string title;
 		unsigned int width, height;
 		bool vSync;
+
+		std::function<void(Event&)>  m_callBack;
 
 		WindowProp(unsigned int width, unsigned int height, std::string title)
 			: width(width), height(height), title(title), vSync(false)
@@ -21,16 +23,19 @@ namespace Blaze
 		}
 	};
 
-	class Window
+	class BLAZE_API Window
 	{
 	public:
-		Window(unsigned int width, int height, std::string title, Application* app);
+
+
+		Window(unsigned int width, int height, std::string title);
 		virtual ~Window();
 
 		void DestroyWindow();
 		void OnUpdate();
 		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f);
-		void Init(WindowProp& prop, ImGuiIO* io);
+		void Init(WindowProp& prop);
+		void SetCallBackEvent(std::function<void(Event&)> cb) { m_callback = cb; };
 
 		GLFWwindow* GetWindow() const { return m_window; }
 
@@ -42,9 +47,8 @@ namespace Blaze
 		WindowProp m_prop;
 
 	public:
-		ImGuiIO* io;
-		Application* app;
+		std::function<void(Event&)> m_callback;
 	};
 
-	Window* Create(Application* app);
+	Window* Create();
 }

@@ -1,17 +1,19 @@
-
 #include"bzpch.h"
+
 #include"Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
-#include<glm.hpp>
 
-namespace Blaze {
-
+namespace Blaze {	
 	Application::Application()
 		: m_running(true)
 	{
 		m_renderer = new Renderer();
-		m_window = Create(this);
+		m_window = Create();
+		std::function<void(Event&)> callback = std::bind(&Application::OnEvent, this, std::placeholders::_1);
+		m_window->SetCallBackEvent(callback);
+
 		m_context = new Context(m_window->GetWindow());
+
 	}
 
 	Application::~Application()
@@ -25,8 +27,7 @@ namespace Blaze {
 
 	void Application::KeyButtonEvent(int key)
 	{
-		if (char(key) == 'A')
-			BZ_INFO("A was pressed");
+		
 	}
 
 	void Application::WindowResize()
@@ -34,10 +35,10 @@ namespace Blaze {
 
 	}
 
-	void Application::WindowClose()
+	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
-		BZ_INFO("Window close");
 		m_running = false;
+		return true;
 	}
 
 	void Application::Run()
@@ -57,6 +58,16 @@ namespace Blaze {
 			m_context->OnUpdate();
 			m_window->OnUpdate();
 		}
+	}
+
+	void Application::OnEvent(Event& e)
+	{
+		EventDispatcher dispatcher(e);
+
+		std::function<bool(WindowCloseEvent&)> callback = std::bind(&Application::OnWindowClose, this, std::placeholders::_1);
+		dispatcher.Dispatch<WindowCloseEvent>(callback);
+
+		BZ_CORE_INFO("{0}", e.GetName());
 	}
 
 }
