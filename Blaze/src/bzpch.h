@@ -14,4 +14,3 @@
 
 #include"Blaze/Logging/Log.h"
 
-#define BIND_EVENT_FN(x) std::bind(&Application::x,std::placeholders::_1)

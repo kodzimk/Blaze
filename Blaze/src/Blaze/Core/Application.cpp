@@ -4,30 +4,23 @@
 #include"Blaze/Event/ApplicationEvent.h"
 
 namespace Blaze {	
+    #define BIND_EVENT_FN(x) std::bind(&Application::x,this,std::placeholders::_1)
 	Application::Application()
 		: m_running(true)
 	{
 		m_renderer = new Renderer();
 		m_window = Create();
-		std::function<void(Event&)> callback = std::bind(&Application::OnEvent, this, std::placeholders::_1);
-		m_window->SetCallBackEvent(callback);
+		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
+	
 
 		m_context = new Context(m_window->GetWindow());
-
 	}
 
 	Application::~Application()
 	{
-		m_window->DestroyWindow();
-
 		delete m_context;
 		delete m_window;
 		delete m_renderer;
-	}
-
-	void Application::KeyButtonEvent(int key)
-	{
-		
 	}
 
 	void Application::WindowResize()
@@ -63,9 +56,7 @@ namespace Blaze {
 	void Application::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
-
-		std::function<bool(WindowCloseEvent&)> callback = std::bind(&Application::OnWindowClose, this, std::placeholders::_1);
-		dispatcher.Dispatch<WindowCloseEvent>(callback);
+		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
 
 		BZ_CORE_INFO("{0}", e.GetName());
 	}

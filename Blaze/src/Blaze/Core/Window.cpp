@@ -3,6 +3,8 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include"Blaze/Event/ApplicationEvent.h"
+#include"Blaze/Event/KeyEvent.h"
+#include"Blaze/Event/MouseEvent.h"
 
 namespace Blaze {
 
@@ -35,56 +37,71 @@ namespace Blaze {
 			BZ_CORE_INFO("Creating window {0} ({1}, {2})", prop.title, prop.width, prop.height);
 		}
 
-
 		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
-			{
-				Window& win = *(Window*)glfwGetWindowUserPointer(window);
+		{
+				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				switch (action)
 				{
 				    case GLFW_PRESS:
 				    {
-				    	
-
+						KeyPressedEvent e(key, 0);
+						
 				    	break;
 				    }
 				    case GLFW_RELEASE:
 				    {
-				    	
+						KeyReleasedEvent e(key);
+					
 				    	break;
 				    }
 				    case GLFW_REPEAT:
 				    {
-				    	
+						KeyPressedEvent e(key, 1);
+						
 				    	break;
 				    }
 				}
-			});
-
-		glfwSetWindowUserPointer(m_window, this);
+		});
 
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
-			{
-				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-				
-			});
+		{
+				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
+				switch (action)
+				{
+				    case GLFW_PRESS:
+				    {
+				    	MouseButtonPressedEvent e(button);
+						
+				    	break;
+				    }
+				    case GLFW_RELEASE:
+				    {
+				    	MouseButtonReleasedEvent e(button);
+						
+				    	break;
+				    }
+				}
+		});
 
 		glfwSetCursorPosCallback(m_window, [](GLFWwindow* window, double Xpos, double Ypos)
-			{
-				Window& win = *(Window*)glfwGetWindowUserPointer(window);
+		{
+				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
+				MouseMovedEvent e((float)Xpos, (float)Ypos);
 			
-			});
+		});
 
 		glfwSetScrollCallback(m_window, [](GLFWwindow* window, double Xoffset, double Yoffset)
-			{
-				Window& win = *(Window*)glfwGetWindowUserPointer(window);
-			
-			});
+		{
+				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
+				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
+		});
 
-		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) {
-			Window& win = *(Window*)glfwGetWindowUserPointer(window);
+		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 
+		{
+			WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 			WindowCloseEvent e;
-			win.m_callback(e);
-			});
+			prop.m_callback(e);
+		});
 
 
 		glfwMakeContextCurrent(m_window);
@@ -106,6 +123,7 @@ namespace Blaze {
 
 	Window::~Window()
 	{
+		DestroyWindow();
 	}
 
 	void Window::DestroyWindow()

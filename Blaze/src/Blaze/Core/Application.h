@@ -13,7 +13,6 @@ namespace Blaze {
 		Application();
 		virtual ~Application();
 
-		void KeyButtonEvent(int key);
 		void WindowResize();
 		bool Application::OnWindowClose(WindowCloseEvent& e);
 		void Run();
