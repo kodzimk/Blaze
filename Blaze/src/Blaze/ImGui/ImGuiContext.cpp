@@ -11,6 +11,8 @@ namespace Blaze
 		m_contextWindow = new ContentBrowser();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
+		m_menuBar = new MenuBar();
+
 		Init(window);
 	}
 
@@ -19,6 +21,7 @@ namespace Blaze
 		delete m_objectWindow;
 		delete m_contextWindow;
 		delete m_propWindow;
+		delete m_menuBar;
 
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

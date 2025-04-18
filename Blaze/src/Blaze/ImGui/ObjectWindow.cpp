@@ -5,14 +5,42 @@
 namespace Blaze
 {
 
-	ObjectWindow::ObjectWindow()
+	MenuBar::MenuBar()
 		: onFocus(false)
 	{
 
 	}
-	ObjectWindow::~ObjectWindow()
+	MenuBar::~MenuBar()
 	{
 
+	}
+
+	void MenuBar::OnUpdate()
+	{
+		if (ImGui::BeginMainMenuBar()) {
+			if (ImGui::BeginMenu("File")) {
+				if (ImGui::MenuItem("Create")) {
+				}
+				if (ImGui::MenuItem("Open", "Ctrl+O")) {
+				}
+				if (ImGui::MenuItem("Save", "Ctrl+S")) {
+				}
+				if (ImGui::MenuItem("Save as..")) {
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
+		}
+	}
+
+	ObjectWindow::ObjectWindow()
+		: onFocus(false)
+	{
+		m_menuBar = new MenuBar();
+	}
+	ObjectWindow::~ObjectWindow()
+	{
+		delete m_menuBar;
 	}
 
 	void ObjectWindow::OnUpdate()
@@ -20,8 +48,10 @@ namespace Blaze
 		ImGui::Begin("Objects", NULL,
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-		ImGui::SetWindowPos(ImVec2(0, 0));
-		ImGui::SetWindowSize(ImVec2(300, 900));
+		ImGui::SetWindowPos(ImVec2(0, 19));
+		ImGui::SetWindowSize(ImVec2(300, 881));
+		
+		m_menuBar->OnUpdate();
 		
 		for (size_t i = 0; i < m_objects.size(); i++)
 		{

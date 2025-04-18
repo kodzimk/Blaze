@@ -155,7 +155,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="MenuBar.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze.h" />
@@ -603,7 +602,6 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MenuBar.cpp" />
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />

@@ -17,6 +17,18 @@ namespace Blaze
 		}
 	};
 
+	class MenuBar
+	{
+	public:
+		MenuBar();
+		virtual ~MenuBar();
+
+		void OnUpdate();
+		bool OnFocus() const { return onFocus; }
+	private:
+		bool onFocus;
+	};
+
 	class  ObjectWindow
 	{
 	public:
@@ -25,11 +37,14 @@ namespace Blaze
 
 		void OnUpdate();
 		void AddObject(const char* name, ImVec2 size, ImVec2 pos);
-		
 		bool OnFocus() const { return onFocus; }
+
 	private:
 		bool onFocus;
 		std::vector<ObjectProp> m_objects;
+
+	public:
+		MenuBar* m_menuBar;
 	};
 }
 
