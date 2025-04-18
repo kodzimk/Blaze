@@ -28,4 +28,26 @@ namespace Blaze
 
 		ImGui::End();
 	}
+	
+	StartWindow::StartWindow()
+		: onFocus(false)
+	{
+	}
+
+	StartWindow::~StartWindow()
+	{
+	}
+
+	void StartWindow::OnUpdate()
+	{
+		ImGui::Begin(" ", NULL,
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar
+		| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+		ImGui::SetWindowPos(ImVec2(300, 19));
+		ImGui::SetWindowSize(ImVec2(1000, 20));
+		ImGui::Button("Start");
+
+		ImGui::End();
+	}
 }

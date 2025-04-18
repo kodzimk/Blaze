@@ -25,7 +25,7 @@ namespace Blaze
 		ImGuiStyle* io_style = nullptr;
 
 	public:
-		MenuBar* m_menuBar;
+		StartWindow* m_startWindow;
 		PropertiesWindow* m_propWindow;
 		ObjectWindow* m_objectWindow;
 		ContentBrowser* m_contextWindow;

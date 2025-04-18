@@ -11,7 +11,7 @@ namespace Blaze
 		m_contextWindow = new ContentBrowser();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
-		m_menuBar = new MenuBar();
+		m_startWindow = new StartWindow();
 
 		Init(window);
 	}
@@ -21,7 +21,7 @@ namespace Blaze
 		delete m_objectWindow;
 		delete m_contextWindow;
 		delete m_propWindow;
-		delete m_menuBar;
+		delete m_startWindow;
 
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
@@ -60,6 +60,7 @@ namespace Blaze
 	void Context::OnUpdate()
 	{
 		NewFrame();
+		m_startWindow->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
