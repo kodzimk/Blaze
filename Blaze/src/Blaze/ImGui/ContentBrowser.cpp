@@ -5,6 +5,7 @@
 namespace Blaze
 {
 	ContentBrowser::ContentBrowser()
+		: onFocus(false)
 	{
 	}
 
@@ -14,10 +15,11 @@ namespace Blaze
 
 	void ContentBrowser::OnUpdate()
 	{
-		ImGui::Begin("Content Browser", NULL,ImGuiWindowFlags_MenuBar);
+		ImGui::Begin("Content Browser",NULL,
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-		ImGui::SetWindowPos(ImVec2(300, 700));
-		ImGui::SetWindowSize(ImVec2(700, 300));
+		ImGui::SetWindowPos(ImVec2(300, 650));
+		ImGui::SetWindowSize(ImVec2(1000, 250));
 
 
 		ImGui::End();

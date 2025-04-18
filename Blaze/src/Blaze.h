@@ -6,6 +6,7 @@
 #include"Blaze/Event/Event.h"
 #include"Blaze/ImGui/ObjectWindow.h"
 #include"Blaze/ImGui/ContentBrowser.h"
+#include"Blaze/ImGui/ImGuiContext.h"
 
 // ---Entry Point---------------------
 #include "Blaze/Core/EntryPoint.h"

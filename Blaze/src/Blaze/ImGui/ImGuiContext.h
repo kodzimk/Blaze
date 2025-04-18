@@ -4,14 +4,15 @@
 #include"bzpch.h"
 #include"ObjectWindow.h"
 #include"ContentBrowser.h"
+#include"PropertiesWindow.h"
 
 namespace Blaze
 {
-	class BLAZE_API Context
+	class Context
 	{
 	public:
 		Context(GLFWwindow* window);
-		Context() = default;
+		Context(const Context&) = default;
 		virtual ~Context();
 
 		void Init(GLFWwindow* window);
@@ -20,11 +21,13 @@ namespace Blaze
 		void OnUpdate();
 
 	private:
-		std::unique_ptr<ImGuiIO> io;
+		ImGuiIO* io = nullptr;
 		ImGuiStyle* io_style = nullptr;
 
 	public:
-		std::unique_ptr<ContentBrowser> m_contentWindow;
+		PropertiesWindow* m_propWindow;
+		ObjectWindow* m_objectWindow;
+		ContentBrowser* m_contextWindow;
 	};
 }
 

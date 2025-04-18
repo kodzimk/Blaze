@@ -17,7 +17,8 @@ namespace Blaze
 
 	void ObjectWindow::OnUpdate()
 	{
-		ImGui::Begin("Objects", NULL, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_None);
+		ImGui::Begin("Objects", NULL,
+		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
 		ImGui::SetWindowPos(ImVec2(0, 0));
 		ImGui::SetWindowSize(ImVec2(300, 900));

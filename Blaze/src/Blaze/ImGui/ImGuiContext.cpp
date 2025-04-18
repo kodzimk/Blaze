@@ -8,22 +8,27 @@ namespace Blaze
 {
 	Context::Context( GLFWwindow* window)
 	{
-		m_contentWindow = std::make_unique<ContentBrowser>(ContentBrowser());
+		m_contextWindow = new ContentBrowser();
+		m_objectWindow = new ObjectWindow();
+		m_propWindow = new PropertiesWindow();
 		Init(window);
 	}
+
 	Context::~Context()
-	{
-		delete io_style;
+	{	
+		delete m_objectWindow;
+		delete m_contextWindow;
+		delete m_propWindow;
 
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 	}
 
-	void Context::Init( GLFWwindow* window)
+	void Context::Init(GLFWwindow* window)
 	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		io = std::make_unique<ImGuiIO>(ImGui::GetIO());
+		io = &ImGui::GetIO();
 
 		io->ConfigFlags |= ImGuiConfigFlags_None;
 
@@ -52,7 +57,9 @@ namespace Blaze
 	void Context::OnUpdate()
 	{
 		NewFrame();
-		m_contentWindow->OnUpdate();
+		m_propWindow->OnUpdate();
+		m_objectWindow->OnUpdate();
+		m_contextWindow->OnUpdate();
 		EndFrame();
 	}
 }

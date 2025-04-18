@@ -21,7 +21,7 @@ namespace Blaze
 	{
 	public:
 		ObjectWindow();
-		~ObjectWindow();
+		virtual ~ObjectWindow();
 
 		void OnUpdate();
 		void AddObject(const char* name, ImVec2 size, ImVec2 pos);

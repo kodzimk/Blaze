@@ -1384,6 +1384,8 @@
     <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h" />
     <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
+    <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
+    <ClInclude Include="MenuBar.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1432,5 +1434,7 @@
     <ClCompile Include="vendor\imgui\include\imgui_impl_opengl3.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
+    <ClCompile Include="MenuBar.cpp" />
   </ItemGroup>
 </Project>
