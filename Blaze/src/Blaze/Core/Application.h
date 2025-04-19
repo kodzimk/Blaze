@@ -4,6 +4,7 @@
 #include"Blaze/Renderer/Renderer.h"
 #include"Blaze/ImGui/ImGuiContext.h"
 #include"Blaze/Event/ApplicationEvent.h"
+#include"Blaze/Core/LayerStack.h"
 
 namespace Blaze {
 
@@ -18,13 +19,15 @@ namespace Blaze {
 		void Run();
 		void OnEvent(Event& e);
 
-	public:
+		void PushLayer(Layer* layer);
+		void PopLayer(Layer* layer);
+	private:
 		Window *m_window;
 		Renderer* m_renderer;
 		Context* m_context;
 
-	private:
 		bool m_running;
+		LayerStack m_layerStack;
 	};
 	Application* CreateApplication();
 }

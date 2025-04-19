@@ -55,6 +55,9 @@
     <Filter Include="vendor\imgui">
       <UniqueIdentifier>{5D3BD0F0-499E-5F95-F223-984BDE652B18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="vendor\imgui\include">
+      <UniqueIdentifier>{D06F9DBA-BCFE-2684-651D-3B7F518B372A}</UniqueIdentifier>
+    </Filter>
     <Filter Include="vendor\imgui\src">
       <UniqueIdentifier>{F45F240B-E058-435D-098B-28E2F5E22269}</UniqueIdentifier>
     </Filter>
@@ -70,6 +73,12 @@
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\EntryPoint.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Core\Layer.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Core\LayerStack.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\Window.h">
@@ -90,7 +99,16 @@
     <ClInclude Include="src\Blaze\Event\MouseEvent.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Logging\Log.h">
@@ -1362,6 +1380,12 @@
     <ClInclude Include="vendor\glm\glm\vector_relational.hpp">
       <Filter>vendor\glm\glm</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\imgui\include\imgui_impl_glfw.h">
+      <Filter>vendor\imgui\include</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h">
+      <Filter>vendor\imgui\include</Filter>
+    </ClInclude>
     <ClInclude Include="vendor\imgui\src\imconfig.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
@@ -1380,20 +1404,30 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
-    <ClInclude Include="vendor\imgui\include\imgui_impl_glfw.h" />
-    <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h" />
-    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
-    <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
-    <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Core\Layer.cpp">
+      <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Core\LayerStack.cpp">
+      <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Core\Window.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Logging\Log.cpp">
@@ -1414,6 +1448,12 @@
     <ClCompile Include="vendor\GLAD\src\glad.c">
       <Filter>vendor\GLAD\src</Filter>
     </ClCompile>
+    <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp">
+      <Filter>vendor\imgui\include</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\imgui\include\imgui_impl_opengl3.cpp">
+      <Filter>vendor\imgui\include</Filter>
+    </ClCompile>
     <ClCompile Include="vendor\imgui\src\imgui.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
@@ -1429,10 +1469,5 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
-    <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp" />
-    <ClCompile Include="vendor\imgui\include\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
-    <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
-    <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
   </ItemGroup>
 </Project>

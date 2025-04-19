@@ -8,6 +8,7 @@
 #include"Blaze/ImGui/ObjectWindow.h"
 #include"Blaze/ImGui/ContentBrowser.h"
 #include"Blaze/ImGui/ImGuiContext.h"
+#include"Blaze/Core/Layer.h"
 
 // ---Entry Point---------------------
 #include "Blaze/Core/EntryPoint.h"

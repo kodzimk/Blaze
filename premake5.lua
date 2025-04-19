@@ -33,6 +33,8 @@ project "Blaze"
 		"%{prj.name}/vendor/imgui/src/**.h",
 		"%{prj.name}/vendor/imgui/src/**.cpp",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
+		"%{prj.name}/vendor/imgui/include/**.cpp",
+		"%{prj.name}/vendor/imgui/include/**.h",
 		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
 
@@ -42,7 +44,6 @@ project "Blaze"
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/glfw3/include",
 		"%{prj.name}/vendor/GLAD/include",
-		"%{prj.name}/vendor/imgui/include",
 		"%{prj.name}/vendor/glm/glm"
 	}
 
@@ -77,14 +78,17 @@ project "Blaze"
 
 	filter "configurations:Debug"
 		defines "BZ_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "BZ_RELEASE"
+		buildoptions "/MD"
 		optimize "On"
 
 	filter "configurations:Dist"
 		defines "BZ_DIST"
+		buildoptions "/MD"
 		optimize "On"
 
 project "Sandbox"
@@ -134,12 +138,15 @@ project "Sandbox"
 
 	filter "configurations:Debug"
 		defines "BZ_DEBUG"
+			buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines "BZ_RELEASE"
+			buildoptions "/MD"
 		optimize "On"
 
 	filter "configurations:Dist"
 		defines "BZ_DIST"
+			buildoptions "/MD"
 		optimize "On"

@@ -48,6 +48,10 @@ namespace Blaze {
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
 			m_renderer->Render();
 			m_context->OnUpdate();
+
+			for (Layer* layer : m_layerStack){
+				layer->OnUpdate();
+			}
 			m_window->OnUpdate();
 		}
 	}
@@ -56,6 +60,22 @@ namespace Blaze {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
+		for (auto it = m_layerStack.end(); it != m_layerStack.begin();)
+		{
+			(*--it)->OnEvent(e);
+			if (e.m_Handled)
+				break;
+		}
+	}
+
+	void Application::PushLayer(Layer* layer)
+	{
+		m_layerStack.PushLayer(layer);
+	}
+
+	void Application::PopLayer(Layer* layer)
+	{
+		m_layerStack.PopLayer(layer);
 	}
 
 }
