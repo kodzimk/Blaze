@@ -4,7 +4,7 @@
 #include"Blaze/Event/ApplicationEvent.h"
 
 namespace Blaze {	
-    #define BIND_EVENT_FN(x) std::bind(&Application::x,this,std::placeholders::_1)
+	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
 	Application::Application()
 		: m_running(true)
 	{
@@ -12,7 +12,6 @@ namespace Blaze {
 		m_window = Create();
 		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
 	
-
 		m_context = new Context(m_window->GetWindow());
 	}
 
@@ -57,8 +56,6 @@ namespace Blaze {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
-
-		BZ_CORE_INFO("{0}", e.GetName());
 	}
 
 }

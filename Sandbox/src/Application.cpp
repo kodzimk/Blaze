@@ -1,4 +1,5 @@
 #include <Blaze.h>
+#include<memory>
 
 class Sandbox : public Blaze::Application
 {
