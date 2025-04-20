@@ -35,8 +35,9 @@ namespace Blaze
 		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f);
 		void Init(WindowProp& prop);
 		void SetCallBackEvent(const EventCallbackfn& cb) { m_prop.m_callback = cb; };
-
-		GLFWwindow* GetWindow() const { return m_window; }
+		inline void* GetNativeWindow() const {
+			return m_window;
+		};
 
 		void SetVSync(bool enabled);
 		bool IsVSync() const;

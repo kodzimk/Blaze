@@ -7,7 +7,7 @@
 
 namespace Blaze {
 
-	class LayerStack
+	class BLAZE_API LayerStack
 	{
 	public:
 		LayerStack() = default;

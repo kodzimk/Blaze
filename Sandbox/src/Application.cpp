@@ -4,6 +4,7 @@ class ExampleLayer : public Blaze::Layer
 {
 public:
 	ExampleLayer()
+		: Layer("Example")
 	{
 
 	}

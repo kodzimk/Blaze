@@ -2,17 +2,21 @@
 
 #include"Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
+#include"Blaze/Core/Input.h"
 
 namespace Blaze {	
 	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
+
+	Application* Application::s_Instance = nullptr;
 	Application::Application()
 		: m_running(true)
 	{
+		s_Instance = this;
 		m_renderer = new Renderer();
 		m_window = Create();
 		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
 	
-		m_context = new Context(m_window->GetWindow());
+		m_context = new Context((GLFWwindow*)m_window->GetNativeWindow());
 	}
 
 	Application::~Application()
@@ -53,6 +57,10 @@ namespace Blaze {
 				layer->OnUpdate();
 			}
 			m_window->OnUpdate();
+
+			float x = Input::GetMouseX();
+			float y = Input::GetMouseY();
+			BZ_INFO("{0},{1}", x,y);
 		}
 	}
 
@@ -73,9 +81,9 @@ namespace Blaze {
 		m_layerStack.PushLayer(layer);
 	}
 
-	void Application::PopLayer(Layer* layer)
+	void Application::PushOverlay(Layer* layer)
 	{
-		m_layerStack.PopLayer(layer);
+		m_layerStack.PushOverlay(layer);
 	}
 
 }

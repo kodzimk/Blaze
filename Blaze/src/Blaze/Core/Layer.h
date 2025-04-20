@@ -4,10 +4,10 @@
 #include"Blaze/Event/Event.h"
 
 namespace Blaze {
-	class Layer
+	class BLAZE_API Layer
 	{
 	public:
-		Layer(const std::string& name = "Layer");
+		Layer(const std::string name = "Layer");
 		virtual ~Layer() = default;
 
 		virtual void OnAttach() {}

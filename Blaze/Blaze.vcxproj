@@ -171,6 +171,7 @@
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
+    <ClInclude Include="src\Blaze\Core\Input.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
@@ -602,6 +603,7 @@
     <ClInclude Include="vendor\imgui\src\imstb_rectpack.h" />
     <ClInclude Include="vendor\imgui\src\imstb_textedit.h" />
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
+    <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
@@ -625,6 +627,7 @@
     <ClCompile Include="vendor\imgui\src\imgui_draw.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp" />
+    <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

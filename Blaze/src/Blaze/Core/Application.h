@@ -19,8 +19,12 @@ namespace Blaze {
 		void Run();
 		void OnEvent(Event& e);
 
+		inline static Application& Get() { return *s_Instance; }
+		inline Window& GetWindow() { return *m_window; }
+
+
 		void PushLayer(Layer* layer);
-		void PopLayer(Layer* layer);
+		void PushOverlay(Layer* layer);
 	private:
 		Window *m_window;
 		Renderer* m_renderer;
@@ -28,6 +32,8 @@ namespace Blaze {
 
 		bool m_running;
 		LayerStack m_layerStack;
+	private:
+		static Application* s_Instance;
 	};
 	Application* CreateApplication();
 }
