@@ -16,7 +16,7 @@ namespace Blaze
 		FLOAT4,
 	};
 
-	class VertexBuffer
+	class BLAZE_API VertexBuffer
 	{
 	public:
 		VertexBuffer();
@@ -24,7 +24,6 @@ namespace Blaze
 
 		void Bind();
 		void UnBind();
-		void Gen();
 
 		void SetData(const void* data, uint32_t size);
 		void SetFloat(float* data, uint32_t size,uint32_t stride);

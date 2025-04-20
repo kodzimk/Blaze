@@ -8,12 +8,11 @@ namespace Blaze {
 	Blaze::GameObject::GameObject(std::vector<float>& vertices, glm::vec4 color)
 		: m_Color(color)
 	{
-		m_VertexArray.Gen();
 		m_VertexArray.Bind();
 
-		m_VertexBuffer.Gen();
+
 		m_VertexBuffer.Bind();
-		m_VertexBuffer.SetFloat(vertices.data(), sizeof(vertices), 2);
+		m_VertexBuffer.SetFloat(vertices.data(), sizeof(vertices), 3);
 		m_VertexArray.AttribPointer(m_VertexBuffer);
 	}
 
@@ -21,7 +20,7 @@ namespace Blaze {
 	{
 	}
 
-	void GameObject::Draw(CameraProp& prop,Shader& m_Shader)
+	void GameObject::Draw(const CameraProp& prop,Shader& const m_Shader)
 	{
 		m_Shader.SetUniform4fv(m_Color, "color");
 

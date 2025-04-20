@@ -90,9 +90,6 @@
     <ClInclude Include="src\Blaze\Core\WindowsInput.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
-      <Filter>src\Blaze\Error</Filter>
-    </ClInclude>
     <ClInclude Include="src\Blaze\Event\ApplicationEvent.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
@@ -107,9 +104,6 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\MouseEvent.h">
       <Filter>src\Blaze\Event</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h">
-      <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
       <Filter>src\Blaze\ImGui</Filter>
@@ -1425,6 +1419,8 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
+    <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1444,9 +1440,6 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Event\MouseButtonCodes.h">
       <Filter>src\Blaze\Event</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">
-      <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">
       <Filter>src\Blaze\ImGui</Filter>
@@ -1505,5 +1498,7 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
+    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
   </ItemGroup>
 </Project>

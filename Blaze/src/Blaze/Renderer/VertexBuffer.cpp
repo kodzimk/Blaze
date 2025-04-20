@@ -5,6 +5,7 @@ namespace Blaze
 {
 	VertexBuffer::VertexBuffer()
 	{
+		glGenBuffers(1, &m_ID);
 	}
 
 	VertexBuffer::~VertexBuffer()
@@ -19,11 +20,6 @@ namespace Blaze
 	void VertexBuffer::UnBind()
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-	void VertexBuffer::Gen()
-	{
-		glGenBuffers(1, &m_ID);
 	}
 
 	void VertexBuffer::SetData(const void* data, uint32_t size)

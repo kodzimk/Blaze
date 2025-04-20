@@ -11,6 +11,7 @@ namespace Blaze
 		virtual bool IsMouseButtonPressedImpl(int button) override;
 		virtual float GetMouseXImpl() override;
 		virtual float GetMouseYImpl() override;
+		virtual float MouseScrollXImpl() override;
 	};
 }
 

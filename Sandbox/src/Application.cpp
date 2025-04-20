@@ -7,23 +7,21 @@ public:
 		: Layer("Example")
 	{
 		render = new Blaze::Renderer(vertexSource,fragmentSource);
-		render->CreateCamera(0.0f, 0.0f, 1.0f);
 		render->CreateObject(vertices);
+		camera = Blaze::Camera::CreateCamera(glm::vec3(0.0f,0.0f,1.0f));
 	}
 
 	~ExampleLayer()
 	{
-		
+		delete render;
+		delete camera;
 	}
 
 	void OnUpdate() override
 	{
-
-		if (Blaze::Input::IsKeyPressed(BZ_KEY_SPACE))
-			BZ_INFO("Pressed!!!!!!");
-
-		render->BeginScene("matrix");
-		render->Render();
+		camera->CameraMove();
+		render->BeginScene(*camera,"matrix");
+		render->Render(*camera);
 		render->EndScene();
 	}
 
@@ -34,18 +32,22 @@ public:
 
 public:
 	std::vector<float> vertices = {
-	-0.5f,-0.5f,
-	-0.5f,0.5f,
-	0.0f,0.5f
+	-10.f,-10.f,0.0f,
+	-10.f,10.f,0.0f,
+	0.0f,10.0f,0.0f,
 	};
+
 	Blaze::Renderer* render;
+	Blaze::Camera* camera;
 
 	const char* vertexSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 position;\n"
 		"uniform mat4 matrix;\n"
+		"uniform mat4 ortho;\n"
+		"uniform float zoom;\n"
 		"out vec3 currentPos;\n"
 		"void main() {\n"
-		"gl_Position = matrix * vec4(position, 1.0f);\n"
+		"gl_Position = vec4(matrix * ortho * vec4(position * zoom,1.0f));\n"
 		"currentPos = position;\n"
 		"}\0";
 

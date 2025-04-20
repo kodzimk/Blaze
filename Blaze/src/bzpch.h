@@ -12,5 +12,5 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include"Blaze/Logging/Log.h"
+#include"Blaze/Core/Core.h"
 

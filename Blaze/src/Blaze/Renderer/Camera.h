@@ -6,19 +6,25 @@
 namespace Blaze {
 	typedef struct CameraProp{
 		glm::vec3 pos;
-		float zoom = 1.0;
 		glm::mat4 matrix;
 	}CameraProp;
 
-	class  Camera
+	class BLAZE_API Camera
 	{
 	public:
 		Camera(glm::vec3 pos, float zoom);
 		virtual ~Camera();
 
 		CameraProp GetCameraProp() const;
+		static Camera* CreateCamera(glm::vec3 pos = glm::vec3(0.0f, 0.0f, 1.0f),float zoom = 1.0f);
+
+		void CameraMove();
+		void SetCameraPos(glm::vec3 pos);
+		void TranslateCamera(glm::vec3 translate);
 	private:
 		CameraProp m_prop;
+	public:
+		static float zoom;
 	};
 }
 

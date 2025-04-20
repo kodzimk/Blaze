@@ -4,7 +4,7 @@
 
 namespace Blaze
 {
-	class VertexArray
+	class BLAZE_API VertexArray
 	{
 	public:
 		VertexArray();
@@ -12,9 +12,8 @@ namespace Blaze
 
 		void Bind();
 		void UnBind();
-		void Gen();
 
-		void AttribPointer(VertexBuffer& buffer);
+		void AttribPointer(const VertexBuffer& buffer);
 	private:
 		uint32_t m_ID;
 		uint32_t m_VertexBufferIndex;

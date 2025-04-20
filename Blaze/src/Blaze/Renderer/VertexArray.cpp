@@ -6,11 +6,11 @@ namespace Blaze
 	VertexArray::VertexArray()
 		: m_VertexBufferIndex(0)
 	{
+		glGenVertexArrays(1, &m_ID);
 	}
 
 	VertexArray::~VertexArray()
 	{
-	
 	}
 
 	void VertexArray::Bind()
@@ -23,12 +23,7 @@ namespace Blaze
 		glBindVertexArray(0);
 	}
 
-	void VertexArray::Gen()
-	{
-		glGenVertexArrays(1, &m_ID);
-	}
-
-	void VertexArray::AttribPointer(VertexBuffer& buffer)
+	void VertexArray::AttribPointer(const VertexBuffer& buffer)
 	{
 		switch (buffer.m_dataType)
 		{	

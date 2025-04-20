@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
 	Renderer::Renderer(const char* vertexSource,const char* fragmentSource)
@@ -13,14 +14,14 @@ namespace Blaze {
 		{
 			delete m_objects[i];
 		}
-
-		delete m_camera;
 	}
 
-	void Renderer::BeginScene(const char* uniform_name)
+	void Renderer::BeginScene(const Camera& camera,const char* uniform_name)
 	{
 		m_ShaderProgam.Use();
-		m_ShaderProgam.SetUniformMatrix4fv(m_camera->GetCameraProp().matrix, uniform_name);
+		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().matrix, uniform_name);
+		m_ShaderProgam.SetUniformMatrix4fv(glm::ortho(-800.f, 800.f, -450.f, 450.f, -100.f, 100.0f), "ortho");
+		m_ShaderProgam.SetUniform1f(camera.zoom, "zoom");
 	}
 
 	void Renderer::EndScene()
@@ -38,16 +39,11 @@ namespace Blaze {
 		m_objects.push_back(object);
 	}
 
-	void Renderer::CreateCamera(float x, float y, float zoom)
-	{
-		m_camera = new Camera({ x,y ,0.0f}, zoom);
-	}
-
-	void Renderer::Render()
+	void Renderer::Render(const Camera& camera)
 	{
 		for (size_t i = 0; i < m_objects.size(); ++i)
 		{
-			m_objects[i]->Draw(m_camera->GetCameraProp(),m_ShaderProgam);
+			m_objects[i]->Draw(camera.GetCameraProp(), m_ShaderProgam);
 		}
 	}
 }

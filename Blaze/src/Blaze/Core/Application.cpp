@@ -3,6 +3,9 @@
 #include"Application.h"
 #include"Blaze/Event/ApplicationEvent.h"
 #include"Blaze/Core/Input.h"
+#include"Blaze/Event/MouseButtonCodes.h"
+#include"GLFW/glfw3.h"
+#include"Blaze/Logging/Log.h"
 
 namespace Blaze {	
 	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
@@ -39,7 +42,16 @@ namespace Blaze {
 	{	
 		while(m_running)
 		{   
-			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
+			m_window->Clear(.1f,.1f,.1f,1.0f);
+
+			if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
+			{
+				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				BZ_INFO("Locking");
+			}
+			else {
+				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			}
 
 			for (Layer* layer : m_layerStack) {
 				layer->OnUpdate();
@@ -48,6 +60,7 @@ namespace Blaze {
 			m_context->OnUpdate();
 			m_window->OnUpdate();
 		}
+
 	}
 
 	void Application::OnEvent(Event& e)

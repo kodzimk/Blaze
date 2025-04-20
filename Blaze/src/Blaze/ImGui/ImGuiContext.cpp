@@ -41,7 +41,14 @@ namespace Blaze
 
 		io_style = &ImGui::GetStyle();
 		io_style->Colors[ImGuiCol_Button] = ImVec4(0.0f, 0.0f, 1.f, 0.0f);
-		io_style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 0.0f, 1.f, 0.0f);
+		io_style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
+		io_style->Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.f, 1.0f);
+		io_style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+		io_style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+		io_style->Colors[ImGuiCol_FrameBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+		io_style->Colors[ImGuiCol_Separator] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+		io_style->Colors[ImGuiCol_DragDropTarget] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 	}
 
 	void Context::NewFrame()

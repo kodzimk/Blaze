@@ -49,17 +49,17 @@ namespace Blaze
 	{
 		glUniform1f(glGetUniformLocation(m_Program, uniform_name), data);
 	}
-	void Shader::SetUniform3fv(glm::vec3& data,const char* uniform_name)
+	void Shader::SetUniform3fv(const glm::vec3& data,const char* uniform_name)
 	{
 		glUniform3fv(glGetUniformLocation(m_Program, uniform_name), 1, glm::value_ptr(data));
 	}
 
-	void Shader::SetUniform4fv(glm::vec4& data, const char* uniform_name)
+	void Shader::SetUniform4fv(const glm::vec4& data, const char* uniform_name)
 	{
 		glUniform4fv(glGetUniformLocation(m_Program, uniform_name), 1, glm::value_ptr(data));
 	}
 
-	void Shader::SetUniformMatrix4fv(glm::mat4& data, const char* uniform_name)
+	void Shader::SetUniformMatrix4fv(const glm::mat4& data, const char* uniform_name)
 	{
 		glUniformMatrix4fv(glGetUniformLocation(m_Program, uniform_name), 1,GL_FALSE, glm::value_ptr(data));
 	}

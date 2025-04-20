@@ -152,6 +152,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
@@ -161,7 +162,6 @@
     <ClInclude Include="src\Blaze\Core\LayerStack.h" />
     <ClInclude Include="src\Blaze\Core\Window.h" />
     <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
-    <ClInclude Include="src\Blaze\Error\ErrorHandler.h" />
     <ClInclude Include="src\Blaze\Event\ApplicationEvent.h" />
     <ClInclude Include="src\Blaze\Event\Event.h" />
     <ClInclude Include="src\Blaze\Event\KeyCodes.h" />
@@ -608,6 +608,7 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Layer.cpp" />
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp" />

@@ -23,7 +23,6 @@ namespace Blaze
 	{
 		ImGui::Begin("Properties", NULL,
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-
 		ImGui::SetWindowPos(ImVec2(1300, 19));
 		ImGui::SetWindowSize(ImVec2(width, height));
 		ImGui::Text("Name Of Object: Object1");

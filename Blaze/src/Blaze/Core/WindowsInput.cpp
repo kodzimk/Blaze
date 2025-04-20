@@ -39,4 +39,9 @@ namespace Blaze
         glfwGetCursorPos(window, &xPos, &yPos);
         return (float)yPos;
     }
+    float WindowsInput::MouseScrollXImpl()
+    {
+        auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+        return 0.0f;
+    }
 }

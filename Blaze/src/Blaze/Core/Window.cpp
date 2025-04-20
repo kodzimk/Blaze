@@ -5,6 +5,8 @@
 #include"Blaze/Event/ApplicationEvent.h"
 #include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Event/MouseEvent.h"
+#include"Blaze/Logging/Log.h"
+#include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
 
@@ -14,7 +16,7 @@ namespace Blaze {
 		Init(m_prop);
 	}
 
-	void Window::Init(WindowProp& prop)
+	void Window::Init(const WindowProp& prop)
 	{
 		if (!glfwInit())
 		{
@@ -63,6 +65,7 @@ namespace Blaze {
 				    }
 				}
 		});
+	
 
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
 		{
@@ -96,6 +99,11 @@ namespace Blaze {
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
 				prop.m_callback(e);
+
+				if(Blaze::Camera::zoom < 100.f && Yoffset > 0.0f)
+				  Blaze::Camera::zoom += Yoffset  / 5.f;
+				if (Blaze::Camera::zoom > .1f && Yoffset < 0.0f)
+					Blaze::Camera::zoom += Yoffset / 5.f;
 		});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 

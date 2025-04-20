@@ -29,7 +29,6 @@ namespace Blaze {
 
 		bool m_running;
 		LayerStack m_layerStack;
-	private:
 		static Application* s_Instance;
 	};
 	Application* CreateApplication();
