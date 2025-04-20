@@ -12,7 +12,6 @@ namespace Blaze {
 		: m_running(true)
 	{
 		s_Instance = this;
-		m_renderer = new Renderer();
 		m_window = Create();
 		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
 	
@@ -23,7 +22,6 @@ namespace Blaze {
 	{
 		delete m_context;
 		delete m_window;
-		delete m_renderer;
 	}
 
 	void Application::WindowResize()
@@ -39,28 +37,16 @@ namespace Blaze {
 
 	void Application::Run()
 	{	
-		std::vector<float> vertices = {
-			-0.5f,-0.5f,
-			-0.5f,0.5f,
-			0.0f,0.5f
-		};
-
-		m_renderer->CreateCamera(0.0f,0.0f,1.0f);
-		m_renderer->CreateObject(vertices);
 		while(m_running)
 		{   
 			m_window->Clear(1.0f,0.0f,0.0f,1.0f);
-			m_renderer->Render();
-			m_context->OnUpdate();
 
-			for (Layer* layer : m_layerStack){
+			for (Layer* layer : m_layerStack) {
 				layer->OnUpdate();
 			}
-			m_window->OnUpdate();
 
-			float x = Input::GetMouseX();
-			float y = Input::GetMouseY();
-			BZ_INFO("{0},{1}", x,y);
+			m_context->OnUpdate();
+			m_window->OnUpdate();
 		}
 	}
 

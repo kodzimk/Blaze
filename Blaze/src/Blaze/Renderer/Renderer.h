@@ -2,7 +2,7 @@
 #include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
-	class Renderer
+	class BLAZE_API Renderer
 	{
 	public:
 		Renderer();

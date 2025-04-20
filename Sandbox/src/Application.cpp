@@ -6,18 +6,37 @@ public:
 	ExampleLayer()
 		: Layer("Example")
 	{
+		render = new Blaze::Renderer();
+		render->CreateCamera(0.0f, 0.0f, 1.0f);
+		render->CreateObject(vertices);
+	}
 
+	~ExampleLayer()
+	{
+		
 	}
 
 	void OnUpdate() override
 	{
-		BZ_INFO("ExampleLayer::Update");
+
+		if (Blaze::Input::IsKeyPressed(BZ_KEY_SPACE))
+			BZ_INFO("Pressed!!!!!!");
+
+		render->Render();
 	}
 
 	void OnEvent(Blaze::Event& event) override
-	{
-		BZ_TRACE("{0}", event.GetName());
+	{/*
+		BZ_TRACE("{0}", event.GetName());*/
 	}
+
+public:
+	std::vector<float> vertices = {
+	-0.5f,-0.5f,
+	-0.5f,0.5f,
+	0.0f,0.5f
+	};
+	Blaze::Renderer* render;
 };
 
 class Sandbox : public Blaze::Application

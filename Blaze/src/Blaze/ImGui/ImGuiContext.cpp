@@ -1,8 +1,8 @@
 #include "ImGuiContext.h"
 
 #include "../vendor/imgui/src/imgui.h"   
-#include"imgui_impl_glfw.h"
-#include"imgui_impl_opengl3.h"
+#include"../vendor/imgui/include/imgui_impl_glfw.h"
+#include"../vendor/imgui/include/imgui_impl_opengl3.h"
 
 namespace Blaze
 {

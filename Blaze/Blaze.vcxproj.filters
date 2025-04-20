@@ -1406,6 +1406,7 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Core\Input.h" />
     <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
+    <ClInclude Include="src\Blaze\Event\KeyCodes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1472,5 +1473,6 @@
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
+    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp" />
   </ItemGroup>
 </Project>
