@@ -113,9 +113,7 @@ project "Sandbox"
 	includedirs
 	{
 		"Blaze/vendor/spdlog/include",
-		"Blaze/vendor/glfw3/include",
 		"Blaze/vendor/GLAD/include",
-		"Blaze/vendor/imgui/include",
 		"Blaze/src",
 		"Blaze/vendor/glm/glm"
 	}

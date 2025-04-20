@@ -155,13 +155,16 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Blaze\Renderer\Shader.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
     <ClInclude Include="src\Blaze\Core\EntryPoint.h" />
+    <ClInclude Include="src\Blaze\Core\Input.h" />
     <ClInclude Include="src\Blaze\Core\Layer.h" />
     <ClInclude Include="src\Blaze\Core\LayerStack.h" />
     <ClInclude Include="src\Blaze\Core\Window.h" />
+    <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h" />
     <ClInclude Include="src\Blaze\Event\ApplicationEvent.h" />
     <ClInclude Include="src\Blaze\Event\Event.h" />
@@ -172,7 +175,6 @@
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
-    <ClInclude Include="src\Blaze\Core\Input.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
@@ -598,19 +600,23 @@
     <ClInclude Include="vendor\glm\glm\vector_relational.hpp" />
     <ClInclude Include="vendor\imgui\include\imgui_impl_glfw.h" />
     <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h" />
+    <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3_loader.h" />
     <ClInclude Include="vendor\imgui\src\imconfig.h" />
     <ClInclude Include="vendor\imgui\src\imgui.h" />
     <ClInclude Include="vendor\imgui\src\imgui_internal.h" />
     <ClInclude Include="vendor\imgui\src\imstb_rectpack.h" />
     <ClInclude Include="vendor\imgui\src\imstb_textedit.h" />
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
-    <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Layer.cpp" />
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
+    <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
     <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
@@ -629,7 +635,8 @@
     <ClCompile Include="vendor\imgui\src\imgui_draw.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp" />
-    <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

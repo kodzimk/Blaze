@@ -1,9 +1,10 @@
 #include "Renderer.h"
 
 namespace Blaze {
-	Renderer::Renderer()
+	Renderer::Renderer(const char* vertexSource,const char* fragmentSource)
 	{
-
+		m_ShaderProgam.CreateProgram(vertexSource, fragmentSource);
+		m_ShaderProgam.LinkProgram();
 	}
 
 	Renderer::~Renderer()
@@ -16,9 +17,20 @@ namespace Blaze {
 		delete m_camera;
 	}
 
-	void Renderer::CreateObject(std::vector<float> vertices)
+	void Renderer::BeginScene(const char* uniform_name)
 	{
-		m_objects.push_back(new GameObject(vertices, m_camera->GetCameraProp()));
+		m_ShaderProgam.Use();
+		m_ShaderProgam.SetUniformMatrix4fv(m_camera->GetCameraProp().matrix, uniform_name);
+	}
+
+	void Renderer::EndScene()
+	{
+
+	}
+
+	void Renderer::CreateObject(std::vector<float> vertices,glm::vec4 color)
+	{
+		m_objects.push_back(new GameObject(vertices,color));
 	}
 
 	void Renderer::CreateObject(GameObject *object)
@@ -35,7 +47,7 @@ namespace Blaze {
 	{
 		for (size_t i = 0; i < m_objects.size(); ++i)
 		{
-			m_objects[i]->Draw(m_camera->GetCameraProp());
+			m_objects[i]->Draw(m_camera->GetCameraProp(),m_ShaderProgam);
 		}
 	}
 }

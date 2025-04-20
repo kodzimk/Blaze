@@ -75,6 +75,9 @@
     <ClInclude Include="src\Blaze\Core\EntryPoint.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Core\Input.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Core\Layer.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
@@ -84,6 +87,9 @@
     <ClInclude Include="src\Blaze\Core\Window.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Core\WindowsInput.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Error\ErrorHandler.h">
       <Filter>src\Blaze\Error</Filter>
     </ClInclude>
@@ -91,6 +97,9 @@
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\Event.h">
+      <Filter>src\Blaze\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Event\KeyCodes.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Event\KeyEvent.h">
@@ -1386,6 +1395,9 @@
     <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3.h">
       <Filter>vendor\imgui\include</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\imgui\include\imgui_impl_opengl3_loader.h">
+      <Filter>vendor\imgui\include</Filter>
+    </ClInclude>
     <ClInclude Include="vendor\imgui\src\imconfig.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
@@ -1404,9 +1416,9 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\Core\Input.h" />
-    <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
-    <ClInclude Include="src\Blaze\Event\KeyCodes.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
+    <ClInclude Include="src\Blaze\Renderer\Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1420,6 +1432,12 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Core\Window.cpp">
       <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Core\WindowsInput.cpp">
+      <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp">
+      <Filter>src\Blaze\Event</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">
       <Filter>src\Blaze\ImGui</Filter>
@@ -1472,7 +1490,8 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
-    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
   </ItemGroup>
 </Project>

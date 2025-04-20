@@ -6,6 +6,8 @@ namespace Blaze
 	{
 		m_prop.pos = pos;
 		m_prop.zoom = zoom;
+		m_prop.matrix = glm::mat4(1.0f);
+		m_prop.matrix = glm::translate(m_prop.matrix, m_prop.pos);
 	}
 
 	Camera::~Camera()
