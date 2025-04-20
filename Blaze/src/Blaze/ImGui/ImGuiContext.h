@@ -12,7 +12,7 @@ namespace Blaze
 	{
 	public:
 		Context(GLFWwindow* window);
-		Context(const Context&) = default;
+		Context(const Context& context) = default;
 		virtual ~Context();
 
 		void Init(GLFWwindow* window);

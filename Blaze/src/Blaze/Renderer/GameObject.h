@@ -10,10 +10,10 @@ namespace Blaze
 	class GameObject
 	{
 	public:
-		GameObject(std::vector<float> vertices, glm::vec4 color);
+		GameObject(std::vector<float>& vertices, glm::vec4 color);
 		virtual ~GameObject();
 
-		void Draw(CameraProp prop, Shader& m_Shader);
+		void Draw(CameraProp& prop, Shader& m_Shader);
 	private:
 		VertexArray m_VertexArray;
 		VertexBuffer m_VertexBuffer;

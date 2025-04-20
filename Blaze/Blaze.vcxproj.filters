@@ -1442,7 +1442,7 @@
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp">
+    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.h">
       <Filter>src\Blaze\Event</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">

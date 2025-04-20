@@ -134,7 +134,7 @@ namespace Blaze {
 		BZ_INFO("Window Destroyed");
 	}
 
-	void Window::Clear(float r, float b, float g, float a)
+	void Window::Clear(float r, float b, float g, float a) const
 	{
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);

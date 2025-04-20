@@ -12,7 +12,7 @@ namespace Blaze {
 		void BeginScene(const char* uniform_matrix_name);
 		void EndScene();
 
-		void CreateObject(std::vector<float> vertices,glm::vec4 color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		void CreateObject(std::vector<float>& vertices,glm::vec4 color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
 		void CreateObject(GameObject *object);
 		void CreateCamera(float x = 0.0f, float y = 0.0f, float zoom = 1.0f);
 		void Render();

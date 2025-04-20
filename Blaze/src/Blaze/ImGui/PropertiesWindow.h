@@ -23,6 +23,7 @@ namespace Blaze
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
 	private:
+		int width, height;
 		bool onFocus;
 	};
 }

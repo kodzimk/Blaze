@@ -613,7 +613,7 @@
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
-    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.cpp" />
+    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.h" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />

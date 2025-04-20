@@ -19,8 +19,7 @@ namespace Blaze {
 		void OnEvent(Event& e);
 
 		inline static Application& Get() { return *s_Instance; }
-		inline Window& GetWindow() { return *m_window; }
-
+		inline Window& GetWindow() const { return *m_window; }
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
