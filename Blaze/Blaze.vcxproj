@@ -85,7 +85,6 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/utf-8 /MDd %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -112,7 +111,6 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>/utf-8 /MD %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -140,7 +138,6 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>/utf-8 /MD %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -155,7 +152,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Blaze\Renderer\Shader.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
@@ -179,6 +175,9 @@
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
     <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
+    <ClInclude Include="src\Blaze\Renderer\Shader.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
+    <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
     <ClInclude Include="src\bzpch.h" />
     <ClInclude Include="vendor\glm\glm\common.hpp" />
     <ClInclude Include="vendor\glm\glm\detail\_features.hpp" />
@@ -607,11 +606,8 @@
     <ClInclude Include="vendor\imgui\src\imstb_rectpack.h" />
     <ClInclude Include="vendor\imgui\src\imstb_textedit.h" />
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
-    <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
-    <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Layer.cpp" />
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp" />
@@ -626,6 +622,9 @@
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
     <ClCompile Include="src\bzpch.cpp" />
     <ClCompile Include="vendor\GLAD\src\glad.c" />
     <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp" />
@@ -635,8 +634,6 @@
     <ClCompile Include="vendor\imgui\src\imgui_draw.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_tables.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp" />
-    <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
-    <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
