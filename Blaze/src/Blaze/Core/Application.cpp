@@ -6,6 +6,7 @@
 #include"Blaze/Event/MouseButtonCodes.h"
 #include"GLFW/glfw3.h"
 #include"Blaze/Logging/Log.h"
+#include"Blaze/Renderer/Renderer.h"
 
 namespace Blaze {	
 	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
@@ -27,9 +28,17 @@ namespace Blaze {
 		delete m_window;
 	}
 
-	void Application::WindowResize()
+	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			m_Minimized = true;
+			return false;
+		}
 
+		m_Minimized = false;
+		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
+		return true;
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)
@@ -42,7 +51,7 @@ namespace Blaze {
 	{	
 		while(m_running)
 		{   
-			m_window->Clear(.1f,.1f,.1f,1.0f);
+			m_window->Clear(0.1f, 0.1f, 0.1f,255.0f);
 
 			if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
 			{
@@ -53,10 +62,13 @@ namespace Blaze {
 				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			}
 
-			for (Layer* layer : m_layerStack) {
-				layer->OnUpdate();
-			}
+			if (!m_Minimized)
+			{
+				for (Layer* layer : m_layerStack) {
+					layer->OnUpdate();
+				}
 
+			}
 			m_context->OnUpdate();
 			m_window->OnUpdate();
 		}
@@ -67,6 +79,8 @@ namespace Blaze {
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
+		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(OnWindowResize));
+
 		for (auto it = m_layerStack.end(); it != m_layerStack.begin();)
 		{
 			(*--it)->OnEvent(e);

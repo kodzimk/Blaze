@@ -1,5 +1,7 @@
 #include "Renderer.h"
 #include"Blaze/Renderer/Camera.h"
+#include"Blaze/Core/Window.h"
+#include"glad/glad.h"
 
 namespace Blaze {
 	Renderer::Renderer(const char* vertexSource,const char* fragmentSource)
@@ -20,7 +22,7 @@ namespace Blaze {
 	{
 		m_ShaderProgam.Use();
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().matrix, uniform_name);
-		m_ShaderProgam.SetUniformMatrix4fv(glm::ortho(-800.f, 800.f, -450.f, 450.f, -100.f, 100.0f), "ortho");
+		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().projection, "ortho");
 		m_ShaderProgam.SetUniform1f(camera.zoom, "zoom");
 	}
 
@@ -45,5 +47,9 @@ namespace Blaze {
 		{
 			m_objects[i]->Draw(camera.GetCameraProp(), m_ShaderProgam);
 		}
+	}
+	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
+	{
+		glViewport(0, 0, width, height);
 	}
 }

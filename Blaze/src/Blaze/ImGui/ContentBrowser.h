@@ -9,7 +9,7 @@ struct ImGuiContext;
 
 namespace Blaze
 {
-	class ContentBrowser
+	class BLAZE_API ContentBrowser
 	{
 	public:
 		ContentBrowser();
@@ -17,8 +17,12 @@ namespace Blaze
 
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
+		static void SetSize(float width, float height);
 	private:
 		bool onFocus;
+	public:
+		static float m_width;
+		static float m_height;
 	};
 }
 

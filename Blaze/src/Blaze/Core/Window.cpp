@@ -9,7 +9,6 @@
 #include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
-
 	Window::Window(unsigned int width, int height, std::string title)
 		: m_prop(width, height, title)
 	{
@@ -26,7 +25,7 @@ namespace Blaze {
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
 		m_window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
 
@@ -40,6 +39,7 @@ namespace Blaze {
 		}
 
 		glfwSetWindowUserPointer(m_window, &this->m_prop);
+
 		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
@@ -66,7 +66,6 @@ namespace Blaze {
 				}
 		});
 	
-
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow* window, int button, int action, int mods)
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
@@ -101,9 +100,11 @@ namespace Blaze {
 				prop.m_callback(e);
 
 				if(Blaze::Camera::zoom < 100.f && Yoffset > 0.0f)
-				  Blaze::Camera::zoom += Yoffset  / 5.f;
+				  Blaze::Camera::zoom += Yoffset  / 10.f;
 				if (Blaze::Camera::zoom > .1f && Yoffset < 0.0f)
-					Blaze::Camera::zoom += Yoffset / 5.f;
+					Blaze::Camera::zoom += Yoffset / 10.f;
+
+				BZ_INFO(Blaze::Camera::zoom);
 		});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 
@@ -113,12 +114,42 @@ namespace Blaze {
 			prop.m_callback(e);
 		});
 
+		glfwSetWindowSizeCallback(m_window, [](GLFWwindow* window,int width,int height)
+		{
+				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
+
+				if (width < 800.f)
+				{
+					glfwSetWindowSize(window, prop.width,prop.height);
+				}
+				else
+				{
+					prop.width = width;
+				}
+
+				if (height < 450.f)
+				{
+					glfwSetWindowSize(window, prop.width, prop.height);
+				}
+				else
+				{
+					prop.height = height;
+				}
+
+				if (prop.height == height || prop.width == width)
+				{
+					WindowResizeEvent e(width, height);
+					prop.m_callback(e);
+				}
+		});
+
 
 		glfwMakeContextCurrent(m_window);
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
 			BZ_CORE_ERROR("Failed to load 'Glad' library");
 		}
+		glViewport(0, 0, 1600, 900);
 	}
 
 	void Window::SetVSync(bool enabled)

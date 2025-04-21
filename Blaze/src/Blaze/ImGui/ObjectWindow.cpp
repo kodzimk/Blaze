@@ -4,6 +4,8 @@
 
 namespace Blaze
 {
+	float ObjectWindow::height = 881.f;
+	float ObjectWindow::width  = 300.f;
 
 	MenuBar::MenuBar()
 		: onFocus(false)
@@ -49,7 +51,7 @@ namespace Blaze
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
 		ImGui::SetWindowPos(ImVec2(0, 19));
-		ImGui::SetWindowSize(ImVec2(300, 881));
+		ImGui::SetWindowSize(ImVec2(width, height));
 		
 		m_menuBar->OnUpdate();
 		
@@ -65,5 +67,11 @@ namespace Blaze
 	void ObjectWindow::AddObject(const char* name, ImVec2 size, ImVec2 pos)
 	{
 		m_objects.push_back(ObjectProp(name, size, pos));
+	}
+
+	void ObjectWindow::SetSize(float w, float h)
+	{
+		 width = w;
+		 height = h;
 	}
 }

@@ -38,6 +38,8 @@ namespace Blaze
 		inline void* GetNativeWindow() const {
 			return m_window;
 		};
+		inline unsigned int GetWidth() const {		return m_prop.width;	}
+		inline unsigned int GetHeight() const { return m_prop.height; }
 
 		void SetVSync(bool enabled);
 		bool IsVSync() const;

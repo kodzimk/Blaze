@@ -4,6 +4,9 @@
 
 namespace Blaze
 {
+	float ContentBrowser::m_height = 250.f;
+	float ContentBrowser::m_width = 1000.f;
+
 	ContentBrowser::ContentBrowser()
 		: onFocus(false)
 	{
@@ -19,9 +22,15 @@ namespace Blaze
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav);
 
 		ImGui::SetWindowPos(ImVec2(300, 650));
-		ImGui::SetWindowSize(ImVec2(1000, 250));
+		ImGui::SetWindowSize(ImVec2(m_width, m_height));
 		
 
 		ImGui::End();
+	}
+
+	void ContentBrowser::SetSize(float width, float height)
+	{
+		m_width = width;
+		m_height = height;
 	}
 }

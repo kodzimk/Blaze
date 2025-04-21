@@ -1,4 +1,5 @@
 #pragma once
+#include"Blaze/Core/Core.h"
 
 namespace Blaze
 {
@@ -14,7 +15,7 @@ namespace Blaze
 		bool onFocus;
 	};
 
-	class PropertiesWindow
+	class BLAZE_API PropertiesWindow
 	{
 	public:
 		PropertiesWindow();
@@ -22,8 +23,11 @@ namespace Blaze
 
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
+		static void SetSize(float width, float height);
 	private:
-		int width, height;
 		bool onFocus;
+	public:
+		static float width;
+		static float height;
 	};
 }

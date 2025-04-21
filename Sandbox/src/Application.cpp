@@ -26,15 +26,31 @@ public:
 	}
 
 	void OnEvent(Blaze::Event& event) override
-	{/*
-		BZ_TRACE("{0}", event.GetName());*/
+	{
+		if (event.GetEventType() == Blaze::EventType::WindowResize)
+		{
+			auto& e = (Blaze::WindowResizeEvent&)event;
+			camera->zoom *= e.GetWidth() / camera->m_PrevWidth;
+			camera->GetCameraProp().projection = glm::ortho((float)(-e.GetWidth() / 2), (float)(e.GetWidth() / 2), (float)(-e.GetHeight() / 2), (float)(e.GetHeight() / 2), -100.f, 100.f);
+		
+			Blaze::ObjectWindow::SetSize(Blaze::ObjectWindow::width * (e.GetWidth() / camera->m_PrevWidth),
+									     Blaze::ObjectWindow::height);
+
+			Blaze::PropertiesWindow::SetSize(Blaze::PropertiesWindow::width * (e.GetWidth() / camera->m_PrevWidth),
+											 Blaze::PropertiesWindow::height);
+
+			Blaze::ContentBrowser::SetSize(Blaze::ContentBrowser::m_width * (e.GetWidth() / camera->m_PrevWidth),
+										   Blaze::ContentBrowser::m_height);
+
+			camera->m_PrevWidth = e.GetWidth();
+		}
 	}
 
 public:
 	std::vector<float> vertices = {
-	-10.f,-10.f,0.0f,
-	-10.f,10.f,0.0f,
-	0.0f,10.0f,0.0f,
+	-100.f,-100.f,0.0f,
+	-100.f,100.f,0.0f,
+	0.0f,100.0f,0.0f,
 	};
 
 	Blaze::Renderer* render;

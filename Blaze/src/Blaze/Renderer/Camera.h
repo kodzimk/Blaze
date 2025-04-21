@@ -7,6 +7,7 @@ namespace Blaze {
 	typedef struct CameraProp{
 		glm::vec3 pos;
 		glm::mat4 matrix;
+		glm::mat4 projection;
 	}CameraProp;
 
 	class BLAZE_API Camera
@@ -18,12 +19,14 @@ namespace Blaze {
 		CameraProp GetCameraProp() const;
 		static Camera* CreateCamera(glm::vec3 pos = glm::vec3(0.0f, 0.0f, 1.0f),float zoom = 1.0f);
 
+		void SetProjection(float x, float y, float bottom, float top, float zNear, float zFar);
 		void CameraMove();
 		void SetCameraPos(glm::vec3 pos);
 		void TranslateCamera(glm::vec3 translate);
 	private:
 		CameraProp m_prop;
 	public:
+		float m_PrevWidth = 1600.f;
 		static float zoom;
 	};
 }

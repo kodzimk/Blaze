@@ -25,11 +25,13 @@ namespace Blaze
 
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
+
 	private:
 		bool onFocus;
+
 	};
 
-	class  ObjectWindow
+	class BLAZE_API ObjectWindow
 	{
 	public:
 		ObjectWindow();
@@ -38,6 +40,7 @@ namespace Blaze
 		void OnUpdate();
 		void AddObject(const char* name, ImVec2 size, ImVec2 pos);
 		bool OnFocus() const { return onFocus; }
+		static void SetSize(float width, float height);
 
 	private:
 		bool onFocus;
@@ -45,6 +48,8 @@ namespace Blaze
 
 	public:
 		MenuBar* m_menuBar;
+		static float width;
+		static float height;
 	};
 }
 

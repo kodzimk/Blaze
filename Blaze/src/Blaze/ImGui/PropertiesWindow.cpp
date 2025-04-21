@@ -8,8 +8,10 @@
 
 namespace Blaze
 {
+	float PropertiesWindow::width  = 300.f;
+	float PropertiesWindow::height = 881.f;
 	PropertiesWindow::PropertiesWindow()
-		: onFocus(false),width(300),height(881)
+		: onFocus(false)
 	{
 		
 	}
@@ -51,5 +53,11 @@ namespace Blaze
 		ImGui::Button("Start");
 
 		ImGui::End();
+	}
+
+	void PropertiesWindow::SetSize(float w, float h)
+	{
+		width = w;
+		height = h;
 	}
 }

@@ -11,6 +11,7 @@ namespace Blaze
 		m_prop.pos = pos;
 		m_prop.matrix = glm::mat4(1.0f);
 		m_prop.matrix = glm::translate(m_prop.matrix, m_prop.pos);
+		m_prop.projection = glm::ortho(-800.0f, 800.f, -450.0f, 450.f, -100.f, 100.0f);
 	}
 
 	Camera::~Camera()
@@ -26,9 +27,16 @@ namespace Blaze
 	{
 		return new Camera(pos,zoom);
 	}
+
+	void Camera::SetProjection(float x, float y, float bottom, float top, float zNear, float zFar)
+	{
+		m_prop.projection = glm::ortho(x, y, bottom, top, zNear, zFar);
+	}
+
 	void Camera::CameraMove()
 	{
 		static float x = 0.f, y = 0.f;
+		static int tempX, tempY = 0.0f;
 		if (Blaze::Input::IsKeyPressed(BZ_KEY_LEFT))
 		{
 			TranslateCamera(glm::vec3(0.005f, 0.0f, 0.0f));
@@ -48,16 +56,42 @@ namespace Blaze
 
 		if (Blaze::Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
 		{
-			if (x == Input::GetMouseX())
+		
+			if (tempX != Input::GetMouseX())
 			{
+				if (x < Input::GetMouseX())
+				{
 
-				TranslateCamera(glm::vec3(0.005f, 0.0f, 0.0f));
+					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / 100000.f, 0.0f, 0.0f));
+				}
+				else if (x > Input::GetMouseX())
+				{
+					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / 100000.f, 0.0f, 0.0f));
+				}
+			}
+			else
+			{
+				x = Input::GetMouseX();
 			}
 
-			if (y == Input::GetMouseY())
+			if (tempY != Input::GetMouseY())
 			{
-				TranslateCamera(glm::vec3(0.0f, 0.005f, 0.0f));
+
+				if (y < Input::GetMouseY())
+				{
+					TranslateCamera(glm::vec3(0.0f, -0.004f, 0.0f));
+				}
+				else if (y > Input::GetMouseY())
+				{
+					TranslateCamera(glm::vec3(0.0f, 0.004f, 0.0f));
+				}
 			}
+			else
+			{
+				y = Input::GetMouseY();
+			}
+			tempX = Input::GetMouseX();
+			tempY = Input::GetMouseY();
 		}
 		else
 		{

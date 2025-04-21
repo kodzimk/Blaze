@@ -13,7 +13,7 @@ namespace Blaze {
 		Application();
 		virtual ~Application();
 
-		void WindowResize();
+		bool Application::OnWindowResize(WindowResizeEvent& e);
 		bool Application::OnWindowClose(WindowCloseEvent& e);
 		void Run();
 		void OnEvent(Event& e);
@@ -27,7 +27,8 @@ namespace Blaze {
 		Window *m_window;
 		Context* m_context;
 
-		bool m_running;
+		bool m_running = true;
+		bool m_Minimized = false;
 		LayerStack m_layerStack;
 		static Application* s_Instance;
 	};
