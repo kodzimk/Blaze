@@ -23,9 +23,7 @@ namespace Blaze
 
 	void PropertiesWindow::OnUpdate()
 	{
-		ImGui::Begin("Properties", NULL,
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-		ImGui::SetWindowPos(ImVec2(1300, 19));
+		ImGui::Begin("Properties", NULL,ImGuiWindowFlags_NoCollapse);
 		ImGui::SetWindowSize(ImVec2(width, height));
 		ImGui::Text("Name Of Object: Object1");
 
@@ -57,7 +55,7 @@ namespace Blaze
 
 	void PropertiesWindow::SetSize(float w, float h)
 	{
-		width = w;
-		height = h;
+		 width = w;
+		 height = h;
 	}
 }

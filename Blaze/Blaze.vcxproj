@@ -152,7 +152,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
     <ClInclude Include="src\Blaze.h" />
     <ClInclude Include="src\Blaze\Core\Application.h" />
     <ClInclude Include="src\Blaze\Core\Core.h" />
@@ -166,11 +165,13 @@
     <ClInclude Include="src\Blaze\Event\Event.h" />
     <ClInclude Include="src\Blaze\Event\KeyCodes.h" />
     <ClInclude Include="src\Blaze\Event\KeyEvent.h" />
+    <ClInclude Include="src\Blaze\Event\MouseButtonCodes.h" />
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
+    <ClInclude Include="src\Blaze\ImGui\ViewPort.h" />
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
@@ -178,6 +179,7 @@
     <ClInclude Include="src\Blaze\Renderer\Shader.h" />
     <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
     <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
+    <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
     <ClInclude Include="src\bzpch.h" />
     <ClInclude Include="vendor\glm\glm\common.hpp" />
     <ClInclude Include="vendor\glm\glm\detail\_features.hpp" />
@@ -608,17 +610,16 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
     <ClCompile Include="src\Blaze\Core\Application.cpp" />
     <ClCompile Include="src\Blaze\Core\Layer.cpp" />
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp" />
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
-    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.h" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\ViewPort.cpp" />
     <ClCompile Include="src\Blaze\Logging\Log.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
@@ -626,6 +627,7 @@
     <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
     <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
     <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
+    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
     <ClCompile Include="src\bzpch.cpp" />
     <ClCompile Include="vendor\GLAD\src\glad.c" />
     <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp" />

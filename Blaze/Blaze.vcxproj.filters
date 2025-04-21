@@ -10,9 +10,6 @@
     <Filter Include="src\Blaze\Core">
       <UniqueIdentifier>{025C32BF-EE29-26C5-D7BD-96EBC32A022A}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Blaze\Error">
-      <UniqueIdentifier>{23B4A3A5-8F3F-116A-9850-945E045B6D6A}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\Blaze\Event">
       <UniqueIdentifier>{3BAEA5A5-A739-136A-B04A-965E1C556F6A}</UniqueIdentifier>
     </Filter>
@@ -24,6 +21,9 @@
     </Filter>
     <Filter Include="src\Blaze\Renderer">
       <UniqueIdentifier>{50400C56-3C24-CDAB-A584-C7FE9187B72D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\System">
+      <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
     <Filter Include="vendor">
       <UniqueIdentifier>{B3738122-9F15-ACF8-88D0-BF4C74113349}</UniqueIdentifier>
@@ -102,8 +102,14 @@
     <ClInclude Include="src\Blaze\Event\KeyEvent.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Event\MouseButtonCodes.h">
+      <Filter>src\Blaze\Event</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Event\MouseEvent.h">
       <Filter>src\Blaze\Event</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h">
+      <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
       <Filter>src\Blaze\ImGui</Filter>
@@ -112,6 +118,9 @@
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ViewPort.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Logging\Log.h">
@@ -134,6 +143,9 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\System\CoordinateSystem.h">
+      <Filter>src\Blaze\System</Filter>
     </ClInclude>
     <ClInclude Include="src\bzpch.h">
       <Filter>src</Filter>
@@ -1419,8 +1431,6 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
-    <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
-    <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1438,8 +1448,8 @@
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\Event\MouseButtonCodes.h">
-      <Filter>src\Blaze\Event</Filter>
+    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">
       <Filter>src\Blaze\ImGui</Filter>
@@ -1448,6 +1458,9 @@
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ViewPort.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Logging\Log.cpp">
@@ -1470,6 +1483,9 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp">
+      <Filter>src\Blaze\System</Filter>
     </ClCompile>
     <ClCompile Include="src\bzpch.cpp">
       <Filter>src</Filter>
@@ -1498,7 +1514,5 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
-    <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
   </ItemGroup>
 </Project>
