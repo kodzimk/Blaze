@@ -5,6 +5,7 @@
 #include"ObjectWindow.h"
 #include"ContentBrowser.h"
 #include"PropertiesWindow.h"
+#include"ViewPort.h"
 
 namespace Blaze
 {
@@ -29,6 +30,7 @@ namespace Blaze
 		PropertiesWindow* m_propWindow;
 		ObjectWindow* m_objectWindow;
 		ContentBrowser* m_contextWindow;
+		ViewPort* m_ViewPort;
 	};
 }
 

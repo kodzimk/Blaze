@@ -11,12 +11,13 @@ namespace Blaze
 {
 	Context::Context( GLFWwindow* window)
 	{
+
+		Init(window);
 		m_contextWindow = new ContentBrowser();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
 		m_startWindow = new StartWindow();
-
-		Init(window);
+		m_ViewPort = new ViewPort();
 	}
 
 	Context::~Context()
@@ -25,6 +26,7 @@ namespace Blaze
 		delete m_contextWindow;
 		delete m_propWindow;
 		delete m_startWindow;
+		delete m_ViewPort;
 
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
@@ -44,14 +46,24 @@ namespace Blaze
 		ImGui_ImplOpenGL3_Init("#version 450");
 
 		io_style = &ImGui::GetStyle();
-		io_style->Colors[ImGuiCol_Button] = ImVec4(0.0f, 0.0f, 1.f, 0.0f);
-		io_style->Colors[ImGuiCol_ButtonHovered] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
-		io_style->Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.f, 1.0f);
-		io_style->Colors[ImGuiCol_TitleBgActive] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-		io_style->Colors[ImGuiCol_Separator] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-		io_style->Colors[ImGuiCol_DragDropTarget] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-		io_style->Colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
+		auto& colors = ImGui::GetStyle().Colors;
+
+		colors[ImGuiCol_Button] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+		colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
+		colors[ImGuiCol_ButtonActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+	
+		colors[ImGuiCol_Tab] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabHovered] = ImVec4{ 0.38f, 0.3805f, 0.381f, 1.0f };
+		colors[ImGuiCol_TabActive] = ImVec4{ 0.28f, 0.2805f, 0.281f, 1.0f };
+		colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
+
+	
+		colors[ImGuiCol_TitleBg] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+
+		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
 	}
 
 	void Context::NewFrame()
@@ -66,8 +78,8 @@ namespace Blaze
 		ImGui::Render();
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());	
 		glfwMakeContextCurrent((GLFWwindow*)Window::GetNativeWindow());
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());	
 	}
 	void Context::OnUpdate()
 	{
@@ -78,11 +90,10 @@ namespace Blaze
 
 		// Set up window class
 		ImGuiWindowClass window_class;
-		window_class.ClassId = 0; // Default class ID
-		window_class.ParentViewportId = viewport->ID; // Parent viewport ID
+		window_class.ClassId = 0; 
+		window_class.ParentViewportId = viewport->ID; 
 		NewFrame();
 
-		// Create a new window for the dockspace
 		ImGui::SetNextWindowPos(viewport->Pos);
 		ImGui::SetNextWindowSize(viewport->Size);
 
@@ -90,7 +101,7 @@ namespace Blaze
 		ImGui::DockSpaceOverViewport(viewport, dockspace_flags, &window_class);
 
 
-		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
+		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 		m_contextWindow->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_objectWindow->OnUpdate();

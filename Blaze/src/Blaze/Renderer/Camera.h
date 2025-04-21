@@ -26,7 +26,6 @@ namespace Blaze {
 	private:
 		CameraProp m_prop;
 	public:
-		float m_PrevWidth = 1600.f;
 		static float zoom;
 	};
 }

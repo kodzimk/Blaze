@@ -27,22 +27,24 @@ public:
 
 	void OnEvent(Blaze::Event& event) override
 	{
+		static float height = 900.f, width = 1600.f;
 		if (event.GetEventType() == Blaze::EventType::WindowResize)
 		{
 			auto& e = (Blaze::WindowResizeEvent&)event;
-			camera->zoom *= e.GetWidth() / camera->m_PrevWidth;
+			camera->zoom *= e.GetWidth() / width;
 			camera->GetCameraProp().projection = glm::ortho((float)(-e.GetWidth() / 2), (float)(e.GetWidth() / 2), (float)(-e.GetHeight() / 2), (float)(e.GetHeight() / 2), -100.f, 100.f);
 		
-			Blaze::ObjectWindow::SetSize(Blaze::ObjectWindow::width * (e.GetWidth() / camera->m_PrevWidth),
-									     Blaze::ObjectWindow::height);
+			Blaze::ObjectWindow::SetSize(Blaze::ObjectWindow::width * (e.GetWidth() / width),
+									     Blaze::ObjectWindow::height * (e.GetWidth() / height));
 
-			Blaze::PropertiesWindow::SetSize(Blaze::PropertiesWindow::width * (e.GetWidth() / camera->m_PrevWidth),
-											 Blaze::PropertiesWindow::height);
+			Blaze::PropertiesWindow::SetSize(Blaze::PropertiesWindow::width * (e.GetWidth() / width),
+											 Blaze::PropertiesWindow::height * (e.GetWidth() / height));
 
-			Blaze::ContentBrowser::SetSize(Blaze::ContentBrowser::m_width * (e.GetWidth() / camera->m_PrevWidth),
-										   Blaze::ContentBrowser::m_height);
+			Blaze::ContentBrowser::SetSize(Blaze::ContentBrowser::m_width * (e.GetWidth() / width),
+										   Blaze::ContentBrowser::m_height * (e.GetWidth() / height));
 
-			camera->m_PrevWidth = e.GetWidth();
+			width = e.GetWidth();
+			height = e.GetHeight();
 		}
 	}
 
