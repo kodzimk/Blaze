@@ -47,9 +47,7 @@ namespace Blaze
 
 	void ObjectWindow::OnUpdate()
 	{
-		ImGui::Begin("Objects", NULL,
-		ImGuiWindowFlags_NoCollapse);
-
+		ImGui::Begin("Objects");
 		ImGui::SetWindowSize(ImVec2(width, height));
 		
 		m_menuBar->OnUpdate();

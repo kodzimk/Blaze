@@ -35,7 +35,7 @@ namespace Blaze
 		void Clear(float r = 0.0f, float b = 0.0f, float g = 0.0f, float a = 1.0f) const;
 		void Init(const WindowProp& prop);
 		void SetCallBackEvent(const EventCallbackfn& cb) { m_prop.m_callback = cb; };
-		inline void* GetNativeWindow() const {
+		 static void* GetNativeWindow() {
 			return m_window;
 		};
 		inline unsigned int GetWidth() const {		return m_prop.width;	}
@@ -45,7 +45,7 @@ namespace Blaze
 		bool IsVSync() const;
 
 	private:
-		GLFWwindow* m_window;
+		static GLFWwindow* m_window;
 		WindowProp m_prop;
 	};
 

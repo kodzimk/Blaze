@@ -9,6 +9,7 @@
 #include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
+	GLFWwindow* Window::m_window = nullptr;
 	Window::Window(unsigned int width, int height, std::string title)
 		: m_prop(width, height, title)
 	{
@@ -181,6 +182,7 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
+	/*	glfwMakeContextCurrent(m_window);*/
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}

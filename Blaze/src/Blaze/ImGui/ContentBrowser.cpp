@@ -18,8 +18,7 @@ namespace Blaze
 
 	void ContentBrowser::OnUpdate()
 	{
-		ImGui::Begin("Content Browser",NULL, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar
-			| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		ImGui::Begin("Content Browser");
 
 		ImGui::SetWindowSize(ImVec2(m_width, m_height));
 		ImGui::End();
