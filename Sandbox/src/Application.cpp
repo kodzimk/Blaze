@@ -7,8 +7,8 @@ public:
 		: Layer("Example")
 	{
 		render = new Blaze::Renderer(vertexSource,fragmentSource);
-		render->CreateObject(vertices);
-		render->GetGameObject("Object1").SetTexture("res/texture/wall.jpg");
+		render->CreateObject(vertices,indices);
+		render->GetGameObject("Object1").SetTexture("res/texture/container.jpg");
 		camera = Blaze::Camera::CreateCamera(glm::vec3(0.0f,0.0f,0.0f));
 	}
 
@@ -43,16 +43,19 @@ public:
 	}
 
 public:
-	std::vector<float> vertices = {
-	-100.f,-100.f,0.0f,1.0f,1.0f,
-	-100.f,100.f,0.0f,1.0f,0.0f,
-	0.0f,100.0f,0.0f,0.0f,0.0f,
+	std::vector<float> vertices =
+	{
+		 50.f,  50.f, 0.0f,    1.0f, 1.0f, // top right
+		 50.f, -50.f, 0.0f,    1.0f, 0.0f, // bottom right
+		-50.f, -50.f, 0.0f,    0.0f, 0.0f, // bottom left
+		-50.f,  50.f, 0.0f,    0.0f, 1.0f ,
 	};
 
-	std::vector<float> vertices1 = {
-    -200.f,-200.f,0.0f,
-    -150.f,150.f,0.0f,
-     0.0f,0.0f,0.0f,
+	std::vector<unsigned int> indices =
+	{
+		0, 3, 5, // Lower left triangle
+		3, 2, 4, // Upper triangle
+		5, 4, 1 // Lower right triangle
 	};
 
 
@@ -61,7 +64,7 @@ public:
 
 	const char* vertexSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 position;\n"
-		"layout (location = 0) in vec2 tex_coord;\n"
+		"layout (location = 1) in vec2 tex_coord;\n"
 		"uniform mat4 matrix;\n"
 		"uniform mat4 ortho;\n"
 		"uniform float zoom;\n"
