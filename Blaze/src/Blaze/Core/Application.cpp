@@ -16,7 +16,7 @@ namespace Blaze {
 		: m_running(true)
 	{
 		s_Instance = this;
-		m_window = Create();
+		m_window = Window::Create();
 		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
 	
 		m_context = new Context((GLFWwindow*)m_window->GetNativeWindow());

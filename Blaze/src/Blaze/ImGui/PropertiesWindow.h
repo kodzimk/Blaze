@@ -3,7 +3,7 @@
 
 namespace Blaze
 {
-	class StartWindow
+	class BLAZE_API StartWindow
 	{
 	public:
 		StartWindow();
@@ -11,8 +11,12 @@ namespace Blaze
 
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
+		static void SetSize(float width, float height);
 	private:
 		bool onFocus;
+	public:
+		static float width;
+		static float height;
 	};
 
 	class BLAZE_API PropertiesWindow

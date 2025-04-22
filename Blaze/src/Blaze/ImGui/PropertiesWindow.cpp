@@ -10,6 +10,10 @@ namespace Blaze
 {
 	float PropertiesWindow::width  = 300.f;
 	float PropertiesWindow::height = 881.f;
+
+	float StartWindow::width = 1000.f;
+	float StartWindow::height = 50.f;
+
 	PropertiesWindow::PropertiesWindow()
 		: onFocus(false)
 	{
@@ -29,6 +33,12 @@ namespace Blaze
 
 		ImGui::End();
 	}
+
+	void PropertiesWindow::SetSize(float w, float h)
+	{
+		width = w;
+		height = h;
+	}
 	
 	StartWindow::StartWindow()
 		: onFocus(false)
@@ -41,20 +51,18 @@ namespace Blaze
 
 	void StartWindow::OnUpdate()
 	{
+		ImGui::SetNextWindowSize(ImVec2(width, height));
+
 		ImGui::Begin(" ", NULL,
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar
-		| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-		ImGui::SetWindowPos(ImVec2(300, 19));
-		ImGui::SetWindowSize(ImVec2(1000, 20));
+		 ImGuiWindowFlags_NoCollapse| ImGuiWindowFlags_NoTitleBar
+		 | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		ImGui::Button("Start");
-
 		ImGui::End();
 	}
 
-	void PropertiesWindow::SetSize(float w, float h)
+	void StartWindow::SetSize(float w, float h)
 	{
-		 width = w;
-		 height = h;
+		width = w;
+		height = h;
 	}
 }

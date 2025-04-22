@@ -18,9 +18,9 @@ namespace Blaze
 
 	void ContentBrowser::OnUpdate()
 	{
+		ImGui::SetWindowSize(ImVec2(m_width, m_height));
 		ImGui::Begin("Content Browser");
 
-		ImGui::SetWindowSize(ImVec2(m_width, m_height));
 		ImGui::End();
 	}
 

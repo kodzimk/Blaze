@@ -32,16 +32,9 @@ public:
 		{
 			auto& e = (Blaze::WindowResizeEvent&)event;
 			camera->zoom *= e.GetWidth() / width;
+			camera->zoom *= e.GetHeight() / height;
+
 			camera->GetCameraProp().projection = glm::ortho((float)(-e.GetWidth() / 2), (float)(e.GetWidth() / 2), (float)(-e.GetHeight() / 2), (float)(e.GetHeight() / 2), -100.f, 100.f);
-		
-			Blaze::ObjectWindow::SetSize(Blaze::ObjectWindow::width * (e.GetWidth() / width),
-									     Blaze::ObjectWindow::height * (e.GetWidth() / height));
-
-			Blaze::PropertiesWindow::SetSize(Blaze::PropertiesWindow::width * (e.GetWidth() / width),
-											 Blaze::PropertiesWindow::height * (e.GetWidth() / height));
-
-			Blaze::ContentBrowser::SetSize(Blaze::ContentBrowser::m_width * (e.GetWidth() / width),
-										   Blaze::ContentBrowser::m_height * (e.GetWidth() / height));
 
 			width = e.GetWidth();
 			height = e.GetHeight();

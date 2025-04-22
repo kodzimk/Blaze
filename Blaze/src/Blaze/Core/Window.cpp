@@ -9,7 +9,6 @@
 #include"Blaze/Renderer/Camera.h"
 
 namespace Blaze {
-	GLFWwindow* Window::m_window = nullptr;
 	Window::Window(unsigned int width, int height, std::string title)
 		: m_prop(width, height, title)
 	{
@@ -100,12 +99,7 @@ namespace Blaze {
 				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
 				prop.m_callback(e);
 
-				if(Blaze::Camera::zoom < 100.f && Yoffset > 0.0f)
-				  Blaze::Camera::zoom += Yoffset  / 10.f;
-				if (Blaze::Camera::zoom > .1f && Yoffset < 0.0f)
-					Blaze::Camera::zoom += Yoffset / 10.f;
-
-				BZ_INFO(Blaze::Camera::zoom);
+				Blaze::Camera::zoom += Yoffset / 10.f;
 		});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 
@@ -121,7 +115,7 @@ namespace Blaze {
 
 				if (width < 800.f)
 				{
-					glfwSetWindowSize(window, prop.width,prop.height);
+					glfwSetWindowSize(window, prop.width, prop.height);
 				}
 				else
 				{
@@ -137,11 +131,8 @@ namespace Blaze {
 					prop.height = height;
 				}
 
-				if (prop.height == height || prop.width == width)
-				{
-					WindowResizeEvent e(width, height);
-					prop.m_callback(e);
-				}
+				WindowResizeEvent e(prop.width, prop.height);
+				prop.m_callback(e);
 		});
 
 
@@ -161,6 +152,11 @@ namespace Blaze {
 	bool Window::IsVSync() const
 	{
 		return m_prop.vSync;
+	}
+
+	Window* Window::Create()
+	{
+		return new Window(1600, 900, "Blaze Engine");
 	}
 
 	Window::~Window()
@@ -185,10 +181,5 @@ namespace Blaze {
 	/*	glfwMakeContextCurrent(m_window);*/
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
-	}
-
-	Window* Create()
-	{
-		return new Window(1600, 900, "Blaze Engine");
 	}
 }

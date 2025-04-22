@@ -4,7 +4,7 @@
 #include "../vendor/imgui/src/imgui_internal.h"  
 #include"../vendor/imgui/include/imgui_impl_glfw.h"
 #include"../vendor/imgui/include/imgui_impl_opengl3.h"
-#include"Blaze/Core/Window.h"
+#include"Blaze/Core/Application.h"
 #include"GLFW/glfw3.h"
 
 namespace Blaze
@@ -64,6 +64,7 @@ namespace Blaze
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
 
 		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
+		colors[ImGuiCol_DockingPreview] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
 	}
 
 	void Context::NewFrame()
@@ -78,30 +79,19 @@ namespace Blaze
 		ImGui::Render();
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
-		glfwMakeContextCurrent((GLFWwindow*)Window::GetNativeWindow());
+		glfwMakeContextCurrent((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());	
 	}
+
 	void Context::OnUpdate()
 	{
-		ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-		// Set up dockspace flags
-		ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-		// Set up window class
-		ImGuiWindowClass window_class;
-		window_class.ClassId = 0; 
-		window_class.ParentViewportId = viewport->ID; 
 		NewFrame();
 
-		ImGui::SetNextWindowPos(viewport->Pos);
-		ImGui::SetNextWindowSize(viewport->Size);
-
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 0.0f);
-		ImGui::DockSpaceOverViewport(viewport, dockspace_flags, &window_class);
-
+		ImGui::DockSpaceOverViewport(m_ViewPort->GetViewPort(), m_ViewPort->GetDockFlags(), &m_ViewPort->GetWindowClass());
 
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
