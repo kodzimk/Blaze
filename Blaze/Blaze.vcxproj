@@ -161,6 +161,7 @@
     <ClInclude Include="src\Blaze\Core\LayerStack.h" />
     <ClInclude Include="src\Blaze\Core\Window.h" />
     <ClInclude Include="src\Blaze\Core\WindowsInput.h" />
+    <ClInclude Include="src\Blaze\Dep\stb_image.h" />
     <ClInclude Include="src\Blaze\Event\ApplicationEvent.h" />
     <ClInclude Include="src\Blaze\Event\Event.h" />
     <ClInclude Include="src\Blaze\Event\KeyCodes.h" />
@@ -177,6 +178,7 @@
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
     <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\Blaze\Renderer\Shader.h" />
+    <ClInclude Include="src\Blaze\Renderer\Texture.h" />
     <ClInclude Include="src\Blaze\Renderer\VertexArray.h" />
     <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
     <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
@@ -625,6 +627,7 @@
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\Texture.cpp" />
     <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp" />
     <ClCompile Include="src\Blaze\Renderer\VertexBuffer.cpp" />
     <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />

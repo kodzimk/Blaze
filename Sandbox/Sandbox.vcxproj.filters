@@ -18,43 +18,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imconfig.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imgui_internal.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_rectpack.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_textedit.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Blaze\vendor\imgui\src\imstb_truetype.h">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui.cpp">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_demo.cpp">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_draw.cpp">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_tables.cpp">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Blaze\vendor\imgui\src\imgui_widgets.cpp">
-      <Filter>Blaze\vendor\imgui\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\Application.cpp">
       <Filter>src</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\texture\container.jpg" />
+    <Image Include="res\texture\wall.jpg" />
   </ItemGroup>
 </Project>

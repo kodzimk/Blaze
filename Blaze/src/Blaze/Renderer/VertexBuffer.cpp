@@ -10,6 +10,7 @@ namespace Blaze
 
 	VertexBuffer::~VertexBuffer()
 	{
+		glDeleteBuffers(1, &m_ID);
 	}
 
 	void VertexBuffer::Bind()

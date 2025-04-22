@@ -10,6 +10,9 @@
     <Filter Include="src\Blaze\Core">
       <UniqueIdentifier>{025C32BF-EE29-26C5-D7BD-96EBC32A022A}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Dep">
+      <UniqueIdentifier>{F2DE5634-5E9F-D26A-27DA-1BE893591747}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Blaze\Event">
       <UniqueIdentifier>{3BAEA5A5-A739-136A-B04A-965E1C556F6A}</UniqueIdentifier>
     </Filter>
@@ -90,6 +93,9 @@
     <ClInclude Include="src\Blaze\Core\WindowsInput.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Dep\stb_image.h">
+      <Filter>src\Blaze\Dep</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Event\ApplicationEvent.h">
       <Filter>src\Blaze\Event</Filter>
     </ClInclude>
@@ -136,6 +142,9 @@
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Shader.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Texture.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\VertexArray.h">
@@ -1476,6 +1485,9 @@
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Shader.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Texture.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\VertexArray.cpp">

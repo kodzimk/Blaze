@@ -18,7 +18,10 @@ namespace Blaze {
 		void Render(const Camera& camera);
 
 		static void OnWindowResize(uint32_t width, uint32_t height);
+		GameObject& GetGameObject(std::string name) { return *GetGameObjectByName(name); }
 
+	private:
+		GameObject* GetGameObjectByName(std::string name);
 	private:
 		Shader m_ShaderProgam;
 		std::vector<GameObject*> m_objects;

@@ -141,7 +141,7 @@ namespace Blaze {
 		{
 			BZ_CORE_ERROR("Failed to load 'Glad' library");
 		}
-		glViewport(0, 0, 1600, 900);
+		
 	}
 
 	void Window::SetVSync(bool enabled)
@@ -178,7 +178,7 @@ namespace Blaze {
 
 	void Window::OnUpdate()
 	{
-	/*	glfwMakeContextCurrent(m_window);*/
+		glViewport(0.0f, 0.0f, 1600.f, 900.f);
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}

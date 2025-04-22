@@ -33,7 +33,7 @@ namespace Blaze {
 
 	void Renderer::CreateObject(std::vector<float>& vertices,glm::vec4 color)
 	{
-		m_objects.push_back(new GameObject(vertices,color));
+		m_objects.push_back(new GameObject(vertices,color,"Object" + std::to_string(m_objects.size() + 1)));
 	}
 
 	void Renderer::CreateObject(GameObject *object)
@@ -51,5 +51,15 @@ namespace Blaze {
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
 	{
 		glViewport(0, 0, width, height);
+	}
+	GameObject* Renderer::GetGameObjectByName(std::string name)
+	{
+		for (size_t i = 0; i < m_objects.size(); i++)
+		{
+			if (m_objects[i]->GetName() == name)
+				return m_objects[i];
+		}
+
+		return nullptr;
 	}
 }

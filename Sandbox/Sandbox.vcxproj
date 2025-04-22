@@ -141,6 +141,10 @@
       <Project>{1337E60C-7F4B-0EBE-48CD-B11DB4A00AEF}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\texture\container.jpg" />
+    <Image Include="res\texture\wall.jpg" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
