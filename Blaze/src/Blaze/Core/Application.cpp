@@ -4,9 +4,9 @@
 #include"Blaze/Event/ApplicationEvent.h"
 #include"Blaze/Core/Input.h"
 #include"Blaze/Event/MouseButtonCodes.h"
-#include"GLFW/glfw3.h"
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Renderer.h"
+#include"GLFW/glfw3.h"
 
 namespace Blaze {	
 	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)

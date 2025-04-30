@@ -11,7 +11,9 @@ namespace Blaze
 		m_prop.pos = pos;
 		m_prop.matrix = glm::mat4(1.0f);
 		m_prop.matrix = glm::translate(m_prop.matrix, m_prop.pos);
-		m_prop.projection = glm::ortho(-800.f, 800.f,-450.f,450.f, -100.f, 100.0f);
+		m_prop.projection = glm::ortho(-800.f, 800.f, -450.f, 450.f, -100.f, 100.0f);
+		glm::mat4 view = glm::lookAt(m_prop.pos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		m_prop.projection = m_prop.projection * view;
 	}
 
 	Camera::~Camera()

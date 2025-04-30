@@ -11,7 +11,7 @@ namespace Blaze
 	class BLAZE_API GameObject
 	{
 	public:
-		GameObject(std::vector<float>& vertices, std::vector<unsigned int>& indices, glm::vec4 color,std::string name);
+		GameObject(std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color,std::string name);
 		virtual ~GameObject();
 
 		void Draw(const CameraProp& prop, Shader& const m_Shader);

@@ -45,17 +45,19 @@ public:
 public:
 	std::vector<float> vertices =
 	{
-		 50.f,  50.f, 0.0f,    1.0f, 1.0f, // top right
-		 50.f, -50.f, 0.0f,    1.0f, 0.0f, // bottom right
-		-50.f, -50.f, 0.0f,    0.0f, 0.0f, // bottom left
-		-50.f,  50.f, 0.0f,    0.0f, 1.0f ,
+		 -50.f,  -50.f, 0.0f, // top right
+		 50.f, -50.f, 0.0f,   // bottom right
+		50.f, 50.f, 0.0f,    
+		
+		 -50.f,-50.f,0.0f,   
+		 50.f,50.f,0.0f,     
+		 -50.f,50.f,0.0f,    // bottom left
 	};
 
 	std::vector<unsigned int> indices =
 	{
-		0, 3, 5, // Lower left triangle
-		3, 2, 4, // Upper triangle
-		5, 4, 1 // Lower right triangle
+		0,1,3,
+		1,2,3
 	};
 
 
@@ -64,26 +66,21 @@ public:
 
 	const char* vertexSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 position;\n"
-		"layout (location = 1) in vec2 tex_coord;\n"
 		"uniform mat4 matrix;\n"
 		"uniform mat4 ortho;\n"
 		"uniform float zoom;\n"
-		"out vec2 TexCoord;\n"
 		"uniform mat4 object_matrix;\n"
 		"out vec3 currentPos;\n"
 		"void main() {\n"
 		"gl_Position = vec4(matrix * object_matrix * ortho * vec4(position * zoom,1.0f));\n"
 		"currentPos = position;\n"
-		"TexCoord = tex_coord;\n"
 		"}\0";
 
 	const char* fragmentSource = "#version 330 core\n"
 		"uniform vec4 color;\n"
 		"out vec4 colour;\n"
-		"in vec2 TexCoord;\n"
-		"uniform sampler2D in_texture;\n"
 		"void main() {\n"
-		"colour = texture(in_texture,TexCoord);\n"
+		"colour = vec4(0.5f,0.0f,0.0f,1.0f);\n"
 		"}\0";
 };
 

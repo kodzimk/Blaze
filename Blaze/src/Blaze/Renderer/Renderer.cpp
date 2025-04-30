@@ -31,7 +31,7 @@ namespace Blaze {
 
 	}
 
-	void Renderer::CreateObject(std::vector<float>& vertices, std::vector<unsigned int>& indices,glm::vec4 color)
+	void Renderer::CreateObject( std::vector<float>& vertices, const std::vector<unsigned int>& indices,glm::vec4 color)
 	{
 		m_objects.push_back(new GameObject(vertices,indices,color,"Object" + std::to_string(m_objects.size() + 1)));
 	}

@@ -24,7 +24,7 @@ namespace Blaze
 		glBindVertexArray(0);
 	}
 
-	void VertexArray::AttribPointer(const VertexBuffer& buffer,int distance,int start)
+	void VertexArray::AttribPointer(const VertexBuffer& buffer,int nextData,int start)
 	{
 		switch (buffer.m_dataType)
 		{	
@@ -34,7 +34,7 @@ namespace Blaze
 			case FLOAT4:
 			{
 				glEnableVertexAttribArray(m_VertexBufferIndex);
-				glVertexAttribPointer(m_VertexBufferIndex, distance,
+				glVertexAttribPointer(m_VertexBufferIndex, nextData,
 					GL_FLOAT, GL_FALSE, buffer.m_stride * sizeof(float), (void*)(sizeof(float) * start));
 			
 				m_VertexBufferIndex++;
@@ -47,7 +47,7 @@ namespace Blaze
 			case INT4:
 			{
 				glEnableVertexAttribArray(m_VertexBufferIndex);
-				glVertexAttribPointer(m_VertexBufferIndex, buffer.m_stride,
+				glVertexAttribPointer(m_VertexBufferIndex, nextData,
 					GL_INT, GL_FALSE, buffer.m_stride * sizeof(GL_INT), (void*)0);
 
 				m_VertexBufferIndex++;
