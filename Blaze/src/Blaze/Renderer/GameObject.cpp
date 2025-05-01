@@ -6,20 +6,23 @@
 #include"Blaze/Logging/Log.h"
 
 namespace Blaze {
+	unsigned int VAO, VBO,EBO = 0;
 	Blaze::GameObject::GameObject(std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color, std::string name)
 		: m_Color(color)
 	{		
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
 
-		m_VertexArray.Bind();
-		m_VertexBuffer.Bind();
-		m_VertexBuffer.SetFloat(vertices.data(), sizeof(vertices), 5,FLOAT);
+		glBindVertexArray(VAO);
 
-		
-		m_VertexArray.AttribPointer(m_VertexBuffer,3,0);
-		m_Name = name;
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_STATIC_DRAW);
 
-		m_VertexBuffer.UnBind();
-		m_VertexArray.UnBind();
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+		glEnableVertexAttribArray(0);
 	}
 
 	Blaze::GameObject::~GameObject()
@@ -32,9 +35,10 @@ namespace Blaze {
 		m_Shader.SetUniform4fv(m_Color, "color");
 		m_Shader.SetUniformMatrix4fv(m_Matrix, "object_matrix");
 
-		m_VertexArray.Bind();
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
+
 	void GameObject::SetPosition(glm::vec3& pos)
 	{
 		m_Pos = pos;

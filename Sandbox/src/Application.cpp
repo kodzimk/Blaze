@@ -8,7 +8,6 @@ public:
 	{
 		render = new Blaze::Renderer(vertexSource,fragmentSource);
 		render->CreateObject(vertices,indices);
-		render->GetGameObject("Object1").SetTexture("res/texture/container.jpg");
 		camera = Blaze::Camera::CreateCamera(glm::vec3(0.0f,0.0f,0.0f));
 	}
 
@@ -45,19 +44,16 @@ public:
 public:
 	std::vector<float> vertices =
 	{
-		 -50.f,  -50.f, 0.0f, // top right
-		 50.f, -50.f, 0.0f,   // bottom right
-		50.f, 50.f, 0.0f,    
-		
-		 -50.f,-50.f,0.0f,   
-		 50.f,50.f,0.0f,     
-		 -50.f,50.f,0.0f,    // bottom left
+		-50.f, -50.f,0.0f,
+		-50.f, 50.f,0.0f,
+		50.f, 50.f,0.0f,
+		50.f, -50.f,0.0f,
 	};
 
 	std::vector<unsigned int> indices =
 	{
-		0,1,3,
-		1,2,3
+		 0, 1, 2,
+		 2, 3, 0
 	};
 
 
@@ -80,7 +76,7 @@ public:
 		"uniform vec4 color;\n"
 		"out vec4 colour;\n"
 		"void main() {\n"
-		"colour = vec4(0.5f,0.0f,0.0f,1.0f);\n"
+		"colour = vec4(1.0f,0.0f,0.0f,1.0f);\n"
 		"}\0";
 };
 

@@ -22,10 +22,10 @@ namespace Blaze {
 			BZ_CORE_ERROR("Cant initialize 'glfw' library");
 		}
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
 		m_window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
 
@@ -140,8 +140,7 @@ namespace Blaze {
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{
 			BZ_CORE_ERROR("Failed to load 'Glad' library");
-		}
-		
+		}	
 	}
 
 	void Window::SetVSync(bool enabled)

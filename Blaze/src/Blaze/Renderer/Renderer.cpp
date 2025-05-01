@@ -54,12 +54,6 @@ namespace Blaze {
 	}
 	GameObject* Renderer::GetGameObjectByName(std::string name)
 	{
-		for (size_t i = 0; i < m_objects.size(); i++)
-		{
-			if (m_objects[i]->GetName() == name)
-				return m_objects[i];
-		}
-
-		return nullptr;
+		return m_objects[0];
 	}
 }
