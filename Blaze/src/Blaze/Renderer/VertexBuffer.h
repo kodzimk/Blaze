@@ -27,7 +27,8 @@ namespace Blaze
 
 		void SetData(const void* data, uint32_t size);
 
-		void SetFloat(float* vertices, uint32_t size, uint32_t stride, DataType type);
+		void SetFloat(const float* vertices, uint32_t size, uint32_t stride);
+		void SetUInt(const unsigned int* vertices, uint32_t size, uint32_t stride);
 	private:
 		uint32_t m_ID;
 	public:

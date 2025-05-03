@@ -22,10 +22,9 @@ namespace Blaze {
 			BZ_CORE_ERROR("Cant initialize 'glfw' library");
 		}
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
 		m_window = glfwCreateWindow(prop.width, prop.height, prop.title.c_str(), NULL, NULL);
 
@@ -39,7 +38,6 @@ namespace Blaze {
 		}
 
 		glfwSetWindowUserPointer(m_window, &this->m_prop);
-
 		glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
@@ -171,13 +169,13 @@ namespace Blaze {
 
 	void Window::Clear(float r, float b, float g, float a) const
 	{
+	
 		glClearColor(r, g, b, a);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	void Window::OnUpdate()
 	{
-		glViewport(0.0f, 0.0f, 1600.f, 900.f);
 		glfwSwapBuffers(m_window);
 		glfwPollEvents();
 	}

@@ -10,7 +10,6 @@ namespace Blaze
 	{
 		m_prop.pos = pos;
 		m_prop.matrix = glm::mat4(1.0f);
-	
 		m_prop.projection = glm::ortho(-800.f, 800.f, -450.f, 450.f, -100.f, 100.0f);
 	}
 

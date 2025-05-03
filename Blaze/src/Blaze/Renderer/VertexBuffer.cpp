@@ -29,10 +29,20 @@ namespace Blaze
 		glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
 	}
 
-	void VertexBuffer::SetFloat(float* vertices, uint32_t size, uint32_t stride, DataType type)
+	void VertexBuffer::SetFloat(const float* vertices, uint32_t size, uint32_t stride)
 	{
 		m_stride = stride;
-		m_dataType = type;
+		m_dataType = FLOAT;
 		glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+	
 	}
+
+	void VertexBuffer::SetUInt(const unsigned int* vertices, uint32_t size, uint32_t stride)
+	{
+		m_stride = stride;
+		m_dataType = INT;
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+	}
+
+
 }

@@ -21,6 +21,7 @@
     <ClCompile Include="src\Application.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\glad.c" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\texture\container.jpg" />

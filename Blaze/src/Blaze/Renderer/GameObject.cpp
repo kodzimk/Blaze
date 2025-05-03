@@ -6,23 +6,25 @@
 #include"Blaze/Logging/Log.h"
 
 namespace Blaze {
-	unsigned int VAO, VBO,EBO = 0;
-	Blaze::GameObject::GameObject(std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color, std::string name)
+	Blaze::GameObject::GameObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color, std::string name)
 		: m_Color(color)
 	{		
-		glGenVertexArrays(1, &VAO);
-		glGenBuffers(1, &VBO);
-		glGenBuffers(1, &EBO);
+		
+		glGenBuffers(1, &m_EBO);
+		// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+		m_VertexArray.Bind();
 
-		glBindVertexArray(VAO);
+		m_VertexBuffer.Bind();
+		m_VertexBuffer.SetFloat(vertices.data(), vertices.size() * sizeof(float), 5);
 
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_EBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices.data(), GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-		glEnableVertexAttribArray(0);
+		m_VertexArray.AttribPointer(m_VertexBuffer, 3, 0);	
+		m_VertexArray.AttribPointer(m_VertexBuffer, 2, 3);
+		m_VertexBuffer.UnBind();
+
+		m_VertexArray.UnBind();
 	}
 
 	Blaze::GameObject::~GameObject()
@@ -35,7 +37,8 @@ namespace Blaze {
 		m_Shader.SetUniform4fv(m_Color, "color");
 		m_Shader.SetUniformMatrix4fv(m_Matrix, "object_matrix");
 
-		glBindVertexArray(VAO);
+		glBindTexture(GL_TEXTURE_2D, m_Texture.GetTextID());
+		m_VertexArray.Bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 
