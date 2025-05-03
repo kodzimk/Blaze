@@ -97,7 +97,11 @@ namespace Blaze {
 				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
 				prop.m_callback(e);
 
-				Blaze::Camera::zoom += Yoffset / 10.f;
+				if (Blaze::Camera::zoom + Yoffset / 20.f > 0)
+				{
+					Blaze::Camera::zoom += Yoffset / 20.f;
+					Blaze::Camera::ScaleCamera();
+				}
 		});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 

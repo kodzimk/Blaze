@@ -6,10 +6,13 @@
 namespace Blaze
 {
 	float Camera::zoom = 1.0f;
+	CameraProp Camera::m_prop;
 	Camera::Camera(glm::vec3 pos, float zoom)
 	{
 		m_prop.pos = pos;
 		m_prop.matrix = glm::mat4(1.0f);
+		m_prop.matrix = glm::translate(m_prop.matrix, m_prop.pos);
+
 		m_prop.projection = glm::ortho(-800.f, 800.f, -450.f, 450.f, -100.f, 100.0f);
 	}
 
@@ -25,6 +28,13 @@ namespace Blaze
 	Camera* Camera::CreateCamera(glm::vec3 pos,float zoom)
 	{
 		return new Camera(pos,zoom);
+	}
+
+	void Camera::ScaleCamera()
+	{
+		m_prop.matrix = glm::mat4(1.0f);
+		m_prop.matrix = glm::scale(m_prop.matrix, glm::vec3(zoom, zoom, 0.0f));
+		m_prop.matrix = glm::translate(m_prop.matrix, m_prop.pos);
 	}
 
 	void Camera::SetProjection(float x, float y, float bottom, float top, float zNear, float zFar)

@@ -24,7 +24,9 @@ public:
 
 	void OnUpdate() override
 	{
+		
 		camera->CameraMove();
+
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
 		render->EndScene();
@@ -79,12 +81,11 @@ public:
 		"layout (location = 1) in vec2 texCoord;\n"
 		"uniform mat4 matrix;\n"
 		"uniform mat4 ortho;\n"
-		"uniform float zoom;\n"
 		"out vec2 TexCoord;\n"
 		"uniform mat4 object_matrix;\n"
 		"void main()\n"
 		"{\n"
-		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos * zoom,1.0f));\n"
+		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos,1.0f));\n"
 		"   TexCoord = texCoord;\n"
 		"}\0";
 

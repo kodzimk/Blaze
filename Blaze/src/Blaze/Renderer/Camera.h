@@ -18,14 +18,14 @@ namespace Blaze {
 
 		CameraProp GetCameraProp() const;
 		static Camera* CreateCamera(glm::vec3 pos = glm::vec3(0.0f, 0.0f, 1.0f),float zoom = 1.0f);
+		static void ScaleCamera();
 
 		void SetProjection(float x, float y, float bottom, float top, float zNear, float zFar);
 		void CameraMove();
 		void SetCameraPos(glm::vec3 pos);
 		void TranslateCamera(glm::vec3 translate);
-	private:
-		CameraProp m_prop;
 	public:
+		static CameraProp m_prop;
 		static float zoom;
 	};
 }

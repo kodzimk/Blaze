@@ -21,9 +21,9 @@ namespace Blaze {
 	void Renderer::BeginScene(const Camera& camera,const char* uniform_name)
 	{
 		m_ShaderProgam.Use();
+		
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().matrix, uniform_name);
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().projection, "ortho");
-		m_ShaderProgam.SetUniform1f(camera.zoom, "zoom");
 	}
 
 	void Renderer::EndScene()
