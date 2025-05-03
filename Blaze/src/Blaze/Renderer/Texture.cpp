@@ -50,4 +50,13 @@ namespace Blaze
         }
         stbi_image_free(data);
 	}
+    void Texture::Bind()
+    {
+        glBindTexture(GL_TEXTURE_2D, m_texture);
+    }
+
+    void Texture::UnBind()
+    {
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }

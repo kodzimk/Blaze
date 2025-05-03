@@ -10,6 +10,8 @@ namespace Blaze
 		virtual ~Texture();
 
 		void Generate(std::string path);
+		void Bind();
+		void UnBind();
 		inline unsigned int GetTextID() const { return m_texture; }
 	private:
 		unsigned int m_texture;

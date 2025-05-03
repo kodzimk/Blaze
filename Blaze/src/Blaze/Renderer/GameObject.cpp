@@ -7,11 +7,10 @@
 
 namespace Blaze {
 	Blaze::GameObject::GameObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color, std::string name)
-		: m_Color(color)
+		: m_Color(color),m_Name(name)
 	{		
 		
 		glGenBuffers(1, &m_EBO);
-		// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 		m_VertexArray.Bind();
 
 		m_VertexBuffer.Bind();
@@ -37,9 +36,10 @@ namespace Blaze {
 		m_Shader.SetUniform4fv(m_Color, "color");
 		m_Shader.SetUniformMatrix4fv(m_Matrix, "object_matrix");
 
-		glBindTexture(GL_TEXTURE_2D, m_Texture.GetTextID());
+		m_Texture.Bind();
 		m_VertexArray.Bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		m_Texture.UnBind();
 	}
 
 	void GameObject::SetPosition(glm::vec3& pos)

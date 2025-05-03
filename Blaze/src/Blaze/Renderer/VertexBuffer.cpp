@@ -37,7 +37,7 @@ namespace Blaze
 	
 	}
 
-	void VertexBuffer::SetUInt(const unsigned int* vertices, uint32_t size, uint32_t stride)
+	void VertexBuffer::SetInt(const unsigned int* vertices, uint32_t size, uint32_t stride)
 	{
 		m_stride = stride;
 		m_dataType = INT;

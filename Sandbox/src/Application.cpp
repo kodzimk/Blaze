@@ -9,6 +9,9 @@ public:
 	{
 		render = new Blaze::Renderer(vertexShaderSource,fragmentShaderSource);
 		render->CreateObject(vertices,indices);
+		render->CreateObject(vertices, indices);
+		render->GetGameObject("Object2").SetTexture("res/texture/wall.jpg");
+		render->GetGameObject("Object2").SetPosition(glm::vec3(0.0f,0.5f,0.0f));
 		render->GetGameObject("Object1").SetTexture("res/texture/container.jpg");
 		camera = Blaze::Camera::CreateCamera(glm::vec3(0.0f,0.0f,0.0f));
 	}
@@ -21,6 +24,7 @@ public:
 
 	void OnUpdate() override
 	{
+		camera->CameraMove();
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
 		render->EndScene();
@@ -40,20 +44,29 @@ public:
 			width = e.GetWidth();
 			height = e.GetHeight();
 		}
+
+		if (event.GetEventType() == Blaze::EventType::KeyPressed)
+		{
+			auto& e = (Blaze::KeyPressedEvent&)event;
+			if (e.GetKeyCode() == BZ_KEY_SPACE)
+			{
+				render->GetGameObject("Object1").SetTexture("res/texture/wall.jpg");
+			}
+		}
 	}
 
 public:
 	std::vector<float> vertices =
 	{
 		 50.f,  50.f, 0.0f,1.0f, 1.0f,  // top right
-		 50.f, -50.f, 0.0f, 1.0f, 0.0f, // bottom right
-		-50.f, -50.f, 0.0f, 0.0f, 0.0f, // bottom left
+		 50.f, -50.f, 0.0f,1.0f, 0.0f, // bottom right
+		-50.f, -50.f, 0.0f,0.0f, 0.0f, // bottom left
 		-50.f,  50.f, 0.0f,0.0f, 1.0f,
 	};
 
 	std::vector<unsigned int> indices =
 	{
-		  0, 1, 3,  // first Triangle
+		0, 1, 3,
 		1, 2, 3 
 	};
 
@@ -74,7 +87,9 @@ public:
 		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos * zoom,1.0f));\n"
 		"   TexCoord = texCoord;\n"
 		"}\0";
+
 	const char* fragmentShaderSource = "#version 330 core\n"
+		"uniform vec4 color;\n"
 		"out vec4 FragColor;\n"
 		"in vec2 TexCoord;\n"
 		"uniform sampler2D in_texture;\n"
