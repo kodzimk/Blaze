@@ -3,6 +3,11 @@
 #include"Blaze/Event/KeyCodes.h"
 #include"Blaze/Event/MouseButtonCodes.h"
 
+#include"../vendor/ImGuizmo/ImGuizmo.h"
+#include"../vendor/ImGuizmo/ImCurveEdit.h"
+#include"../vendor/ImGuizmo/ImGradient.h"
+#include"../vendor/ImGuizmo/ImSequencer.h"
+
 namespace Blaze
 {
 	float Camera::zoom = 1.0f;
@@ -118,5 +123,45 @@ namespace Blaze
 	{
 		m_prop.pos += translate;
 		m_prop.matrix = glm::translate(m_prop.matrix, translate);
+	}
+
+	void EditTransform(const Camera& camera, matrix_t& matrix)
+	{
+		static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
+		static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+		if (ImGui::IsKeyPressed(ImGuiKey_A))
+			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+		if (ImGui::IsKeyPressed(ImGuiKey_B))
+			mCurrentGizmoOperation = ImGuizmo::ROTATE;
+		if (ImGui::IsKeyPressed(ImGuiKey_S)) // r Key
+			mCurrentGizmoOperation = ImGuizmo::SCALE;
+		if (ImGui::RadioButton("Translate", mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+			mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+			mCurrentGizmoOperation = ImGuizmo::ROTATE;
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+			mCurrentGizmoOperation = ImGuizmo::SCALE;
+		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+		ImGuizmo::DecomposeMatrixToComponents(matrix.m16, matrixTranslation, matrixRotation, matrixScale);
+		ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, matrix.m16);
+
+		if (mCurrentGizmoOperation != ImGuizmo::SCALE)
+		{
+			if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+				mCurrentGizmoMode = ImGuizmo::LOCAL;
+			ImGui::SameLine();
+			if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+				mCurrentGizmoMode = ImGuizmo::WORLD;
+		}
+		static bool useSnap(false);
+		if (ImGui::IsKeyPressed(ImGuiKey_0))
+			useSnap = !useSnap;
+		ImGui::Checkbox("", &useSnap);
+		ImGui::SameLine();
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+		ImGuizmo::Manipulate(&camera.GetCameraProp().pos[0],glm::v camera.GetCameraProp().projection, mCurrentGizmoOperation, mCurrentGizmoMode, matrix.m16, NULL, useSnap ? &snap.x : NULL);
 	}
 }

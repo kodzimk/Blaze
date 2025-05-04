@@ -183,6 +183,10 @@
     <ClInclude Include="src\Blaze\Renderer\VertexBuffer.h" />
     <ClInclude Include="src\Blaze\System\CoordinateSystem.h" />
     <ClInclude Include="src\bzpch.h" />
+    <ClInclude Include="vendor\ImGuizmo\ImCurveEdit.h" />
+    <ClInclude Include="vendor\ImGuizmo\ImGradient.h" />
+    <ClInclude Include="vendor\ImGuizmo\ImGuizmo.h" />
+    <ClInclude Include="vendor\ImGuizmo\ImSequencer.h" />
     <ClInclude Include="vendor\glm\glm\common.hpp" />
     <ClInclude Include="vendor\glm\glm\detail\_features.hpp" />
     <ClInclude Include="vendor\glm\glm\detail\_fixes.hpp" />
@@ -633,6 +637,10 @@
     <ClCompile Include="src\Blaze\System\CoordinateSystem.cpp" />
     <ClCompile Include="src\bzpch.cpp" />
     <ClCompile Include="vendor\GLAD\src\glad.c" />
+    <ClCompile Include="vendor\ImGuizmo\ImCurveEdit.cpp" />
+    <ClCompile Include="vendor\ImGuizmo\ImGradient.cpp" />
+    <ClCompile Include="vendor\ImGuizmo\ImGuizmo.cpp" />
+    <ClCompile Include="vendor\ImGuizmo\ImSequencer.cpp" />
     <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp" />
     <ClCompile Include="vendor\imgui\include\imgui_impl_opengl3.cpp" />
     <ClCompile Include="vendor\imgui\src\imgui.cpp" />

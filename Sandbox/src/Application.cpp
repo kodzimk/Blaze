@@ -26,7 +26,6 @@ public:
 	{
 		
 		camera->CameraMove();
-
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
 		render->EndScene();

@@ -35,6 +35,8 @@ project "Blaze"
 		"%{prj.name}/vendor/glm/glm/**.hpp",
 		"%{prj.name}/vendor/imgui/include/**.cpp",
 		"%{prj.name}/vendor/imgui/include/**.h",
+		"%{prj.name}/vendor/ImGuizmo/*.cpp",
+		"%{prj.name}/vendor/ImGuizmo/*.h",
 		"%{prj.name}/vendor/glm/glm/**.inl"
 	}
 
