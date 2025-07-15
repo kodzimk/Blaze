@@ -8,3 +8,4 @@ bin-int/
 # Files
 *.user
 /Blaze.sln
+__pycache__
