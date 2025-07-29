@@ -10,6 +10,7 @@ namespace Blaze
 	ContentBrowser::ContentBrowser()
 		: onFocus(false)
 	{
+		
 	}
 
 	ContentBrowser::~ContentBrowser()

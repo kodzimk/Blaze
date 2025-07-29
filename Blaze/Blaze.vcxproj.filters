@@ -1440,6 +1440,7 @@
     <ClInclude Include="vendor\imgui\src\imstb_truetype.h">
       <Filter>vendor\imgui\src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Gizmo.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Blaze\Core\Application.cpp">
@@ -1526,5 +1527,6 @@
     <ClCompile Include="vendor\imgui\src\imgui_widgets.cpp">
       <Filter>vendor\imgui\src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp" />
   </ItemGroup>
 </Project>

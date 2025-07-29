@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include"Camera.h"
 #include"Blaze/Core/Input.h"
 #include"Blaze/Event/KeyCodes.h"
 #include"Blaze/Event/MouseButtonCodes.h"
@@ -7,6 +7,7 @@ namespace Blaze
 {
 	float Camera::zoom = 1.0f;
 	CameraProp Camera::m_prop;
+
 	Camera::Camera(glm::vec3 pos, float zoom)
 	{
 		m_prop.pos = pos;
@@ -18,7 +19,7 @@ namespace Blaze
 
 	Camera::~Camera()
 	{
-
+		
 	}
 
 	CameraProp Camera::GetCameraProp() const
@@ -46,21 +47,24 @@ namespace Blaze
 	{
 		static float x = 0.f, y = 0.f;
 		static float tempX, tempY = 0.0f;
+		static float camera_speed = 0.005f;
+		static float div_by = 100000.f;
+
 		if (Blaze::Input::IsKeyPressed(BZ_KEY_LEFT))
 		{
-			TranslateCamera(glm::vec3(0.005f, 0.0f, 0.0f));
+			TranslateCamera(glm::vec3(camera_speed, 0.0f, 0.0f));
 		}
 		if (Blaze::Input::IsKeyPressed(BZ_KEY_RIGHT))
 		{
-			TranslateCamera(glm::vec3(-0.005f, 0.0f, 0.0f));
+			TranslateCamera(glm::vec3(-camera_speed, 0.0f, 0.0f));
 		}
 		if (Blaze::Input::IsKeyPressed(BZ_KEY_DOWN))
 		{
-			TranslateCamera(glm::vec3(0.0f, 0.005f, 0.0f));
+			TranslateCamera(glm::vec3(0.0f, camera_speed, 0.0f));
 		}
 		if (Blaze::Input::IsKeyPressed(BZ_KEY_UP))
 		{
-			TranslateCamera(glm::vec3(0.0f, -0.005f, 0.0f));
+			TranslateCamera(glm::vec3(0.0f, -camera_speed, 0.0f));
 		}
 
 		if (Blaze::Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
@@ -71,11 +75,11 @@ namespace Blaze
 				if (x < Input::GetMouseX())
 				{
 
-					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / 100000.f, 0.0f, 0.0f));
+					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / div_by, 0.0f, 0.0f));
 				}
 				else if (x > Input::GetMouseX())
 				{
-					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / 100000.f, 0.0f, 0.0f));
+					TranslateCamera(glm::vec3((Input::GetMouseX() - x) / div_by, 0.0f, 0.0f));
 				}
 			}
 			else

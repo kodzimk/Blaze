@@ -31,6 +31,43 @@ namespace Blaze
 				}
 				ImGui::EndMenu();
 			}
+			if (ImGui::BeginMenu("Build")) {
+				if( ImGui::MenuItem("Build", "Ctrl+B")) {
+				}
+				if (ImGui::MenuItem("Build only lightining", "Ctrl+R")) {
+				}
+				if( ImGui::BeginMenu("Project Package", "Ctrl+G")) {
+						if (ImGui::BeginMenu("Debugging")) {
+							if(ImGui::MenuItem("Linux")) {
+							}	
+							if(ImGui::MenuItem("MacOS")) {
+							}
+							if(ImGui::MenuItem("Windows")) {
+							}
+							ImGui::EndMenu();
+						}
+						if (ImGui::BeginMenu("Development")) {
+							if (ImGui::MenuItem("Linux")) {
+							}
+							if (ImGui::MenuItem("macOS")) {
+							}
+							if (ImGui::MenuItem("Windows")) {
+							}
+							ImGui::EndMenu();
+						}
+						if (ImGui::BeginMenu("Shipping")) {
+							if (ImGui::MenuItem("Linux")) {
+							}
+							if (ImGui::MenuItem("macOS")) {
+							}
+							if (ImGui::MenuItem("Windows")) {
+							}
+							ImGui::EndMenu();
+						}
+						ImGui::EndMenu();						
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::EndMainMenuBar();
 		}
 	}
@@ -49,7 +86,7 @@ namespace Blaze
 	{
 		ImGui::SetNextWindowSize(ImVec2(width, height));
 		ImGui::Begin("Objects");
-		
+
 		m_menuBar->OnUpdate();
 		
 		for (size_t i = 0; i < m_objects.size(); i++)

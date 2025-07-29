@@ -1,6 +1,6 @@
-#include"Blaze/Renderer/GameObject.h"
 #include"Blaze/Renderer/Shader.h"
 #include"Blaze/Core/Core.h"
+#include"Blaze/Renderer/Gizmo.h"
 
 namespace Blaze {
 	class Camera;
@@ -19,12 +19,14 @@ namespace Blaze {
 
 		static void OnWindowResize(uint32_t width, uint32_t height);
 		GameObject& GetGameObject(std::string name) { return *GetGameObjectByName(name); }
+		Gizmo& GetGizmo() { return *m_Gizmo; }
 
 	private:
 		GameObject* GetGameObjectByName(std::string name);
 	private:
 		Shader m_ShaderProgam;
 		std::vector<GameObject*> m_objects;
+		std::unique_ptr<Gizmo> m_Gizmo;
 	};
 }
 

@@ -14,6 +14,7 @@ public:
 		render->GetGameObject("Object2").SetPosition(glm::vec3(0.0f,0.5f,0.0f));
 		render->GetGameObject("Object1").SetTexture("res/texture/container.jpg");
 		camera = Blaze::Camera::CreateCamera(glm::vec3(0.0f,0.0f,0.0f));
+		
 	}
 
 	~ExampleLayer()
@@ -52,6 +53,33 @@ public:
 			if (e.GetKeyCode() == BZ_KEY_SPACE)
 			{
 				render->GetGameObject("Object1").SetTexture("res/texture/wall.jpg");
+			}
+		}
+
+		if (event.GetEventType() == Blaze::EventType::KeyPressed)
+		{
+			auto& e = (Blaze::KeyPressedEvent&)event;
+			if (e.GetKeyCode() == BZ_KEY_C)
+			{
+				render->GetGizmo().Focus(&render->GetGameObject("Object1"));
+			}
+		}
+
+		if (event.GetEventType() == Blaze::EventType::KeyPressed)
+		{
+			auto& e = (Blaze::KeyPressedEvent&)event;
+			if (e.GetKeyCode() == BZ_KEY_1)
+			{
+				render->GetGizmo().UnFocus();
+			}
+		}
+
+		if (event.GetEventType() == Blaze::EventType::KeyPressed)
+		{
+			auto& e = (Blaze::KeyPressedEvent&)event;
+			if (e.GetKeyCode() == BZ_KEY_T)
+			{
+				render->GetGizmo().MoveGizmo();
 			}
 		}
 	}

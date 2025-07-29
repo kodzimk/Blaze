@@ -4,8 +4,26 @@
 #include"glad/glad.h"
 
 namespace Blaze {
+	std::vector<float> vertices =
+	{
+		 50.f,  50.f, 0.0f,1.0f, 1.0f,  // top right
+		 50.f, -50.f, 0.0f,1.0f, 0.0f, // bottom right
+		-50.f, -50.f, 0.0f,0.0f, 0.0f, // bottom left
+		-50.f,  50.f, 0.0f,0.0f, 1.0f,
+	};
+
+	std::vector<unsigned int> indices =
+	{
+		0, 1, 3,
+		1, 2, 3
+	};
+
 	Renderer::Renderer(const char* vertexSource,const char* fragmentSource)
 	{
+		m_Gizmo = std::make_unique<Gizmo>(vertices, indices, glm::vec4(0.0f, 1.0f, 1.0f, 1.0f));
+		m_Gizmo->SetTexture("res/texture/wall.jpg");
+		m_Gizmo->Translate(glm::vec3(0.2f, 0.0f, 0.0f));
+
 		m_ShaderProgam.CreateProgram(vertexSource, fragmentSource);
 		m_ShaderProgam.LinkProgram();
 	}
@@ -43,10 +61,17 @@ namespace Blaze {
 
 	void Renderer::Render(const Camera& camera)
 	{
+		if (m_Gizmo->GetVisibility())
+		{
+			m_Gizmo->Draw(camera.GetCameraProp(), m_ShaderProgam);
+		}
+
 		for (size_t i = 0; i < m_objects.size(); ++i)
 		{
 			m_objects[i]->Draw(camera.GetCameraProp(), m_ShaderProgam);
 		}
+
+		
 	}
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
 	{

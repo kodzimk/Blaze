@@ -19,7 +19,7 @@ namespace Blaze
 		void Translate(glm::vec3& translate);
 		void SetTexture(std::string path);
 		inline std::string GetName() const { return m_Name; }
-	private:
+	protected:
 		VertexArray m_VertexArray;
 		VertexBuffer m_VertexBuffer;
 		unsigned int m_EBO;

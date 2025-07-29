@@ -40,6 +40,7 @@ namespace Blaze
          
 		io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;         
 		io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 
 		ImGui::StyleColorsDark();
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -91,6 +92,7 @@ namespace Blaze
 		ImGui::DockSpaceOverViewport(m_ViewPort->GetViewPort(), m_ViewPort->GetDockFlags(), &m_ViewPort->GetWindowClass());
 
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+		io_style->Colors[ImGuiCol_Tab] = ImVec4(0.15f, 0.1505f, 0.151f, 1.0f);
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_propWindow->OnUpdate();
