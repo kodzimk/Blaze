@@ -405,12 +405,21 @@ public:
 		if (event.GetEventType() == Blaze::EventType::KeyPressed)
 		{
 			auto& e = (Blaze::KeyPressedEvent&)event;
+			const bool ctrl = Blaze::Input::IsKeyPressed(BZ_KEY_LEFT_CONTROL) ||
+				Blaze::Input::IsKeyPressed(BZ_KEY_RIGHT_CONTROL);
+
+			if (e.GetKeyCode() == BZ_KEY_S && ctrl && !Blaze::UIWantTextInput())
+			{
+				if (Blaze::Project::SaveScene(*render))
+					ApplyProjectToBrowser();
+				return;
+			}
+
 			if (e.GetKeyCode() == BZ_KEY_SPACE)
 			{
 				render->GetGameObject("Object3").SetTexture("content/texture/wall.jpg");
 			}
 
-			// gizmo modes: R = move, T = rotate, Y = scale
 			if (e.GetKeyCode() == BZ_KEY_R)
 				gizmo->SetMode(Blaze::GizmoMode::Translate);
 			if (e.GetKeyCode() == BZ_KEY_T)
