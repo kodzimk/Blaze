@@ -26,6 +26,14 @@ namespace Blaze {
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().projection, "ortho");
 	}
 
+	void Renderer::BeginScene(const glm::mat4& viewMatrix, const char* uniform_name)
+	{
+		m_ShaderProgam.Use();
+
+		m_ShaderProgam.SetUniformMatrix4fv(viewMatrix, uniform_name);
+		m_ShaderProgam.SetUniformMatrix4fv(Camera::m_prop.projection, "ortho");
+	}
+
 	void Renderer::EndScene()
 	{
 
@@ -39,6 +47,23 @@ namespace Blaze {
 	void Renderer::CreateObject(GameObject *object)
 	{
 		m_objects.push_back(object);
+	}
+
+	bool Renderer::DestroyObject(GameObject* object)
+	{
+		if (!object)
+			return false;
+
+		for (auto it = m_objects.begin(); it != m_objects.end(); ++it)
+		{
+			if (*it == object)
+			{
+				delete *it;
+				m_objects.erase(it);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void Renderer::Render(const Camera& camera)

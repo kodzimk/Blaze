@@ -13,8 +13,9 @@ namespace Blaze
 		void Bind();
 		void UnBind();
 		inline unsigned int GetTextID() const { return m_texture; }
+		inline bool IsValid() const { return m_texture != 0; }
 	private:
-		unsigned int m_texture;
+		unsigned int m_texture = 0;
 	};
 }
 

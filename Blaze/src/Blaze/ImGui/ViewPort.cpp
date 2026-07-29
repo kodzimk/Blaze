@@ -12,7 +12,7 @@ namespace Blaze
 	ViewPort::ViewPort()
 	{
 		m_ViewPort = ImGui::GetMainViewport();
-		m_DockFlags = ImGuiDockNodeFlags_None;
+		m_DockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 		m_Window.ClassId = 0;
 		m_Window.ParentViewportId = m_ViewPort->ID;
 	}

@@ -14,8 +14,6 @@ namespace Blaze
 		void LinkProgram();
 		void Use();
 
-		// SetUniform
-
 		void SetUniform1f(float data, const char* uniform_name);
 		void SetUniform1i(int data, const char* uniform_name);
 

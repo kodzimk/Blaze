@@ -1,0 +1,33 @@
+#pragma once
+#include"Blaze/Core/Core.h"
+#include"bzpch.h"
+
+namespace Blaze
+{
+	class GameObject;
+	class Texture;
+
+	class BLAZE_API ComponentsWindow
+	{
+	public:
+		ComponentsWindow();
+		virtual ~ComponentsWindow();
+
+		void OnUpdate();
+		void SetSelectedObject(GameObject* object) { m_Selected = object; }
+		bool OnFocus() const { return onFocus; }
+		bool IsOpen() const { return m_Open; }
+		bool* GetOpenPtr() { return &m_Open; }
+		static void SetSize(float width, float height);
+	private:
+		Texture* GetThumbnail(const std::string& path);
+	private:
+		bool onFocus;
+		bool m_Open = true;
+		GameObject* m_Selected = nullptr;
+		std::unordered_map<std::string, Texture*> m_Thumbnails;
+	public:
+		static float width;
+		static float height;
+	};
+}

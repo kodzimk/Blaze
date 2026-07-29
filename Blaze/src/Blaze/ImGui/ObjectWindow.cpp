@@ -1,69 +1,545 @@
 #include "ObjectWindow.h"
 
 #include "../vendor/imgui/src/imgui.h"   
+#include "Blaze/Renderer/GameObject.h"
+#include "Blaze/Core/Project.h"
+#include "Blaze/Logging/Log.h"
+#include <cstring>
+#include <unordered_set>
+#include <algorithm>
+#include <filesystem>
 
 namespace Blaze
 {
 	float ObjectWindow::height = 881.f;
 	float ObjectWindow::width  = 300.f;
 
+	static const char* s_SceneObjectPayload = "BLAZE_SCENE_OBJECT";
+
+	HubAction ProjectHub::s_Action = HubAction::None;
+
+	ProjectHub::ProjectHub()
+	{
+	}
+
+	ProjectHub::~ProjectHub()
+	{
+	}
+
+	HubAction ProjectHub::ConsumeAction()
+	{
+		HubAction action = s_Action;
+		s_Action = HubAction::None;
+		return action;
+	}
+
+	void ProjectHub::OnUpdate()
+	{
+		if (Project::HasProject())
+			return;
+
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(ImVec2(viewport->GetCenter().x, viewport->GetCenter().y),
+			ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		ImGui::SetNextWindowSize(ImVec2(640.0f, 460.0f), ImGuiCond_Always);
+
+		ImGui::Begin("Blaze Projects", nullptr,
+			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
+
+		ImGui::TextUnformatted("Welcome to Blaze");
+		ImGui::TextDisabled("Open one of your projects or create a new one");
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		if (ImGui::Button("Create New Project...", ImVec2(200.0f, 34.0f)))
+		{
+			if (Project::NewProject())
+				s_Action = HubAction::CreateProject;
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Open From Disk...", ImVec2(200.0f, 34.0f)))
+		{
+			if (Project::OpenProjectDialog())
+				s_Action = HubAction::LoadProject;
+		}
+
+		ImGui::Spacing();
+		ImGui::TextUnformatted("Recent Projects");
+		ImGui::Separator();
+
+		std::vector<std::string> projects = Project::GetRecentProjects();
+
+		ImGui::BeginChild("HubProjectList", ImVec2(0, 0), true);
+		if (projects.empty())
+		{
+			ImGui::TextDisabled("No projects yet. Create your first one!");
+		}
+		else
+		{
+			for (size_t i = 0; i < projects.size(); ++i)
+			{
+				const std::string& path = projects[i];
+				std::string name = std::filesystem::path(path).stem().string();
+
+				ImGui::PushID((int)i);
+				bool openClicked = ImGui::Button("Open", ImVec2(60.0f, 0.0f));
+				ImGui::SameLine();
+				ImGui::BeginGroup();
+				ImGui::TextUnformatted(name.c_str());
+				ImGui::TextDisabled("%s", path.c_str());
+				ImGui::EndGroup();
+				if (openClicked || ImGui::IsItemClicked())
+				{
+					Project::SetProjectFromFile(path);
+					s_Action = HubAction::LoadProject;
+				}
+				ImGui::PopID();
+				ImGui::Separator();
+			}
+		}
+		ImGui::EndChild();
+
+		ImGui::End();
+	}
+
+	FileAction MenuBar::s_FileAction = FileAction::None;
+
 	MenuBar::MenuBar()
 		: onFocus(false)
 	{
-
 	}
+
 	MenuBar::~MenuBar()
 	{
-
 	}
 
-	void MenuBar::OnUpdate()
+	FileAction MenuBar::ConsumeFileAction()
 	{
-		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("File")) {
-				if (ImGui::MenuItem("Create")) {
-				}
-				if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				}
-				if (ImGui::MenuItem("Save", "Ctrl+S")) {
-				}
-				if (ImGui::MenuItem("Save as..")) {
-				}
-				ImGui::EndMenu();
-			}
-			ImGui::EndMainMenuBar();
+		FileAction action = s_FileAction;
+		s_FileAction = FileAction::None;
+		return action;
+	}
+
+	void MenuBar::OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen)
+	{
+		if (!ImGui::BeginMainMenuBar())
+			return;
+
+		onFocus = ImGui::IsWindowFocused();
+
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("New Project..."))
+				s_FileAction = FileAction::NewProject;
+			if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
+				s_FileAction = FileAction::OpenProject;
+			ImGui::Separator();
+			if (ImGui::MenuItem("Save", "Ctrl+S"))
+				s_FileAction = FileAction::Save;
+			if (ImGui::MenuItem("Save As..."))
+				s_FileAction = FileAction::SaveAs;
+			ImGui::Separator();
+			if (ImGui::MenuItem("Close Project"))
+				s_FileAction = FileAction::CloseProject;
+			ImGui::EndMenu();
 		}
+
+		if (ImGui::BeginMenu("Window"))
+		{
+			if (contentBrowserOpen)
+				ImGui::MenuItem("Content Browser", nullptr, contentBrowserOpen);
+			if (objectsOpen)
+				ImGui::MenuItem("Objects", nullptr, objectsOpen);
+			if (gameObjectOpen)
+				ImGui::MenuItem("GameObject", nullptr, gameObjectOpen);
+			if (componentsOpen)
+				ImGui::MenuItem("Components", nullptr, componentsOpen);
+			if (toolbarOpen)
+				ImGui::MenuItem("Toolbar", nullptr, toolbarOpen);
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMainMenuBar();
 	}
 
 	ObjectWindow::ObjectWindow()
-		: onFocus(false)
+		: onFocus(false), m_Selected(nullptr), m_PendingPick(nullptr), m_PendingDelete(nullptr),
+		  m_PendingDeleteFolderId(-1), m_RenamingObject(nullptr), m_RenamingFolderId(-1)
 	{
-		m_menuBar = new MenuBar();
 	}
+
 	ObjectWindow::~ObjectWindow()
 	{
-		delete m_menuBar;
+	}
+
+	void ObjectWindow::SyncHierarchy(const std::vector<GameObject*>& objects)
+	{
+		std::unordered_set<GameObject*> live(objects.begin(), objects.end());
+
+		auto prune = [&](std::vector<GameObject*>& list)
+		{
+			list.erase(std::remove_if(list.begin(), list.end(),
+				[&](GameObject* o) { return !o || live.find(o) == live.end(); }), list.end());
+		};
+
+		prune(m_RootObjects);
+		for (Folder& folder : m_Folders)
+			prune(folder.objects);
+
+		std::unordered_set<GameObject*> placed(m_RootObjects.begin(), m_RootObjects.end());
+		for (const Folder& folder : m_Folders)
+			placed.insert(folder.objects.begin(), folder.objects.end());
+
+		for (GameObject* object : objects)
+		{
+			if (object && placed.find(object) == placed.end())
+				m_RootObjects.push_back(object);
+		}
+	}
+
+	void ObjectWindow::SetObjects(const std::vector<GameObject*>& objects)
+	{
+		m_Objects = objects;
+		SyncHierarchy(objects);
+	}
+
+	void ObjectWindow::SetSelectedObject(GameObject* object)
+	{
+		m_Selected = object;
+	}
+
+	GameObject* ObjectWindow::ConsumePickedObject()
+	{
+		GameObject* picked = m_PendingPick;
+		m_PendingPick = nullptr;
+		return picked;
+	}
+
+	GameObject* ObjectWindow::ConsumePendingDelete()
+	{
+		GameObject* deleted = m_PendingDelete;
+		m_PendingDelete = nullptr;
+		return deleted;
+	}
+
+	void ObjectWindow::CreateFolder()
+	{
+		Folder folder;
+		folder.id = m_NextFolderId++;
+		folder.name = "New Folder";
+		int suffix = 1;
+		auto nameTaken = [&](const std::string& name)
+		{
+			for (const Folder& f : m_Folders)
+				if (f.name == name) return true;
+			return false;
+		};
+		while (nameTaken(folder.name))
+		{
+			folder.name = "New Folder (" + std::to_string(suffix) + ")";
+			++suffix;
+		}
+
+		m_Folders.push_back(folder);
+		StartRenameFolder(folder.id);
+		BZ_INFO("Created hierarchy folder: {0}", folder.name);
+	}
+
+	void ObjectWindow::DeleteFolder(int folderId)
+	{
+		for (auto it = m_Folders.begin(); it != m_Folders.end(); ++it)
+		{
+			if (it->id != folderId)
+				continue;
+
+			m_RootObjects.insert(m_RootObjects.end(), it->objects.begin(), it->objects.end());
+			if (m_RenamingFolderId == folderId)
+			{
+				m_RenamingFolderId = -1;
+				m_FocusRename = false;
+			}
+			m_Folders.erase(it);
+			return;
+		}
+	}
+
+	void ObjectWindow::RemoveObjectFromHierarchy(GameObject* object)
+	{
+		if (!object)
+			return;
+
+		m_RootObjects.erase(std::remove(m_RootObjects.begin(), m_RootObjects.end(), object), m_RootObjects.end());
+		for (Folder& folder : m_Folders)
+			folder.objects.erase(std::remove(folder.objects.begin(), folder.objects.end(), object), folder.objects.end());
+	}
+
+	void ObjectWindow::MoveObjectToFolder(GameObject* object, int folderId)
+	{
+		if (!object)
+			return;
+
+		RemoveObjectFromHierarchy(object);
+		if (folderId < 0)
+		{
+			m_RootObjects.push_back(object);
+			return;
+		}
+
+		for (Folder& folder : m_Folders)
+		{
+			if (folder.id == folderId)
+			{
+				folder.objects.push_back(object);
+				folder.open = true;
+				return;
+			}
+		}
+
+		m_RootObjects.push_back(object);
+	}
+
+	void ObjectWindow::StartRenameObject(GameObject* object)
+	{
+		if (!object)
+			return;
+
+		m_RenamingObject = object;
+		m_RenamingFolderId = -1;
+		std::memset(m_RenameBuffer, 0, sizeof(m_RenameBuffer));
+		std::strncpy(m_RenameBuffer, object->GetName().c_str(), sizeof(m_RenameBuffer) - 1);
+		m_FocusRename = true;
+	}
+
+	void ObjectWindow::StartRenameFolder(int folderId)
+	{
+		for (const Folder& folder : m_Folders)
+		{
+			if (folder.id != folderId)
+				continue;
+
+			m_RenamingFolderId = folderId;
+			m_RenamingObject = nullptr;
+			std::memset(m_RenameBuffer, 0, sizeof(m_RenameBuffer));
+			std::strncpy(m_RenameBuffer, folder.name.c_str(), sizeof(m_RenameBuffer) - 1);
+			m_FocusRename = true;
+			return;
+		}
+	}
+
+	void ObjectWindow::CommitRename()
+	{
+		std::string newName = m_RenameBuffer;
+		while (!newName.empty() && (newName.front() == ' ' || newName.front() == '\t'))
+			newName.erase(newName.begin());
+		while (!newName.empty() && (newName.back() == ' ' || newName.back() == '\t'))
+			newName.pop_back();
+
+		GameObject* object = m_RenamingObject;
+		int folderId = m_RenamingFolderId;
+		m_RenamingObject = nullptr;
+		m_RenamingFolderId = -1;
+		m_FocusRename = false;
+
+		if (newName.empty())
+		{
+			BZ_INFO("Rename cancelled: empty name");
+			return;
+		}
+
+		if (object)
+		{
+			object->SetName(newName);
+			BZ_INFO("Renamed object to: {0}", newName);
+			return;
+		}
+
+		if (folderId >= 0)
+		{
+			for (Folder& folder : m_Folders)
+			{
+				if (folder.id == folderId)
+				{
+					folder.name = newName;
+					BZ_INFO("Renamed folder to: {0}", newName);
+					return;
+				}
+			}
+		}
+	}
+
+	void ObjectWindow::DrawObjectProp(GameObject* object)
+	{
+		if (!object)
+			return;
+
+		ImGui::PushID(object);
+		bool selected = (object == m_Selected);
+
+		if (m_RenamingObject == object)
+		{
+			if (m_FocusRename)
+			{
+				ImGui::SetKeyboardFocusHere();
+				m_FocusRename = false;
+			}
+
+			bool renameDone = ImGui::InputText("##objrename", m_RenameBuffer, sizeof(m_RenameBuffer),
+				ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+			if (renameDone || ImGui::IsItemDeactivatedAfterEdit())
+				CommitRename();
+		}
+		else
+		{
+			std::string label = object->GetName();
+			if (object->IsCamera())
+				label += " (Camera)";
+
+			if (ImGui::Selectable(label.c_str(), selected))
+			{
+				m_Selected = object;
+				m_PendingPick = object;
+			}
+
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload(s_SceneObjectPayload, &object, sizeof(GameObject*));
+				ImGui::TextUnformatted(label.c_str());
+				ImGui::EndDragDropSource();
+			}
+		}
+
+		if (ImGui::BeginPopupContextItem("ObjectItemContext"))
+		{
+			m_Selected = object;
+			m_PendingPick = object;
+
+			if (ImGui::MenuItem("Rename"))
+				StartRenameObject(object);
+			if (ImGui::MenuItem("Delete"))
+			{
+				RemoveObjectFromHierarchy(object);
+				m_PendingDelete = object;
+			}
+			ImGui::EndPopup();
+		}
+
+		ImGui::PopID();
+	}
+
+	void ObjectWindow::DrawFolder(Folder& folder)
+	{
+		ImGui::PushID(folder.id);
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+		if (folder.open)
+			flags |= ImGuiTreeNodeFlags_DefaultOpen;
+
+		bool open = false;
+		if (m_RenamingFolderId == folder.id)
+		{
+			open = ImGui::TreeNodeEx("##foldernode", flags, "");
+			ImGui::SameLine();
+			if (m_FocusRename)
+			{
+				ImGui::SetKeyboardFocusHere();
+				m_FocusRename = false;
+			}
+			ImGui::SetNextItemWidth(-1.0f);
+			bool renameDone = ImGui::InputText("##folderrename", m_RenameBuffer, sizeof(m_RenameBuffer),
+				ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+			if (renameDone || ImGui::IsItemDeactivatedAfterEdit())
+				CommitRename();
+		}
+		else
+		{
+			open = ImGui::TreeNodeEx("##foldernode", flags, "[Folder] %s", folder.name.c_str());
+		}
+
+		folder.open = open;
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
+			{
+				GameObject* object = *(GameObject**)payload->Data;
+				MoveObjectToFolder(object, folder.id);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		if (ImGui::BeginPopupContextItem("FolderItemContext"))
+		{
+			if (ImGui::MenuItem("Rename"))
+				StartRenameFolder(folder.id);
+			if (ImGui::MenuItem("Delete Folder"))
+				m_PendingDeleteFolderId = folder.id;
+			ImGui::EndPopup();
+		}
+
+		if (open)
+		{
+			for (GameObject* object : folder.objects)
+				DrawObjectProp(object);
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	void ObjectWindow::DrawContextMenu()
+	{
+		if (ImGui::BeginPopupContextWindow("ObjectsWindowContext",
+			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ImGui::MenuItem("Create Folder"))
+				CreateFolder();
+			ImGui::EndPopup();
+		}
 	}
 
 	void ObjectWindow::OnUpdate()
 	{
-		ImGui::SetNextWindowSize(ImVec2(width, height));
-		ImGui::Begin("Objects");
-		
-		m_menuBar->OnUpdate();
-		
-		for (size_t i = 0; i < m_objects.size(); i++)
-		{
-			ImGui::SetCursorPos(m_objects[i].pos);
-			ImGui::Button(m_objects[i].name.c_str(), m_objects[i].size);
-		}
-	
-		ImGui::End();
-	}
+		if (!m_Open)
+			return;
 
-	void ObjectWindow::AddObject(const char* name, ImVec2 size, ImVec2 pos)
-	{
-		m_objects.push_back(ObjectProp(name, size, pos));
+		if (!ImGui::Begin("Objects", &m_Open))
+		{
+			ImGui::End();
+			return;
+		}
+
+		onFocus = ImGui::IsWindowFocused();
+
+		if (m_Folders.empty() && m_RootObjects.empty())
+			ImGui::TextDisabled("No objects in scene");
+
+		for (Folder& folder : m_Folders)
+			DrawFolder(folder);
+
+		for (GameObject* object : m_RootObjects)
+			DrawObjectProp(object);
+
+		ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, 28.0f));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
+			{
+				GameObject* object = *(GameObject**)payload->Data;
+				MoveObjectToFolder(object, -1);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		DrawContextMenu();
+
+		if (m_PendingDeleteFolderId >= 0)
+		{
+			DeleteFolder(m_PendingDeleteFolderId);
+			m_PendingDeleteFolderId = -1;
+		}
+
+		ImGui::End();
 	}
 
 	void ObjectWindow::SetSize(float w, float h)

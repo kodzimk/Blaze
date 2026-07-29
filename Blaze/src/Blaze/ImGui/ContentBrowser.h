@@ -9,6 +9,8 @@ struct ImGuiContext;
 
 namespace Blaze
 {
+	class Texture;
+
 	class BLAZE_API ContentBrowser
 	{
 	public:
@@ -17,12 +19,38 @@ namespace Blaze
 
 		void OnUpdate();
 		bool OnFocus() const { return onFocus; }
+		bool IsOpen() const { return m_Open; }
+		bool* GetOpenPtr() { return &m_Open; }
 		static void SetSize(float width, float height);
+
+		void SetRootDirectory(const std::string& path);
+
+		static bool ConsumePendingDrop(std::string& outPath);
+	private:
+		bool IsTextureFile(std::string extension) const;
+		Texture* GetThumbnail(const std::string& path);
+		void ImportTexture();
+		void CreateFolder();
+		void StartRename(const std::string& path);
+		void CommitRename();
+		void DrawContextMenu();
+		bool MoveTextureToFolder(const std::string& texturePath, const std::string& folderPath);
+		void InvalidateThumbnail(const std::string& path);
 	private:
 		bool onFocus;
+		bool m_Open = true;
+		std::string m_RootDir;
+		std::string m_CurrentDir;
+		std::unordered_map<std::string, Texture*> m_Thumbnails;
+
+		std::string m_RenamingPath;
+		char m_RenameBuffer[256] = {};
+		bool m_FocusRename = false;
+
+		static std::string s_DraggingPath;
+		static std::string s_PendingDropPath;
 	public:
 		static float m_width;
 		static float m_height;
 	};
 }
-

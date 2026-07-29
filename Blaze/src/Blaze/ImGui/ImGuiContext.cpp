@@ -5,10 +5,21 @@
 #include"../vendor/imgui/include/imgui_impl_glfw.h"
 #include"../vendor/imgui/include/imgui_impl_opengl3.h"
 #include"Blaze/Core/Application.h"
+#include"Blaze/Core/Project.h"
 #include"GLFW/glfw3.h"
 
 namespace Blaze
 {
+	bool UIWantCaptureMouse()
+	{
+		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantCaptureMouse;
+	}
+
+	bool UIWantTextInput()
+	{
+		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
+	}
+
 	Context::Context( GLFWwindow* window)
 	{
 
@@ -16,15 +27,23 @@ namespace Blaze
 		m_contextWindow = new ContentBrowser();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
+		m_componentsWindow = new ComponentsWindow();
 		m_startWindow = new StartWindow();
 		m_ViewPort = new ViewPort();
+		m_menuBar = new MenuBar();
+		m_gameWindow = new GameWindow();
+		m_projectHub = new ProjectHub();
 	}
 
 	Context::~Context()
 	{	
+		delete m_projectHub;
+		delete m_gameWindow;
+		delete m_menuBar;
 		delete m_objectWindow;
 		delete m_contextWindow;
 		delete m_propWindow;
+		delete m_componentsWindow;
 		delete m_startWindow;
 		delete m_ViewPort;
 
@@ -91,10 +110,27 @@ namespace Blaze
 		ImGui::DockSpaceOverViewport(m_ViewPort->GetViewPort(), m_ViewPort->GetDockFlags(), &m_ViewPort->GetWindowClass());
 
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+
+		// until a project is picked, only the project hub is shown
+		if (!Project::HasProject())
+		{
+			m_projectHub->OnUpdate();
+			EndFrame();
+			return;
+		}
+
+		m_menuBar->OnUpdate(
+			m_contextWindow->GetOpenPtr(),
+			m_objectWindow->GetOpenPtr(),
+			m_propWindow->GetOpenPtr(),
+			m_componentsWindow->GetOpenPtr(),
+			m_startWindow->GetOpenPtr());
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_propWindow->OnUpdate();
+		m_componentsWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
+		m_gameWindow->OnUpdate();
 		EndFrame();
 	}
 }

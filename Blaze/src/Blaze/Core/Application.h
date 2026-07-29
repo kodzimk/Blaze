@@ -20,6 +20,7 @@ namespace Blaze {
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_window; }
+		inline Context* GetContext() const { return m_context; }
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);

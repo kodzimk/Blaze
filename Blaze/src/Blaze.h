@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Blaze/Core/Application.h"
+#include"Blaze/Core/Project.h"
 #include"Blaze/Event/Event.h"
 #include"Blaze/Renderer/Renderer.h"
 #include"Blaze/Core/Layer.h"
@@ -11,10 +12,10 @@
 #include"Blaze/Event/KeyEvent.h"
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Camera.h"
+#include"Blaze/Renderer/Gizmo.h"
 #include"Blaze/ImGui/ObjectWindow.h"
 #include"Blaze/ImGui/PropertiesWindow.h"
+#include"Blaze/ImGui/ComponentsWindow.h"
 #include"Blaze/ImGui/ContentBrowser.h"
 
-// ---Entry Point---------------------
 #include "Blaze/Core/EntryPoint.h"
-// -----------------------------------

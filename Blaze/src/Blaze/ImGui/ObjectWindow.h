@@ -4,31 +4,54 @@
 
 namespace Blaze
 {
-	struct ObjectProp
+	class GameObject;
+
+	enum class FileAction
 	{
-		std::string name;
-		ImVec2 size;
-		ImVec2 pos;
-
-		ObjectProp(std::string name, ImVec2 size, ImVec2 pos) :
-			name(name), size(size), pos(pos)
-		{
-
-		}
+		None = 0,
+		NewProject,
+		OpenProject,
+		Save,
+		SaveAs,
+		CloseProject
 	};
 
-	class MenuBar
+	enum class HubAction
+	{
+		None = 0,
+		LoadProject,
+		CreateProject
+	};
+
+	// Startup screen shown while no project is loaded: lists recent projects
+	// and lets the user create or open one.
+	class BLAZE_API ProjectHub
+	{
+	public:
+		ProjectHub();
+		virtual ~ProjectHub();
+
+		void OnUpdate();
+
+		static HubAction ConsumeAction();
+	private:
+		static HubAction s_Action;
+	};
+
+	class BLAZE_API MenuBar
 	{
 	public:
 		MenuBar();
 		virtual ~MenuBar();
 
-		void OnUpdate();
+		void OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen);
 		bool OnFocus() const { return onFocus; }
+
+		static FileAction ConsumeFileAction();
 
 	private:
 		bool onFocus;
-
+		static FileAction s_FileAction;
 	};
 
 	class BLAZE_API ObjectWindow
@@ -38,18 +61,57 @@ namespace Blaze
 		virtual ~ObjectWindow();
 
 		void OnUpdate();
-		void AddObject(const char* name, ImVec2 size, ImVec2 pos);
 		bool OnFocus() const { return onFocus; }
+		bool IsOpen() const { return m_Open; }
+		bool* GetOpenPtr() { return &m_Open; }
 		static void SetSize(float width, float height);
 
+		void SetObjects(const std::vector<GameObject*>& objects);
+		void SetSelectedObject(GameObject* object);
+
+		GameObject* ConsumePickedObject();
+		GameObject* ConsumePendingDelete();
+
+	private:
+		struct Folder
+		{
+			int id = 0;
+			std::string name;
+			bool open = true;
+			std::vector<GameObject*> objects;
+		};
+
+		void SyncHierarchy(const std::vector<GameObject*>& objects);
+		void CreateFolder();
+		void DeleteFolder(int folderId);
+		void RemoveObjectFromHierarchy(GameObject* object);
+		void MoveObjectToFolder(GameObject* object, int folderId); // -1 = root
+		void StartRenameObject(GameObject* object);
+		void StartRenameFolder(int folderId);
+		void CommitRename();
+		void DrawObjectProp(GameObject* object);
+		void DrawFolder(Folder& folder);
+		void DrawContextMenu();
 	private:
 		bool onFocus;
-		std::vector<ObjectProp> m_objects;
+		bool m_Open = true;
+		std::vector<GameObject*> m_Objects;
+		std::vector<GameObject*> m_RootObjects;
+		std::vector<Folder> m_Folders;
+		int m_NextFolderId = 1;
+
+		GameObject* m_Selected = nullptr;
+		GameObject* m_PendingPick = nullptr;
+		GameObject* m_PendingDelete = nullptr;
+		int m_PendingDeleteFolderId = -1;
+
+		GameObject* m_RenamingObject = nullptr;
+		int m_RenamingFolderId = -1;
+		char m_RenameBuffer[256] = {};
+		bool m_FocusRename = false;
 
 	public:
-		MenuBar* m_menuBar;
 		static float width;
 		static float height;
 	};
 }
-

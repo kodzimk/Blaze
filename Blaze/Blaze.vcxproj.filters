@@ -93,6 +93,9 @@
     <ClInclude Include="src\Blaze\Core\LayerStack.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Core\Project.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Core\Window.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
@@ -132,6 +135,9 @@
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ComponentsWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ViewPort.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
@@ -142,6 +148,9 @@
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\GameObject.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Gizmo.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Renderer.h">
@@ -164,18 +173,6 @@
     </ClInclude>
     <ClInclude Include="src\bzpch.h">
       <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\ImGuizmo\ImCurveEdit.h">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\ImGuizmo\ImGradient.h">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\ImGuizmo\ImGuizmo.h">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\ImGuizmo\ImSequencer.h">
-      <Filter>vendor\ImGuizmo</Filter>
     </ClInclude>
     <ClInclude Include="vendor\glm\glm\common.hpp">
       <Filter>vendor\glm\glm</Filter>
@@ -1469,6 +1466,9 @@
     <ClCompile Include="src\Blaze\Core\LayerStack.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Core\Project.cpp">
+      <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Core\Window.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
@@ -1487,6 +1487,9 @@
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ComponentsWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ViewPort.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
@@ -1497,6 +1500,9 @@
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp">
@@ -1522,18 +1528,6 @@
     </ClCompile>
     <ClCompile Include="vendor\GLAD\src\glad.c">
       <Filter>vendor\GLAD\src</Filter>
-    </ClCompile>
-    <ClCompile Include="vendor\ImGuizmo\ImCurveEdit.cpp">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClCompile>
-    <ClCompile Include="vendor\ImGuizmo\ImGradient.cpp">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClCompile>
-    <ClCompile Include="vendor\ImGuizmo\ImGuizmo.cpp">
-      <Filter>vendor\ImGuizmo</Filter>
-    </ClCompile>
-    <ClCompile Include="vendor\ImGuizmo\ImSequencer.cpp">
-      <Filter>vendor\ImGuizmo</Filter>
     </ClCompile>
     <ClCompile Include="vendor\imgui\include\imgui_impl_glfw.cpp">
       <Filter>vendor\imgui\include</Filter>

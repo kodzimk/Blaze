@@ -20,6 +20,8 @@ namespace Blaze {
 		static Camera* CreateCamera(glm::vec3 pos = glm::vec3(0.0f, 0.0f, 1.0f),float zoom = 1.0f);
 		static void ScaleCamera();
 
+		static glm::vec2 ScreenToWorld(float mouseX, float mouseY, float windowWidth, float windowHeight);
+
 		void SetProjection(float x, float y, float bottom, float top, float zNear, float zFar);
 		void CameraMove();
 		void SetCameraPos(glm::vec3 pos);
