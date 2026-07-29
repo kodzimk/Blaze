@@ -26,6 +26,7 @@ namespace Blaze
 	ContentBrowser::ContentBrowser()
 		: onFocus(false), m_RootDir("content"), m_CurrentDir("content")
 	{
+		
 	}
 
 	ContentBrowser::~ContentBrowser()

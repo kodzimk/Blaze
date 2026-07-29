@@ -25,9 +25,6 @@
     <Filter Include="src\Blaze\Renderer">
       <UniqueIdentifier>{50400C56-3C24-CDAB-A584-C7FE9187B72D}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\Blaze\SceneComponent">
-      <UniqueIdentifier>{3A0531CA-262A-804A-4F75-65DA3BF97E68}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\Blaze\System">
       <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
@@ -39,9 +36,6 @@
     </Filter>
     <Filter Include="vendor\GLAD\src">
       <UniqueIdentifier>{31B12476-9D3C-923A-A64D-152F1258EE3A}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="vendor\ImGuizmo">
-      <UniqueIdentifier>{73BF7F4C-DF4A-ED10-E85B-700554664911}</UniqueIdentifier>
     </Filter>
     <Filter Include="vendor\glm">
       <UniqueIdentifier>{829FC5A8-6E57-07F6-D75E-E051C335A2E6}</UniqueIdentifier>
