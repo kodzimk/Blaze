@@ -11,6 +11,10 @@
 #include"ProjectSettingsWindow.h"
 #include"ViewPort.h"
 
+struct ImGuiViewport;
+typedef unsigned int ImGuiID;
+struct ImVec2;
+
 namespace Blaze
 {
 	BLAZE_API bool UIWantCaptureMouse();
@@ -30,8 +34,12 @@ namespace Blaze
 		void OnUpdate();
 
 	private:
+		void SetupDefaultDockLayout(ImGuiID dockspaceId, const ImVec2& size);
+
 		ImGuiIO* io = nullptr;
 		ImGuiStyle* io_style = nullptr;
+		bool m_DefaultDockChecked = false;
+		bool m_HadProjectLastFrame = false;
 
 	public:
 		StartWindow* m_startWindow;
@@ -48,4 +56,3 @@ namespace Blaze
 		ProjectHub* m_projectHub;
 	};
 }
-

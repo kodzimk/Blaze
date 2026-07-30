@@ -8,6 +8,7 @@
 #include"Blaze/Core/Project.h"
 #include"Blaze/Scripting/ScriptEngine.h"
 #include"GLFW/glfw3.h"
+#include <cstdio>
 
 namespace Blaze
 {
@@ -118,18 +119,85 @@ namespace Blaze
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());	
 	}
 
+	void Context::SetupDefaultDockLayout(ImGuiID dockspaceId, const ImVec2& size)
+	{
+		ImGui::DockBuilderRemoveNode(dockspaceId);
+		ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspaceId, size);
+
+		ImGuiID dockMain = dockspaceId;
+		ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Left, 0.16f, nullptr, &dockMain);
+		ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Right, 0.24f, nullptr, &dockMain);
+		ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Down, 0.28f, nullptr, &dockMain);
+		ImGuiID dockTop = ImGui::DockBuilderSplitNode(dockMain, ImGuiDir_Up, 0.07f, nullptr, &dockMain);
+
+		ImGui::DockBuilderDockWindow("Objects", dockLeft);
+		ImGui::DockBuilderDockWindow("Toolbar", dockTop);
+		ImGui::DockBuilderDockWindow("Content Browser", dockBottom);
+		ImGui::DockBuilderDockWindow("Components", dockRight);
+		ImGui::DockBuilderDockWindow("GameObject", dockRight);
+
+		ImGui::DockBuilderFinish(dockspaceId);
+	}
+
 	void Context::OnUpdate()
 	{
 		NewFrame();
 
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 0.0f);
-		ImGui::DockSpaceOverViewport(m_ViewPort->GetViewPort(), m_ViewPort->GetDockFlags(), &m_ViewPort->GetWindowClass());
+
+		const ImGuiViewport* viewport = m_ViewPort->GetViewPort();
+		if (viewport == nullptr)
+			viewport = ImGui::GetMainViewport();
+
+		ImGui::SetNextWindowPos(viewport->WorkPos);
+		ImGui::SetNextWindowSize(viewport->WorkSize);
+		ImGui::SetNextWindowViewport(viewport->ID);
+
+		ImGuiWindowFlags hostFlags =
+			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+		if (m_ViewPort->GetDockFlags() & ImGuiDockNodeFlags_PassthruCentralNode)
+			hostFlags |= ImGuiWindowFlags_NoBackground;
+
+		char hostLabel[32];
+		std::snprintf(hostLabel, sizeof(hostLabel), "DockSpaceViewport_%08X", viewport->ID);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::Begin(hostLabel, nullptr, hostFlags);
+		ImGui::PopStyleVar(3);
+
+		ImGuiID dockspaceId = ImGui::GetID("DockSpace");
+
+		const bool hasProject = Project::HasProject();
+		const bool projectJustOpened = hasProject && !m_HadProjectLastFrame;
+		m_HadProjectLastFrame = hasProject;
+
+		if (hasProject)
+		{
+			ImGuiDockNode* root = ImGui::DockBuilderGetNode(dockspaceId);
+			const bool needsDefault =
+				projectJustOpened ||
+				(!m_DefaultDockChecked && (root == nullptr || !root->IsSplitNode()));
+
+			if (needsDefault)
+				SetupDefaultDockLayout(dockspaceId, viewport->WorkSize);
+
+			m_DefaultDockChecked = true;
+		}
+
+		ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), m_ViewPort->GetDockFlags(), &m_ViewPort->GetWindowClass());
+		ImGui::End();
 
 		io_style->Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
 		// until a project is picked, only the project hub is shown
-		if (!Project::HasProject())
+		if (!hasProject)
 		{
+			m_DefaultDockChecked = false;
 			m_projectHub->OnUpdate();
 			EndFrame();
 			return;

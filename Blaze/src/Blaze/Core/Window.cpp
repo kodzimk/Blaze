@@ -8,8 +8,146 @@
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Camera.h"
 #include"Blaze/ImGui/ImGuiContext.h"
+#include"Blaze/Dep/stb_image.h"
+
+#include <filesystem>
+#include <vector>
+#include <string>
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
+
+namespace fs = std::filesystem;
 
 namespace Blaze {
+
+	static void ApplyBlazeWindowIcon(GLFWwindow* window)
+	{
+		if (!window)
+			return;
+
+		auto tryLoad = [](const fs::path& path, int& w, int& h) -> unsigned char*
+		{
+			std::error_code ec;
+			if (!fs::exists(path, ec))
+				return nullptr;
+			int channels = 0;
+			return stbi_load(path.string().c_str(), &w, &h, &channels, 4);
+		};
+
+		const char* sizedNames[] = {
+			"blaze-logo-16.png",
+			"blaze-logo-32.png",
+			"blaze-logo-48.png",
+		};
+
+		std::vector<GLFWimage> images;
+		std::vector<unsigned char*> owned;
+
+		auto addSizedFromDir = [&](const fs::path& dir) -> bool
+		{
+			std::vector<GLFWimage> localImages;
+			std::vector<unsigned char*> localOwned;
+			for (const char* name : sizedNames)
+			{
+				int w = 0, h = 0;
+				unsigned char* pixels = tryLoad(dir / name, w, h);
+				if (!pixels)
+				{
+					for (unsigned char* p : localOwned)
+						stbi_image_free(p);
+					return false;
+				}
+				GLFWimage img{};
+				img.width = w;
+				img.height = h;
+				img.pixels = pixels;
+				localImages.push_back(img);
+				localOwned.push_back(pixels);
+			}
+			images = std::move(localImages);
+			owned = std::move(localOwned);
+			return true;
+		};
+
+		std::vector<fs::path> sizedDirs = {
+			fs::path("content") / "icons",
+			fs::path("../Blaze/res/icons"),
+			fs::path("Blaze/res/icons"),
+			fs::path("res/icons"),
+		};
+#ifdef _WIN32
+		{
+			char modulePath[MAX_PATH] = {};
+			if (GetModuleFileNameA(nullptr, modulePath, MAX_PATH) > 0)
+			{
+				const fs::path exeDir = fs::path(modulePath).parent_path();
+				sizedDirs.push_back(exeDir / "content" / "icons");
+				sizedDirs.push_back(exeDir / "Blaze" / "res" / "icons");
+				sizedDirs.push_back(exeDir / ".." / ".." / ".." / "Blaze" / "res" / "icons");
+				sizedDirs.push_back(exeDir / ".." / ".." / ".." / "Sandbox" / "content" / "icons");
+			}
+		}
+#endif
+
+		for (const fs::path& dir : sizedDirs)
+		{
+			if (addSizedFromDir(dir))
+			{
+				BZ_CORE_INFO("Window icon: {0}", (dir / "blaze-logo-*.png").string());
+				break;
+			}
+		}
+
+		if (images.empty())
+		{
+			std::vector<fs::path> candidates = {
+				fs::path("content") / "icons" / "blaze-logo.png",
+				fs::path("../Blaze/res/icons") / "blaze-logo.png",
+				fs::path("Blaze/res/icons") / "blaze-logo.png",
+				fs::path("res/icons") / "blaze-logo.png",
+			};
+#ifdef _WIN32
+			{
+				char modulePath[MAX_PATH] = {};
+				if (GetModuleFileNameA(nullptr, modulePath, MAX_PATH) > 0)
+				{
+					const fs::path exeDir = fs::path(modulePath).parent_path();
+					candidates.push_back(exeDir / "content" / "icons" / "blaze-logo.png");
+					candidates.push_back(exeDir / "Blaze" / "res" / "icons" / "blaze-logo.png");
+					candidates.push_back(exeDir / ".." / ".." / ".." / "Blaze" / "res" / "icons" / "blaze-logo.png");
+					candidates.push_back(exeDir / ".." / ".." / ".." / "Sandbox" / "content" / "icons" / "blaze-logo.png");
+				}
+			}
+#endif
+			for (const fs::path& path : candidates)
+			{
+				int w = 0, h = 0;
+				unsigned char* pixels = tryLoad(path, w, h);
+				if (!pixels)
+					continue;
+				GLFWimage img{};
+				img.width = w;
+				img.height = h;
+				img.pixels = pixels;
+				images.push_back(img);
+				owned.push_back(pixels);
+				BZ_CORE_INFO("Window icon: {0}", path.string());
+				break;
+			}
+		}
+
+		if (!images.empty())
+			glfwSetWindowIcon(window, (int)images.size(), images.data());
+		else
+			BZ_CORE_WARN("Window icon not found (blaze-logo.png)");
+
+		for (unsigned char* pixels : owned)
+			stbi_image_free(pixels);
+	}
+
 	Window::Window(unsigned int width, int height, std::string title)
 		: m_prop(width, height, title)
 	{
@@ -36,6 +174,7 @@ namespace Blaze {
 		else
 		{
 			BZ_CORE_INFO("Creating window {0} ({1}, {2})", prop.title, prop.width, prop.height);
+			ApplyBlazeWindowIcon(m_window);
 		}
 
 		glfwSetWindowUserPointer(m_window, &this->m_prop);
