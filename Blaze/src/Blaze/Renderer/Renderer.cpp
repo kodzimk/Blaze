@@ -1,7 +1,11 @@
 #include "Renderer.h"
 #include"Blaze/Renderer/Camera.h"
 #include"Blaze/Core/Window.h"
+#include"Blaze/Audio/AudioEngine.h"
+#include"Blaze/Scripting/ScriptEngine.h"
 #include"glad/glad.h"
+#include <algorithm>
+#include <vector>
 
 namespace Blaze {
 	Renderer::Renderer(const char* vertexSource,const char* fragmentSource)
@@ -14,6 +18,8 @@ namespace Blaze {
 	{
 		for (size_t i = 0; i < m_objects.size(); ++i)
 		{
+			AudioEngine::RemoveObject(m_objects[i]);
+			ScriptEngine::RemoveObject(m_objects[i]);
 			delete m_objects[i];
 		}
 	}
@@ -58,6 +64,8 @@ namespace Blaze {
 		{
 			if (*it == object)
 			{
+				AudioEngine::RemoveObject(object);
+				ScriptEngine::RemoveObject(object);
 				delete *it;
 				m_objects.erase(it);
 				return true;
@@ -68,9 +76,19 @@ namespace Blaze {
 
 	void Renderer::Render(const Camera& camera)
 	{
-		for (size_t i = 0; i < m_objects.size(); ++i)
+		std::vector<GameObject*> sorted = m_objects;
+		std::stable_sort(sorted.begin(), sorted.end(),
+			[](GameObject* a, GameObject* b)
+			{
+				const int la = a ? a->GetLayer() : 0;
+				const int lb = b ? b->GetLayer() : 0;
+				return la < lb;
+			});
+
+		for (GameObject* object : sorted)
 		{
-			m_objects[i]->Draw(camera.GetCameraProp(), m_ShaderProgam);
+			if (object)
+				object->Draw(camera.GetCameraProp(), m_ShaderProgam);
 		}
 	}
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)

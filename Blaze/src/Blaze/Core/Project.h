@@ -5,15 +5,16 @@
 namespace Blaze
 {
 	class Renderer;
+	class ObjectWindow;
 
 	class BLAZE_API Project
 	{
 	public:
 		static bool NewProject();
 		static bool OpenProjectDialog();
-		static bool SaveScene(Renderer& renderer);
-		static bool SaveSceneAs(Renderer& renderer);
-		static bool LoadScene(Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices);
+		static bool SaveScene(Renderer& renderer, ObjectWindow* objectsWindow = nullptr);
+		static bool SaveSceneAs(Renderer& renderer, ObjectWindow* objectsWindow = nullptr);
+		static bool LoadScene(Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, ObjectWindow* objectsWindow = nullptr);
 
 		static bool HasProject();
 		static void CloseProject();

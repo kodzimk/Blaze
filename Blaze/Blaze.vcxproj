@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -79,7 +79,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;GLFW_INCLUDE_NONE;BZ_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;vendor\miniaudio;vendor\lua;vendor\sol2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -102,7 +102,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;GLFW_INCLUDE_NONE;BZ_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;vendor\miniaudio;vendor\lua;vendor\sol2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -129,7 +129,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>BZ_PLATFORM_WINDOWS;BZ_BUILD_DLL;GLFW_INCLUDE_NONE;BZ_DIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>vendor\spdlog\include;src;vendor\glfw3\include;vendor\GLAD\include;vendor\glm\glm;vendor\miniaudio;vendor\lua;vendor\sol2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -169,6 +169,7 @@
     <ClInclude Include="src\Blaze\Event\MouseButtonCodes.h" />
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
+    <ClInclude Include="src\Blaze\ImGui\ScriptEditorWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
@@ -179,6 +180,10 @@
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h" />
+    <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h" />
+    <ClInclude Include="src\Blaze\Audio\AudioEngine.h" />
+    <ClInclude Include="src\Blaze\Scripting\ScriptEngine.h" />
+    <ClInclude Include="src\Blaze\Scripting\OnScreenDebug.h" />
     <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\Blaze\Renderer\Shader.h" />
     <ClInclude Include="src\Blaze\Renderer\Texture.h" />
@@ -621,6 +626,7 @@
     <ClCompile Include="src\Blaze\Core\Window.cpp" />
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\ScriptEditorWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
@@ -631,6 +637,172 @@
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp" />
+    <ClCompile Include="src\Blaze\Physics\PhysicsWorld2D.cpp" />
+    <ClCompile Include="src\Blaze\Audio\AudioEngine.cpp" />
+    <ClCompile Include="src\Blaze\Scripting\ScriptEngine.cpp">
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\OnScreenDebug.cpp" />
+    <ClCompile Include="vendor\lua\lapi.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lauxlib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lbaselib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lcode.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lcorolib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lctype.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldblib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldebug.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldo.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldump.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lfunc.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lgc.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\linit.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\liolib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\llex.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lmathlib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lmem.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\loadlib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lobject.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lopcodes.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\loslib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lparser.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstate.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstring.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstrlib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltable.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltablib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltm.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lundump.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lutf8lib.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lvm.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lzio.c">
+      <CompileAs>CompileAsC</CompileAs>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Shader.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Texture.cpp" />

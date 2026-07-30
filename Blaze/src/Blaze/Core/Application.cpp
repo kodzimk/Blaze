@@ -55,7 +55,6 @@ namespace Blaze {
 			if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
 			{
 				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-				BZ_INFO("Locking");
 			}
 			else {
 				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);

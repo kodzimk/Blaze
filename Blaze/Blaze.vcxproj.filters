@@ -25,6 +25,18 @@
     <Filter Include="src\Blaze\Renderer">
       <UniqueIdentifier>{50400C56-3C24-CDAB-A584-C7FE9187B72D}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Scripting">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vendor\lua">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\Physics">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\Audio">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Blaze\System">
       <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
@@ -120,6 +132,9 @@
     <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ScriptEditorWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
@@ -146,6 +161,18 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h">
+      <Filter>src\Blaze\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Audio\AudioEngine.h">
+      <Filter>src\Blaze\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Scripting\ScriptEngine.h">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Scripting\OnScreenDebug.h">
+      <Filter>src\Blaze\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Renderer.h">
       <Filter>src\Blaze\Renderer</Filter>
@@ -1472,6 +1499,9 @@
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ScriptEditorWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
@@ -1498,6 +1528,114 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Physics\PhysicsWorld2D.cpp">
+      <Filter>src\Blaze\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Audio\AudioEngine.cpp">
+      <Filter>src\Blaze\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\ScriptEngine.cpp">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\OnScreenDebug.cpp">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lapi.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lauxlib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lbaselib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lcode.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lcorolib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lctype.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldblib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldebug.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldo.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ldump.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lfunc.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lgc.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\linit.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\liolib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\llex.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lmathlib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lmem.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\loadlib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lobject.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lopcodes.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\loslib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lparser.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstate.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstring.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lstrlib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltable.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltablib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\ltm.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lundump.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lutf8lib.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lvm.c">
+      <Filter>vendor\lua</Filter>
+    </ClCompile>
+    <ClCompile Include="vendor\lua\lzio.c">
+      <Filter>vendor\lua</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Renderer.cpp">
       <Filter>src\Blaze\Renderer</Filter>

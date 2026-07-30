@@ -1,0 +1,652 @@
+#include "ScriptEditorWindow.h"
+
+#include "../vendor/imgui/src/imgui.h"
+#include "Blaze/Logging/Log.h"
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+
+namespace Blaze
+{
+	ScriptEditorWindow* ScriptEditorWindow::s_Instance = nullptr;
+
+	const ScriptEditorWindow::CompletionItem* ScriptEditorWindow::GetCompletionCatalog(int& outCount)
+	{
+		static const CompletionItem kItems[] = {
+			{ "OnStart", "OnStart", "function OnStart()" },
+			{ "OnUpdate", "OnUpdate", "function OnUpdate(dt)" },
+			{ "OnCollisionBegin", "OnCollisionBegin", "function OnCollisionBegin(other)" },
+			{ "OnCollisionEnd", "OnCollisionEnd", "function OnCollisionEnd(other)" },
+			{ "OnCollisionEnter", "OnCollisionEnter", "alias of OnCollisionBegin" },
+			{ "OnCollisionExit", "OnCollisionExit", "alias of OnCollisionEnd" },
+			{ "Destroy", "Destroy", "Destroy(gameObject) or Destroy()" },
+			{ "self", "self", "this GameObject" },
+
+			{ "print", "print", "print(...)" },
+			{ "PrintString", "PrintString", "PrintString(message, duration?)" },
+			{ "SetLocation", "SetLocation", "SetLocation(x, y [, z])" },
+			{ "SetPosition", "SetPosition", "SetPosition(x, y [, z])" },
+			{ "GetLocation", "GetLocation", "x, y = GetLocation()" },
+			{ "SetRotation", "SetRotation", "SetRotation(degrees)" },
+			{ "GetRotation", "GetRotation", "degrees = GetRotation()" },
+			{ "Rotate", "Rotate", "Rotate(degrees)" },
+			{ "SetScale", "SetScale", "SetScale(x [, y])" },
+			{ "GetScale", "GetScale", "x, y = GetScale()" },
+			{ "Translate", "Translate", "Translate(x, y) or Translate({x=, y=})" },
+			{ "MOUSE_LEFT", "MOUSE_LEFT", "mouse button constant" },
+			{ "MOUSE_RIGHT", "MOUSE_RIGHT", "mouse button constant" },
+			{ "MOUSE_MIDDLE", "MOUSE_MIDDLE", "mouse button constant" },
+
+		
+			{ "Log", "Log", "Log.Info / Log.Warn" },
+			{ "Log.Info", "Log.Info", "Log.Info(message)" },
+			{ "Log.Warn", "Log.Warn", "Log.Warn(message)" },
+
+		
+			{ "Input", "Input", "Input.* keyboard / mouse" },
+			{ "Input.IsKeyDown", "Input.IsKeyDown", "Input.IsKeyDown(\"A\")" },
+			{ "Input.IsKeyPressed", "Input.IsKeyPressed", "Input.IsKeyPressed(\"SPACE\")" },
+			{ "Input.IsMouseDown", "Input.IsMouseDown", "Input.IsMouseDown(MOUSE_LEFT)" },
+			{ "Input.IsMousePressed", "Input.IsMousePressed", "Input.IsMousePressed(MOUSE_LEFT)" },
+			{ "Input.GetMouseX", "Input.GetMouseX", "Input.GetMouseX()" },
+			{ "Input.GetMouseY", "Input.GetMouseY", "Input.GetMouseY()" },
+
+		
+			{ "function", "function", "Lua keyword" },
+			{ "local", "local", "Lua keyword" },
+			{ "if", "if", "Lua keyword" },
+			{ "then", "then", "Lua keyword" },
+			{ "else", "else", "Lua keyword" },
+			{ "elseif", "elseif", "Lua keyword" },
+			{ "end", "end", "Lua keyword" },
+			{ "return", "return", "Lua keyword" },
+			{ "for", "for", "Lua keyword" },
+			{ "while", "while", "Lua keyword" },
+			{ "do", "do", "Lua keyword" },
+			{ "repeat", "repeat", "Lua keyword" },
+			{ "until", "until", "Lua keyword" },
+			{ "break", "break", "Lua keyword" },
+			{ "true", "true", "Lua boolean" },
+			{ "false", "false", "Lua boolean" },
+			{ "nil", "nil", "Lua nil" },
+			{ "and", "and", "Lua keyword" },
+			{ "or", "or", "Lua keyword" },
+			{ "not", "not", "Lua keyword" },
+			{ "math", "math", "Lua math library" },
+			{ "string", "string", "Lua string library" },
+			{ "table", "table", "Lua table library" },
+			{ "pairs", "pairs", "pairs(t)" },
+			{ "ipairs", "ipairs", "ipairs(t)" },
+			{ "tonumber", "tonumber", "tonumber(v)" },
+			{ "tostring", "tostring", "tostring(v)" },
+			{ "type", "type", "type(v)" },
+		};
+
+		outCount = (int)(sizeof(kItems) / sizeof(kItems[0]));
+		return kItems;
+	}
+
+	static bool StartsWithIgnoreCase(const char* text, const char* prefix)
+	{
+		if (!text || !prefix)
+			return false;
+		while (*prefix)
+		{
+			char a = (char)std::tolower((unsigned char)*text++);
+			char b = (char)std::tolower((unsigned char)*prefix++);
+			if (a != b)
+				return false;
+			if (!*(text - 1) && *prefix)
+				return false;
+		}
+		return true;
+	}
+
+	static bool IsIdentChar(char c)
+	{
+		return std::isalnum((unsigned char)c) || c == '_' || c == '.';
+	}
+
+	int ScriptEditorWindow::ScriptEditCallback(ImGuiInputTextCallbackData* data)
+	{
+		EditUserData* ud = (EditUserData*)data->UserData;
+		if (!ud || !ud->editor || !ud->buf)
+			return 0;
+
+		ScriptEditorWindow* editor = ud->editor;
+
+		if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+		{
+			size_t needed = (size_t)data->BufTextLen + 1;
+			if (ud->buf->size() < needed)
+				ud->buf->resize(needed + 1024);
+			data->Buf = ud->buf->data();
+			data->BufSize = (int)ud->buf->size();
+			return 0;
+		}
+
+		if (data->EventFlag == ImGuiInputTextFlags_CallbackCompletion)
+		{
+			// Tab always lands here (never use AllowTabInput).
+			if (!editor->m_Filtered.empty())
+			{
+				editor->AcceptCompletion();
+				editor->ApplyCompletionToCallback(data);
+			}
+			else
+			{
+				data->InsertChars(data->CursorPos, "\t");
+				editor->m_Dirty = true;
+			}
+			return 0;
+		}
+
+		if (data->EventFlag == ImGuiInputTextFlags_CallbackAlways)
+		{
+			editor->m_CursorPos = data->CursorPos;
+
+			if (editor->m_AcceptCompletion && !editor->m_PendingInsert.empty())
+				editor->ApplyCompletionToCallback(data);
+
+			if (!editor->m_SuppressCompletions)
+				editor->RebuildCompletionFilter(data->Buf, data->CursorPos);
+			else
+				editor->m_ShowCompletions = false;
+		}
+
+		return 0;
+	}
+
+	ScriptEditorWindow::ScriptEditorWindow()
+		: m_Open(false), m_Dirty(false)
+	{
+		s_Instance = this;
+		m_EditBuf.assign(4096, '\0');
+		m_EditUserData.buf = &m_EditBuf;
+		m_EditUserData.editor = this;
+	}
+
+	ScriptEditorWindow::~ScriptEditorWindow()
+	{
+		if (s_Instance == this)
+			s_Instance = nullptr;
+	}
+
+	void ScriptEditorWindow::OpenFile(const std::string& path)
+	{
+		if (s_Instance)
+			s_Instance->Open(path);
+	}
+
+	bool ScriptEditorWindow::IsFocused()
+	{
+		return s_Instance && s_Instance->m_Open && s_Instance->m_WindowFocused;
+	}
+
+	bool ScriptEditorWindow::IsBlockingMainEditor()
+	{
+		if (!s_Instance || !s_Instance->m_Open)
+			return false;
+		return s_Instance->m_WindowFocused || s_Instance->m_ShowCompletions;
+	}
+
+	void ScriptEditorWindow::SyncEditBufferFromString()
+	{
+		m_EditBuf.assign(m_Buffer.begin(), m_Buffer.end());
+		m_EditBuf.push_back('\0');
+		if (m_EditBuf.size() < 4096)
+			m_EditBuf.resize(4096, '\0');
+	}
+
+	void ScriptEditorWindow::SyncStringFromEditBuffer()
+	{
+		if (m_EditBuf.empty())
+		{
+			m_Buffer.clear();
+			return;
+		}
+		m_Buffer.assign(m_EditBuf.data());
+	}
+
+	void ScriptEditorWindow::Open(const std::string& path)
+	{
+		if (path.empty())
+			return;
+
+		if (m_Open && m_Dirty && !m_Path.empty() && m_Path != path)
+		{
+			SyncStringFromEditBuffer();
+			SaveFile();
+		}
+
+		if (!LoadFile(path))
+			return;
+
+		SyncEditBufferFromString();
+		m_Open = true;
+		m_Dirty = false;
+		m_FocusRequest = true;
+		m_PlaceFloating = true;
+		m_ShowCompletions = false;
+		m_ForceCompletions = false;
+		m_AcceptCompletion = false;
+		m_SuppressCompletions = false;
+		m_RefocusEditor = false;
+		m_Filtered.clear();
+	}
+
+	bool ScriptEditorWindow::LoadFile(const std::string& path)
+	{
+		std::ifstream in(path, std::ios::binary);
+		if (!in.is_open())
+		{
+			BZ_INFO("Script editor: failed to open {0}", path);
+			return false;
+		}
+
+		std::ostringstream ss;
+		ss << in.rdbuf();
+		m_Buffer = ss.str();
+		m_Path = path;
+		return true;
+	}
+
+	bool ScriptEditorWindow::SaveFile()
+	{
+		if (m_Path.empty())
+			return false;
+
+		SyncStringFromEditBuffer();
+
+		std::ofstream out(m_Path, std::ios::binary | std::ios::trunc);
+		if (!out.is_open())
+		{
+			BZ_INFO("Script editor: failed to save {0}", m_Path);
+			return false;
+		}
+
+		out.write(m_Buffer.data(), (std::streamsize)m_Buffer.size());
+		out.close();
+		m_Dirty = false;
+		BZ_INFO("Saved script: {0}", m_Path);
+		return true;
+	}
+
+	void ScriptEditorWindow::RebuildCompletionFilter(const char* buf, int cursor)
+	{
+		m_Filtered.clear();
+		m_Prefix.clear();
+		m_WordStart = cursor;
+
+		if (!buf || cursor < 0)
+		{
+			m_ShowCompletions = false;
+			return;
+		}
+
+		int start = cursor;
+		while (start > 0 && IsIdentChar(buf[start - 1]))
+			--start;
+
+		m_WordStart = start;
+		m_Prefix.assign(buf + start, buf + cursor);
+
+		const bool afterDot = !m_Prefix.empty() && m_Prefix.back() == '.';
+		const bool wantPopup = m_ForceCompletions || m_Prefix.size() >= 1 || afterDot;
+
+		if (!wantPopup)
+		{
+			m_ShowCompletions = false;
+			return;
+		}
+
+		int count = 0;
+		const CompletionItem* catalog = GetCompletionCatalog(count);
+		for (int i = 0; i < count; ++i)
+		{
+			const CompletionItem& item = catalog[i];
+			if (m_Prefix.empty() || StartsWithIgnoreCase(item.insert, m_Prefix.c_str()))
+			{
+				if (!m_ForceCompletions &&
+					m_Prefix.size() == std::strlen(item.insert) &&
+					StartsWithIgnoreCase(item.insert, m_Prefix.c_str()))
+				{
+					continue;
+				}
+				m_Filtered.push_back(&item);
+			}
+		}
+
+		if (m_Filtered.empty())
+		{
+			m_ShowCompletions = false;
+			return;
+		}
+
+		if (m_SelectedCompletion < 0 || m_SelectedCompletion >= (int)m_Filtered.size())
+			m_SelectedCompletion = 0;
+
+		m_ShowCompletions = true;
+	}
+
+	void ScriptEditorWindow::AcceptCompletion(int index)
+	{
+		if (m_Filtered.empty())
+			return;
+
+		if (index >= 0 && index < (int)m_Filtered.size())
+			m_SelectedCompletion = index;
+
+		if (m_SelectedCompletion < 0 || m_SelectedCompletion >= (int)m_Filtered.size())
+			return;
+
+		m_PendingInsert = m_Filtered[m_SelectedCompletion]->insert;
+		m_AcceptCompletion = true;
+		m_ForceCompletions = false;
+		m_SuppressCompletions = true;
+		m_ShowCompletions = false;
+	}
+
+	bool ScriptEditorWindow::ApplyCompletionToCallback(ImGuiInputTextCallbackData* data)
+	{
+		if (!m_AcceptCompletion || m_PendingInsert.empty() || !data)
+			return false;
+
+		int start = m_WordStart;
+		int end = data->CursorPos;
+		if (start < 0) start = 0;
+		if (end < start) end = start;
+		if (end > data->BufTextLen) end = data->BufTextLen;
+
+		data->DeleteChars(start, end - start);
+		data->InsertChars(start, m_PendingInsert.c_str());
+
+		m_AcceptCompletion = false;
+		m_PendingInsert.clear();
+		m_ShowCompletions = false;
+		m_ForceCompletions = false;
+		m_SuppressCompletions = true;
+		m_Dirty = true;
+		return true;
+	}
+
+	void ScriptEditorWindow::ApplyCompletionToBuffer()
+	{
+		if (!m_AcceptCompletion || m_PendingInsert.empty())
+			return;
+
+		SyncStringFromEditBuffer();
+
+		int len = (int)m_Buffer.size();
+		int start = m_WordStart;
+		int end = m_CursorPos;
+		if (start < 0) start = 0;
+		if (end < start) end = start;
+		if (end > len) end = len;
+
+		m_Buffer.replace((size_t)start, (size_t)(end - start), m_PendingInsert);
+		SyncEditBufferFromString();
+
+		m_CursorPos = start + (int)m_PendingInsert.size();
+		m_AcceptCompletion = false;
+		m_PendingInsert.clear();
+		m_ShowCompletions = false;
+		m_ForceCompletions = false;
+		m_SuppressCompletions = true;
+		m_Dirty = true;
+		m_RefocusEditor = true;
+	}
+
+	void ScriptEditorWindow::DrawCompletionsPopup()
+	{
+		if (!m_ShowCompletions || m_Filtered.empty() || !m_HasPopupAnchor)
+			return;
+
+		ImVec2 pos(m_PopupAnchorX, m_PopupAnchorY);
+
+		const float rowH = ImGui::GetTextLineHeightWithSpacing();
+		const float height = (std::min)(8.0f, (float)m_Filtered.size()) * rowH + 12.0f;
+
+		ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(360.0f, height), ImGuiCond_Always);
+
+	
+		ImGuiWindowFlags flags =
+			ImGuiWindowFlags_NoTitleBar |
+			ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoSavedSettings |
+			ImGuiWindowFlags_NoFocusOnAppearing |
+			ImGuiWindowFlags_NoNav |
+			ImGuiWindowFlags_NoNavInputs |
+			ImGuiWindowFlags_NoNavFocus |
+			ImGuiWindowFlags_Tooltip |
+			ImGuiWindowFlags_NoDocking;
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 4.0f));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.14f, 0.14f, 0.17f, 0.98f));
+		ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.35f, 0.45f, 0.70f, 0.90f));
+		ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.25f, 0.40f, 0.70f, 0.85f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.30f, 0.48f, 0.80f, 0.95f));
+		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(0.30f, 0.48f, 0.80f, 1.0f));
+
+		if (ImGui::Begin("##ScriptCompletions", nullptr, flags))
+		{
+			for (int i = 0; i < (int)m_Filtered.size(); ++i)
+			{
+				const CompletionItem* item = m_Filtered[i];
+				const bool selected = (i == m_SelectedCompletion);
+
+				char row[256];
+				std::snprintf(row, sizeof(row), "%s  -  %s##cmp%d", item->label, item->detail, i);
+
+				if (ImGui::Selectable(row, selected))
+				{
+					AcceptCompletion(i);
+					ApplyCompletionToBuffer();
+				}
+
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::End();
+
+		ImGui::PopStyleColor(5);
+		ImGui::PopStyleVar();
+	}
+
+	void ScriptEditorWindow::OnUpdate()
+	{
+		if (!m_Open)
+		{
+			m_WindowFocused = false;
+			return;
+		}
+
+		if (m_EditBuf.empty())
+			SyncEditBufferFromString();
+
+		std::string title = "Script Editor";
+		if (!m_Path.empty())
+		{
+			title += " - ";
+			title += m_Path;
+		}
+		if (m_Dirty)
+			title += " *";
+		title += "###ScriptEditor";
+
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.11f, 0.11f, 0.13f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.07f, 0.07f, 0.09f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.07f, 0.07f, 0.09f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.10f, 0.10f, 0.12f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.10f, 0.10f, 0.12f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.90f, 0.90f, 0.92f, 1.0f));
+
+		if (m_PlaceFloating)
+		{
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImVec2 size(680.0f, 460.0f);
+			ImVec2 pos(
+				viewport->WorkPos.x + viewport->WorkSize.x - size.x - 24.0f,
+				viewport->WorkPos.y + 72.0f);
+			ImGui::SetNextWindowDockID(0, ImGuiCond_Always);
+			ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+			ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+			ImGui::SetNextWindowViewport(viewport->ID);
+			m_PlaceFloating = false;
+		}
+
+		if (m_FocusRequest)
+		{
+			ImGui::SetNextWindowFocus();
+			m_FocusRequest = false;
+		}
+
+		const ImGuiWindowFlags flags =
+			ImGuiWindowFlags_NoDocking |
+			ImGuiWindowFlags_NoCollapse;
+
+		if (!ImGui::Begin(title.c_str(), &m_Open, flags))
+		{
+			m_WindowFocused = false;
+			ImGui::End();
+			ImGui::PopStyleColor(6);
+			return;
+		}
+
+		m_WindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+		if (m_WindowFocused)
+			ImGui::SetNextFrameWantCaptureKeyboard(true);
+
+		if (ImGui::Button("Save"))
+			SaveFile();
+		ImGui::SameLine();
+		if (ImGui::Button("Float Reset"))
+			m_PlaceFloating = true;
+		ImGui::SameLine();
+		ImGui::TextDisabled("Ctrl+S save  |  Ctrl+Space IntelliSense");
+		ImGui::Separator();
+
+		ImVec2 avail = ImGui::GetContentRegionAvail();
+		if (avail.x < 50.0f) avail.x = 50.0f;
+		if (avail.y < 50.0f) avail.y = 50.0f;
+
+		ImGui::BeginChild("##ScriptCodeChild", avail, true,
+			ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+		ImVec2 textSize = ImGui::GetContentRegionAvail();
+		if (textSize.x < 1.0f) textSize.x = 1.0f;
+		if (textSize.y < 1.0f) textSize.y = 1.0f;
+
+		if (m_EditBuf.size() < 2)
+			m_EditBuf.assign(4096, '\0');
+
+		m_EditUserData.buf = &m_EditBuf;
+		m_EditUserData.editor = this;
+
+		ImGuiInputTextFlags textFlags =
+			ImGuiInputTextFlags_CallbackResize |
+			ImGuiInputTextFlags_CallbackAlways |
+			ImGuiInputTextFlags_CallbackCompletion;
+
+		ImGuiIO& io = ImGui::GetIO();
+		const bool editorActive = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+
+		if (editorActive && io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Space, false))
+		{
+			m_ForceCompletions = true;
+			m_SuppressCompletions = false;
+			m_ShowCompletions = true;
+		}
+
+		// Clear suppress once user types something new.
+		if (m_SuppressCompletions && editorActive)
+		{
+			for (int n = 0; n < io.InputQueueCharacters.Size; n++)
+			{
+				if (io.InputQueueCharacters[n] != 0)
+				{
+					m_SuppressCompletions = false;
+					break;
+				}
+			}
+			if (ImGui::IsKeyPressed(ImGuiKey_Backspace, false) ||
+				ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+			{
+				m_SuppressCompletions = false;
+			}
+		}
+
+		if (m_ShowCompletions && editorActive)
+		{
+			if (ImGui::IsKeyPressed(ImGuiKey_Escape, false) ||
+				ImGui::IsKeyPressed(ImGuiKey_Enter, false))
+			{
+				// Esc closes list; Enter closes list and still inserts a newline in the editor.
+				m_ShowCompletions = false;
+				m_ForceCompletions = false;
+				m_SuppressCompletions = true;
+			}
+			else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow, false))
+			{
+				if (m_SelectedCompletion > 0)
+					--m_SelectedCompletion;
+			}
+			else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow, false))
+			{
+				if (m_SelectedCompletion + 1 < (int)m_Filtered.size())
+					++m_SelectedCompletion;
+			}
+			// Tab applies via CallbackCompletion. Enter goes to a new line.
+		}
+
+		if (m_RefocusEditor)
+		{
+			ImGui::SetKeyboardFocusHere();
+			m_RefocusEditor = false;
+		}
+
+		if (ImGui::InputTextMultiline("##ScriptCode", m_EditBuf.data(), m_EditBuf.size(),
+			textSize, textFlags, ScriptEditCallback, &m_EditUserData))
+		{
+			m_Dirty = true;
+			m_SuppressCompletions = false;
+			SyncStringFromEditBuffer();
+		}
+
+		// Anchor popup under the code box; draw later after End() so it stays on top.
+		{
+			ImVec2 amin = ImGui::GetItemRectMin();
+			ImVec2 amax = ImGui::GetItemRectMax();
+			m_PopupAnchorX = amin.x;
+			m_PopupAnchorY = amax.y + 4.0f;
+			m_HasPopupAnchor = true;
+		}
+
+		// Mouse/Enter accept may have been queued while InputText wasn't applying yet.
+		if (m_AcceptCompletion)
+			ApplyCompletionToBuffer();
+
+		ImGui::EndChild();
+
+		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+			io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S, false))
+		{
+			SaveFile();
+		}
+
+		if (m_Dirty)
+			SyncStringFromEditBuffer();
+
+		ImGui::End();
+		ImGui::PopStyleColor(6);
+
+		// Draw after the editor window so suggestions aren't covered by it.
+		DrawCompletionsPopup();
+	}
+}

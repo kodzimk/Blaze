@@ -7,6 +7,8 @@
 
 #include"bzpch.h"
 #include"Blaze/Logging/Log.h"
+#include"Blaze/Renderer/Gizmo.h"
+#include"Blaze/Scripting/OnScreenDebug.h"
 #include <cstring>
 
 namespace Blaze
@@ -32,8 +34,10 @@ namespace Blaze
 	static const GameObjectType s_AvailableTypes[] =
 	{
 		{ "Sprite", "sprite", "Textured 2D quad" },
-		{ "Empty",  "empty",  "Empty transform object" },
-		{ "Camera", "camera", "Scene view camera" },
+		{ "Circle", "circle", "Circle collider object" },
+		{ "Box",    "box",    "Box collider object" },
+		{ "Camera", "camera", "Scene / game camera" },
+		{ "Sound",  "sound",  "Audio source object" },
 	};
 
 	PropertiesWindow::PropertiesWindow()
@@ -71,7 +75,21 @@ namespace Blaze
 		{
 			ImGui::PushID(type.typeId);
 
-			if (ImGui::Button(type.displayName, ImVec2(thumbSize, thumbSize)))
+			const bool isSound = (strcmp(type.typeId, "sound") == 0);
+			const bool isCamera = (strcmp(type.typeId, "camera") == 0);
+			unsigned int iconTex = 0;
+			if (isSound)
+				iconTex = Gizmo2D::GetSoundIconTextureID();
+			else if (isCamera)
+				iconTex = Gizmo2D::GetCameraIconTextureID();
+
+			if (iconTex != 0)
+			{
+				ImGui::ImageButton("##type", (ImTextureID)(intptr_t)iconTex,
+					ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
+					ImVec4(0.12f, 0.12f, 0.12f, 1.0f), ImVec4(1, 1, 1, 1));
+			}
+			else if (ImGui::Button(type.displayName, ImVec2(thumbSize, thumbSize)))
 			{
 			}
 
@@ -79,6 +97,8 @@ namespace Blaze
 			{
 				ImGui::SetDragDropPayload(s_GameObjectPayload, type.typeId, strlen(type.typeId) + 1);
 				s_DraggingType = type.typeId;
+				if (iconTex != 0)
+					ImGui::Image((ImTextureID)(intptr_t)iconTex, ImVec2(32.0f, 32.0f));
 				ImGui::Text("%s", type.displayName);
 				ImGui::EndDragDropSource();
 			}
@@ -255,6 +275,7 @@ namespace Blaze
 									   cursor.y + (avail.y - size.y) * 0.5f));
 
 			ImGui::Image((ImTextureID)(intptr_t)s_TextureId, size, ImVec2(0, 1), ImVec2(1, 0));
+			OnScreenDebug::DrawOverItem();
 		}
 		else
 		{

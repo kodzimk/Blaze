@@ -5,6 +5,7 @@
 
 #include<gtc/type_ptr.hpp>
 #include"Blaze/Core/Input.h"
+#include <cmath>
 
 namespace Blaze
 {
@@ -75,8 +76,9 @@ namespace Blaze
 			float my = (float)Input::GetMouseY();
 			float dx = (mx - prevMouseX) / 500.0f;
 			float dy = (prevMouseY - my) / 500.0f;
+			float z = (zoom != 0.0f && std::isfinite(zoom)) ? zoom : 1.0f;
 			if (dx != 0.0f || dy != 0.0f)
-				TranslateCamera(glm::vec3(-dx / zoom, -dy / zoom, 0.0f));
+				TranslateCamera(glm::vec3(-dx / z, -dy / z, 0.0f));
 			prevMouseX = mx;
 			prevMouseY = my;
 		}

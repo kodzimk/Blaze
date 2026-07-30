@@ -1,6 +1,7 @@
 #include "Project.h"
 #include "Blaze/Renderer/Renderer.h"
 #include "Blaze/Renderer/GameObject.h"
+#include "Blaze/ImGui/ObjectWindow.h"
 #include "Blaze/Logging/Log.h"
 
 #include <filesystem>
@@ -214,10 +215,10 @@ namespace Blaze
 		return (fs::path(s_ContentFolder) / source.filename()).generic_string();
 	}
 
-	bool Project::SaveScene(Renderer& renderer)
+	bool Project::SaveScene(Renderer& renderer, ObjectWindow* objectsWindow)
 	{
 		if (!HasProject())
-			return SaveSceneAs(renderer);
+			return SaveSceneAs(renderer, objectsWindow);
 
 		std::ofstream out(s_ProjectFile, std::ios::trunc);
 		if (!out.is_open())
@@ -242,6 +243,7 @@ namespace Blaze
 
 			glm::vec2 scale = object->GetScale();
 			out << "scale " << scale.x << " " << scale.y << "\n";
+			out << "layer " << object->GetLayer() << "\n";
 
 			if (object->IsCamera())
 			{
@@ -252,14 +254,49 @@ namespace Blaze
 			if (!object->GetTexturePath().empty())
 				out << "texture " << StoreTexturePath(object->GetTexturePath()) << "\n";
 
+			if (object->HasCollision())
+			{
+				out << "collision " << (int)object->GetCollisionType() << "\n";
+				out << "collidershape " << (int)object->GetColliderShape() << "\n";
+				out << "collisionradius " << object->GetCollisionRadius() << "\n";
+				glm::vec2 csize = object->GetCollisionSize();
+				out << "collisionsize " << csize.x << " " << csize.y << "\n";
+				out << "rbmass " << object->GetRigidbodyMass() << "\n";
+				out << "rbgravity " << object->GetRigidbodyGravityScale() << "\n";
+				out << "rbkinematic " << (object->IsRigidbodyKinematic() ? 1 : 0) << "\n";
+			}
+
+			if (object->HasAudio())
+			{
+				out << "audio 1\n";
+				if (!object->GetAudioPath().empty())
+					out << "audiopath " << StoreTexturePath(object->GetAudioPath()) << "\n";
+				out << "audiovolume " << object->GetAudioVolume() << "\n";
+				out << "audioloop " << (object->GetAudioLoop() ? 1 : 0) << "\n";
+				out << "audioplayonstart " << (object->GetAudioPlayOnStart() ? 1 : 0) << "\n";
+			}
+
+			if (object->HasScript())
+			{
+				out << "script 1\n";
+				if (!object->GetScriptPath().empty())
+					out << "scriptpath " << StoreTexturePath(object->GetScriptPath()) << "\n";
+			}
+
 			out << "end\n";
+		}
+
+		if (objectsWindow)
+		{
+			objectsWindow->SetObjects(renderer.GetObjects());
+			objectsWindow->SaveHierarchy(out);
 		}
 
 		BZ_INFO("Project saved: {0}", s_ProjectFile);
 		return true;
 	}
 
-	bool Project::SaveSceneAs(Renderer& renderer)
+	bool Project::SaveSceneAs(Renderer& renderer, ObjectWindow* objectsWindow)
 	{
 		std::string picked;
 		if (!PickProjectLocation(picked, "Choose where to save the project"))
@@ -267,10 +304,10 @@ namespace Blaze
 		if (!SetupProjectAt(picked))
 			return false;
 
-		return SaveScene(renderer);
+		return SaveScene(renderer, objectsWindow);
 	}
 
-	bool Project::LoadScene(Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices)
+	bool Project::LoadScene(Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, ObjectWindow* objectsWindow)
 	{
 		std::ifstream in(s_ProjectFile);
 		if (!in.is_open())
@@ -290,6 +327,9 @@ namespace Blaze
 		while (!renderer.GetObjects().empty())
 			renderer.DestroyObject(renderer.GetObjects().back());
 
+		if (objectsWindow)
+			objectsWindow->ClearHierarchy();
+
 		GameObject* current = nullptr;
 		std::string line;
 		while (std::getline(in, line))
@@ -297,6 +337,12 @@ namespace Blaze
 			while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
 				line.pop_back();
 
+			if (line == "hierarchy")
+			{
+				if (objectsWindow)
+					objectsWindow->LoadHierarchy(in, renderer.GetObjects());
+				continue;
+			}
 			if (line == "object")
 			{
 				renderer.CreateObject(vertices, indices);
@@ -343,6 +389,12 @@ namespace Blaze
 				stream >> scale.x >> scale.y;
 				current->SetScale(scale);
 			}
+			else if (key == "layer")
+			{
+				int layer = 0;
+				stream >> layer;
+				current->SetLayer(layer);
+			}
 			else if (key == "zoom")
 			{
 				float zoom = 1.0f;
@@ -371,6 +423,110 @@ namespace Blaze
 						current->SetTexture(full.generic_string());
 					else
 						current->SetTexture(rel);
+				}
+			}
+			else if (key == "collision")
+			{
+				int type = 0;
+				stream >> type;
+				current->AddCollision((CollisionType)type);
+			}
+			else if (key == "collidershape")
+			{
+				int shape = 0;
+				stream >> shape;
+				current->SetColliderShape((ColliderShape)shape);
+			}
+			else if (key == "collisionradius")
+			{
+				float radius = 50.0f;
+				stream >> radius;
+				current->SetCollisionRadius(radius);
+			}
+			else if (key == "collisionsize")
+			{
+				glm::vec2 size(100.0f);
+				stream >> size.x >> size.y;
+				current->SetCollisionSize(size);
+			}
+			else if (key == "rbmass")
+			{
+				float mass = 1.0f;
+				stream >> mass;
+				current->SetRigidbodyMass(mass);
+			}
+			else if (key == "rbgravity")
+			{
+				float gravity = 1.0f;
+				stream >> gravity;
+				current->SetRigidbodyGravityScale(gravity);
+			}
+			else if (key == "rbkinematic")
+			{
+				int kinematic = 0;
+				stream >> kinematic;
+				current->SetRigidbodyKinematic(kinematic != 0);
+			}
+			else if (key == "audio")
+			{
+				current->AddAudio();
+			}
+			else if (key == "audiopath" && line.size() > 10)
+			{
+				std::string rel = line.substr(10);
+				if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+					rel = std::string(s_ContentFolder) + rel.substr(3);
+
+				std::error_code ec;
+				if (fs::exists(rel, ec))
+					current->SetAudioPath(rel);
+				else
+				{
+					fs::path full = fs::path(s_Directory) / rel;
+					if (fs::exists(full, ec))
+						current->SetAudioPath(full.generic_string());
+					else
+						current->SetAudioPath(rel);
+				}
+			}
+			else if (key == "audiovolume")
+			{
+				float volume = 1.0f;
+				stream >> volume;
+				current->SetAudioVolume(volume);
+			}
+			else if (key == "audioloop")
+			{
+				int loop = 0;
+				stream >> loop;
+				current->SetAudioLoop(loop != 0);
+			}
+			else if (key == "audioplayonstart")
+			{
+				int play = 1;
+				stream >> play;
+				current->SetAudioPlayOnStart(play != 0);
+			}
+			else if (key == "script")
+			{
+				current->AddScript();
+			}
+			else if (key == "scriptpath" && line.size() > 11)
+			{
+				std::string rel = line.substr(11);
+				if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+					rel = std::string(s_ContentFolder) + rel.substr(3);
+
+				std::error_code ec;
+				if (fs::exists(rel, ec))
+					current->SetScriptPath(rel);
+				else
+				{
+					fs::path full = fs::path(s_Directory) / rel;
+					if (fs::exists(full, ec))
+						current->SetScriptPath(full.generic_string());
+					else
+						current->SetScriptPath(rel);
 				}
 			}
 		}

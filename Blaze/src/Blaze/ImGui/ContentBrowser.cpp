@@ -2,10 +2,13 @@
 
 #include "../vendor/imgui/src/imgui.h"   
 #include "Blaze/Renderer/Texture.h"
+#include "Blaze/Renderer/Gizmo.h"
 #include "Blaze/Logging/Log.h"
+#include "Blaze/ImGui/ScriptEditorWindow.h"
 #include <filesystem>
 #include <cctype>
 #include <cstring>
+#include <fstream>
 
 #define NOMINMAX
 #include <windows.h>
@@ -22,6 +25,8 @@ namespace Blaze
 	std::string ContentBrowser::s_PendingDropPath;
 
 	static const char* s_TexturePayload = "BLAZE_TEXTURE";
+	static const char* s_AudioPayload = "BLAZE_AUDIO";
+	static const char* s_ScriptPayload = "BLAZE_SCRIPT";
 
 	ContentBrowser::ContentBrowser()
 		: onFocus(false), m_RootDir("content"), m_CurrentDir("content")
@@ -47,6 +52,21 @@ namespace Blaze
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".jpg" || extension == ".jpeg" ||
 			   extension == ".png" || extension == ".bmp";
+	}
+
+	bool ContentBrowser::IsAudioFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".wav" || extension == ".mp3" ||
+			   extension == ".ogg" || extension == ".flac";
+	}
+
+	bool ContentBrowser::IsScriptFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".lua";
 	}
 
 	Texture* ContentBrowser::GetThumbnail(const std::string& path)
@@ -115,6 +135,96 @@ namespace Blaze
 		BZ_INFO("Imported texture: {0}", destination.string());
 	}
 
+	void ContentBrowser::ImportAudio()
+	{
+		char filePath[MAX_PATH] = {};
+
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = filePath;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.lpstrFilter =
+			"Audio Files (*.wav;*.mp3;*.ogg;*.flac)\0*.wav;*.mp3;*.ogg;*.flac\0"
+			"WAV (*.wav)\0*.wav\0"
+			"MP3 (*.mp3)\0*.mp3\0"
+			"OGG (*.ogg)\0*.ogg\0"
+			"FLAC (*.flac)\0*.flac\0"
+			"All Files (*.*)\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if (!GetOpenFileNameA(&ofn))
+			return;
+
+		fs::path source(filePath);
+		if (!IsAudioFile(source.extension().string()))
+		{
+			BZ_INFO("Import cancelled: unsupported audio format '{0}'", source.extension().string());
+			return;
+		}
+
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path destination = fs::path(m_CurrentDir) / source.filename();
+		if (fs::exists(destination))
+		{
+			fs::path stem = source.stem();
+			fs::path ext = source.extension();
+			int suffix = 1;
+			do
+			{
+				destination = fs::path(m_CurrentDir) / (stem.string() + "_" + std::to_string(suffix) + ext.string());
+				++suffix;
+			} while (fs::exists(destination));
+		}
+
+		std::error_code ec;
+		fs::copy_file(source, destination, fs::copy_options::none, ec);
+		if (ec)
+		{
+			BZ_INFO("Failed to import audio: {0}", ec.message());
+			return;
+		}
+
+		BZ_INFO("Imported audio: {0}", destination.string());
+	}
+
+	void ContentBrowser::CreateScript()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path scriptPath = fs::path(m_CurrentDir) / "NewScript.lua";
+		int suffix = 1;
+		while (fs::exists(scriptPath))
+		{
+			scriptPath = fs::path(m_CurrentDir) / ("NewScript (" + std::to_string(suffix) + ").lua");
+			++suffix;
+		}
+
+		std::ofstream out(scriptPath);
+		if (!out.is_open())
+		{
+			BZ_INFO("Failed to create script: {0}", scriptPath.string());
+			return;
+		}
+
+		out << "-- Blaze Lua script\n\n";
+		out << "function OnStart()\n";
+		out << "\tprint(\"Script started on\", selfName)\n";
+		out << "end\n\n";
+		out << "function OnUpdate(dt)\n";
+		out << "\tif Input.IsKeyDown(\"A\") then\n";
+		out << "\t\tprint(\"A held\")\n";
+		out << "\tend\n";
+		out << "end\n";
+		out.close();
+
+		BZ_INFO("Created script: {0}", scriptPath.string());
+		StartRename(scriptPath.string());
+	}
+
 	void ContentBrowser::CreateFolder()
 	{
 		if (!fs::exists(m_CurrentDir))
@@ -165,12 +275,17 @@ namespace Blaze
 
 		if (newName.empty() || newName.find_first_of("\\/:*?\"<>|") != std::string::npos)
 		{
-			BZ_INFO("Rename cancelled: invalid folder name");
+			BZ_INFO("Rename cancelled: invalid name");
 			return;
 		}
 
-		fs::path destination = fs::path(oldPath).parent_path() / newName;
-		if (fs::path(oldPath).filename().string() == newName)
+		fs::path old = oldPath;
+		// Keep extension for files if the user only typed a stem
+		if (old.has_extension() && fs::is_regular_file(old) && fs::path(newName).extension().empty())
+			newName += old.extension().string();
+
+		fs::path destination = old.parent_path() / newName;
+		if (old.filename().string() == newName)
 			return;
 
 		if (fs::exists(destination))
@@ -180,14 +295,39 @@ namespace Blaze
 		}
 
 		std::error_code ec;
-		fs::rename(oldPath, destination, ec);
+		fs::rename(old, destination, ec);
 		if (ec)
 		{
-			BZ_INFO("Failed to rename folder: {0}", ec.message());
+			BZ_INFO("Failed to rename: {0}", ec.message());
 			return;
 		}
 
-		BZ_INFO("Renamed folder to: {0}", destination.string());
+		InvalidateThumbnail(oldPath);
+		BZ_INFO("Renamed to: {0}", destination.string());
+	}
+
+	void ContentBrowser::DrawAssetRenameLabel(const std::string& fullPath, const std::string& name, float width)
+	{
+		if (m_RenamingPath == fullPath)
+		{
+			if (m_FocusRename)
+			{
+				ImGui::SetKeyboardFocusHere();
+				m_FocusRename = false;
+			}
+
+			ImGui::SetNextItemWidth(width);
+			bool renameDone = ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer),
+				ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+			if (renameDone || ImGui::IsItemDeactivatedAfterEdit())
+				CommitRename();
+		}
+		else
+		{
+			ImGui::TextWrapped("%s", name.c_str());
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				StartRename(fullPath);
+		}
 	}
 
 	void ContentBrowser::DrawContextMenu()
@@ -195,8 +335,12 @@ namespace Blaze
 		if (ImGui::BeginPopupContextWindow("ContentBrowserContext",
 			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
-			if (ImGui::MenuItem("Import"))
+			if (ImGui::MenuItem("Import Texture"))
 				ImportTexture();
+			if (ImGui::MenuItem("Import Audio"))
+				ImportAudio();
+			if (ImGui::MenuItem("Create Script"))
+				CreateScript();
 			if (ImGui::MenuItem("New Folder"))
 				CreateFolder();
 			ImGui::EndPopup();
@@ -213,9 +357,9 @@ namespace Blaze
 		m_Thumbnails.erase(it);
 	}
 
-	bool ContentBrowser::MoveTextureToFolder(const std::string& texturePath, const std::string& folderPath)
+	bool ContentBrowser::MoveAssetToFolder(const std::string& assetPath, const std::string& folderPath)
 	{
-		fs::path source(texturePath);
+		fs::path source(assetPath);
 		if (!fs::exists(source) || !fs::is_directory(folderPath))
 			return false;
 
@@ -239,13 +383,37 @@ namespace Blaze
 		fs::rename(source, destination, ec);
 		if (ec)
 		{
-			BZ_INFO("Failed to move texture: {0}", ec.message());
+			BZ_INFO("Failed to move asset: {0}", ec.message());
 			return false;
 		}
 
-		InvalidateThumbnail(texturePath);
-		BZ_INFO("Moved texture to: {0}", destination.string());
+		InvalidateThumbnail(assetPath);
+		BZ_INFO("Moved asset to: {0}", destination.string());
 		return true;
+	}
+
+	bool ContentBrowser::AcceptAssetDrop(const std::string& folderPath)
+	{
+		bool moved = false;
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_TexturePayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_AudioPayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_ScriptPayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
+		return moved;
 	}
 
 	void ContentBrowser::OnUpdate()
@@ -279,13 +447,8 @@ namespace Blaze
 
 			if (ImGui::BeginDragDropTarget())
 			{
-				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_TexturePayload))
-				{
-					std::string sourcePath((const char*)payload->Data);
-					std::string parentPath = fs::path(m_CurrentDir).parent_path().string();
-					if (MoveTextureToFolder(sourcePath, parentPath))
-						s_DraggingPath.clear();
-				}
+				if (AcceptAssetDrop(fs::path(m_CurrentDir).parent_path().string()))
+					s_DraggingPath.clear();
 				ImGui::EndDragDropTarget();
 			}
 
@@ -323,14 +486,10 @@ namespace Blaze
 
 				if (ImGui::BeginDragDropTarget())
 				{
-					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_TexturePayload))
+					if (AcceptAssetDrop(fullPath))
 					{
-						std::string sourcePath((const char*)payload->Data);
-						if (MoveTextureToFolder(sourcePath, fullPath))
-						{
-							s_DraggingPath.clear();
-							movedAsset = true;
-						}
+						s_DraggingPath.clear();
+						movedAsset = true;
 					}
 					ImGui::EndDragDropTarget();
 				}
@@ -342,26 +501,7 @@ namespace Blaze
 					ImGui::EndPopup();
 				}
 
-				if (m_RenamingPath == fullPath)
-				{
-					if (m_FocusRename)
-					{
-						ImGui::SetKeyboardFocusHere();
-						m_FocusRename = false;
-					}
-
-					ImGui::SetNextItemWidth(thumbSize);
-					bool renameDone = ImGui::InputText("##rename", m_RenameBuffer, sizeof(m_RenameBuffer),
-						ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-					if (renameDone || ImGui::IsItemDeactivatedAfterEdit())
-						CommitRename();
-				}
-				else
-				{
-					ImGui::TextWrapped("%s", name.c_str());
-					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-						StartRename(fullPath);
-				}
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
 			}
 			else if (IsTextureFile(path.extension().string()))
 			{
@@ -376,7 +516,74 @@ namespace Blaze
 					ImGui::TextUnformatted(name.c_str());
 					ImGui::EndDragDropSource();
 				}
-				ImGui::TextWrapped("%s", name.c_str());
+
+				if (ImGui::BeginPopupContextItem("TextureItemContext"))
+				{
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsAudioFile(path.extension().string()))
+			{
+				unsigned int soundTex = Gizmo2D::GetSoundIconTextureID();
+				if (soundTex != 0)
+				{
+					ImGui::ImageButton("##audio", (ImTextureID)(intptr_t)soundTex,
+						ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
+						ImVec4(0.14f, 0.14f, 0.14f, 1.0f), ImVec4(1, 1, 1, 1));
+				}
+				else
+				{
+					ImGui::Button("[AUD]", ImVec2(thumbSize, thumbSize));
+				}
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_AudioPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					if (soundTex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)soundTex, ImVec2(48.0f, 48.0f));
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("AudioItemContext"))
+				{
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsScriptFile(path.extension().string()))
+			{
+				ImGui::Button("[LUA]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					ScriptEditorWindow::OpenFile(fullPath);
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_ScriptPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("ScriptItemContext"))
+				{
+					if (ImGui::MenuItem("Edit Script"))
+						ScriptEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
 			}
 
 			ImGui::PopID();
@@ -395,7 +602,7 @@ namespace Blaze
 			if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
 			{
 				s_PendingDropPath = s_DraggingPath;
-				BZ_INFO("Texture dropped on scene: {0}", s_PendingDropPath);
+				BZ_INFO("Asset dropped on scene: {0}", s_PendingDropPath);
 			}
 			s_DraggingPath.clear();
 		}

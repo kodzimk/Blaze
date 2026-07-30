@@ -6,12 +6,14 @@
 #include"ContentBrowser.h"
 #include"PropertiesWindow.h"
 #include"ComponentsWindow.h"
+#include"ScriptEditorWindow.h"
 #include"ViewPort.h"
 
 namespace Blaze
 {
 	BLAZE_API bool UIWantCaptureMouse();
 	BLAZE_API bool UIWantTextInput();
+	BLAZE_API bool UIBlocksMainEditor();
 
 	class Context
 	{
@@ -35,6 +37,7 @@ namespace Blaze
 		ComponentsWindow* m_componentsWindow;
 		ObjectWindow* m_objectWindow;
 		ContentBrowser* m_contextWindow;
+		ScriptEditorWindow* m_scriptEditor;
 		ViewPort* m_ViewPort;
 		MenuBar* m_menuBar;
 		GameWindow* m_gameWindow;

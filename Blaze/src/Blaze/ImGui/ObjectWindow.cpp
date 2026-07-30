@@ -2,12 +2,15 @@
 
 #include "../vendor/imgui/src/imgui.h"   
 #include "Blaze/Renderer/GameObject.h"
+#include "Blaze/Renderer/Gizmo.h"
 #include "Blaze/Core/Project.h"
 #include "Blaze/Logging/Log.h"
 #include <cstring>
 #include <unordered_set>
+#include <unordered_map>
 #include <algorithm>
 #include <filesystem>
+#include <sstream>
 
 namespace Blaze
 {
@@ -209,6 +212,118 @@ namespace Blaze
 		m_Selected = object;
 	}
 
+	void ObjectWindow::ClearHierarchy()
+	{
+		m_Folders.clear();
+		m_RootObjects.clear();
+		m_NextFolderId = 1;
+		m_Selected = nullptr;
+		m_PendingPick = nullptr;
+		m_PendingDelete = nullptr;
+		m_PendingDeleteFolderId = -1;
+		m_RenamingObject = nullptr;
+		m_RenamingFolderId = -1;
+	}
+
+	void ObjectWindow::SaveHierarchy(std::ostream& out) const
+	{
+		std::unordered_map<GameObject*, int> index;
+		for (size_t i = 0; i < m_Objects.size(); ++i)
+		{
+			if (m_Objects[i])
+				index[m_Objects[i]] = (int)i;
+		}
+
+		out << "hierarchy\n";
+		for (const Folder& folder : m_Folders)
+		{
+			out << "folder " << folder.id << " " << (folder.open ? 1 : 0) << " " << folder.name << "\n";
+			for (GameObject* object : folder.objects)
+			{
+				auto it = index.find(object);
+				if (it != index.end())
+					out << "obj " << it->second << "\n";
+			}
+			out << "endfolder\n";
+		}
+
+		out << "root\n";
+		for (GameObject* object : m_RootObjects)
+		{
+			auto it = index.find(object);
+			if (it != index.end())
+				out << "obj " << it->second << "\n";
+		}
+		out << "endroot\n";
+		out << "endhierarchy\n";
+	}
+
+	void ObjectWindow::LoadHierarchy(std::istream& in, const std::vector<GameObject*>& objects)
+	{
+		ClearHierarchy();
+		m_Objects = objects;
+
+		Folder* currentFolder = nullptr;
+		bool inRoot = false;
+		std::string line;
+		while (std::getline(in, line))
+		{
+			while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
+				line.pop_back();
+
+			if (line == "endhierarchy")
+				break;
+
+			std::istringstream stream(line);
+			std::string key;
+			stream >> key;
+
+			if (key == "folder")
+			{
+				Folder folder;
+				int open = 1;
+				stream >> folder.id >> open;
+				folder.open = open != 0;
+				std::getline(stream, folder.name);
+				if (!folder.name.empty() && folder.name[0] == ' ')
+					folder.name.erase(0, 1);
+				m_Folders.push_back(folder);
+				currentFolder = &m_Folders.back();
+				inRoot = false;
+				if (folder.id >= m_NextFolderId)
+					m_NextFolderId = folder.id + 1;
+			}
+			else if (key == "endfolder")
+			{
+				currentFolder = nullptr;
+			}
+			else if (key == "root")
+			{
+				inRoot = true;
+				currentFolder = nullptr;
+			}
+			else if (key == "endroot")
+			{
+				inRoot = false;
+			}
+			else if (key == "obj")
+			{
+				int idx = -1;
+				stream >> idx;
+				if (idx < 0 || idx >= (int)objects.size() || !objects[idx])
+					continue;
+
+				GameObject* object = objects[idx];
+				if (currentFolder)
+					currentFolder->objects.push_back(object);
+				else if (inRoot)
+					m_RootObjects.push_back(object);
+			}
+		}
+
+		SyncHierarchy(objects);
+	}
+
 	GameObject* ObjectWindow::ConsumePickedObject()
 	{
 		GameObject* picked = m_PendingPick;
@@ -393,20 +508,68 @@ namespace Blaze
 		{
 			std::string label = object->GetName();
 			if (object->IsCamera())
-				label += " (Camera)";
+				label += object->DrivesView() ? " (Main Camera)" : " (Camera)";
+			else if (object->GetType() == ObjectType::Circle)
+				label += " (Circle)";
+			else if (object->GetType() == ObjectType::Box)
+				label += " (Box)";
+			else if (object->GetType() == ObjectType::Sound)
+				label += " (Sound)";
 
-			if (ImGui::Selectable(label.c_str(), selected))
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, ImGui::GetStyle().ItemSpacing.y));
+
+			if (object->IsCamera())
+			{
+				unsigned int tex = Gizmo2D::GetCameraIconTextureID();
+				if (tex != 0)
+				{
+					ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+					ImGui::SameLine();
+				}
+			}
+			else if (object->IsSound())
+			{
+				unsigned int tex = Gizmo2D::GetSoundIconTextureID();
+				if (tex != 0)
+				{
+					ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+					ImGui::SameLine();
+				}
+			}
+
+			ImGui::Selectable(label.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick);
+			bool hovered = ImGui::IsItemHovered();
+			bool clicked = ImGui::IsItemClicked();
+			bool doubleClicked = hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
+
+			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+			{
+				ImGui::SetDragDropPayload(s_SceneObjectPayload, &object, sizeof(GameObject*));
+				if (object->IsCamera())
+				{
+					unsigned int tex = Gizmo2D::GetCameraIconTextureID();
+					if (tex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+				}
+				else if (object->IsSound())
+				{
+					unsigned int tex = Gizmo2D::GetSoundIconTextureID();
+					if (tex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+				}
+				ImGui::TextUnformatted(label.c_str());
+				ImGui::EndDragDropSource();
+			}
+
+			ImGui::PopStyleVar();
+
+			if (clicked)
 			{
 				m_Selected = object;
 				m_PendingPick = object;
 			}
-
-			if (ImGui::BeginDragDropSource())
-			{
-				ImGui::SetDragDropPayload(s_SceneObjectPayload, &object, sizeof(GameObject*));
-				ImGui::TextUnformatted(label.c_str());
-				ImGui::EndDragDropSource();
-			}
+			if (doubleClicked)
+				StartRenameObject(object);
 		}
 
 		if (ImGui::BeginPopupContextItem("ObjectItemContext"))

@@ -7,6 +7,7 @@
 #include"Blaze/Event/MouseEvent.h"
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Camera.h"
+#include"Blaze/ImGui/ImGuiContext.h"
 
 namespace Blaze {
 	Window::Window(unsigned int width, int height, std::string title)
@@ -96,6 +97,10 @@ namespace Blaze {
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
 				prop.m_callback(e);
+
+				// Don't zoom the scene while using the script editor or any ImGui UI.
+				if (Blaze::UIBlocksMainEditor() || Blaze::UIWantCaptureMouse())
+					return;
 
 				if (Blaze::Camera::zoom + Yoffset / 20.f > 0)
 				{

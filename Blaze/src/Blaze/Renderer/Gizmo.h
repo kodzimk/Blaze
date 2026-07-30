@@ -35,15 +35,28 @@ namespace Blaze
 
 		void Draw(const Camera& camera, const GameObject& object);
 		void DrawCameraRange(const Camera& camera, const GameObject& cameraObject);
+		void DrawCameraIcon(const Camera& camera, const GameObject& cameraObject);
+		void DrawSoundIcon(const Camera& camera, const GameObject& soundObject);
+		void DrawCollision(const Camera& camera, const GameObject& object);
 		GizmoAxis HitTest(const CameraProp& prop, const GameObject& object, const glm::vec2& worldPoint) const;
+
+		// Shared editor icons for ImGui (palette / hierarchy). 0 if not ready.
+		static unsigned int GetSoundIconTextureID();
+		static unsigned int GetCameraIconTextureID();
+		static int GetSoundIconSize();
+		static int GetCameraIconSize();
 	private:
 		void DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color);
 		void DrawArrowHead(const glm::vec2& center, const glm::vec2& axis0, const glm::vec2& axis1, const glm::vec4& color);
 		void DrawRing(const glm::vec2& center, const glm::vec2& radius, const glm::vec4& color);
+		void DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID);
+		void EnsureSoundIcon();
+		void EnsureCameraIcon();
 	private:
 		GizmoMode m_Mode = GizmoMode::Translate;
 
 		Shader m_Shader;
+		Shader m_IconShader;
 
 		VertexArray m_QuadVAO;
 		VertexBuffer m_QuadVBO;
@@ -55,5 +68,16 @@ namespace Blaze
 		VertexArray m_RingVAO;
 		VertexBuffer m_RingVBO;
 		int m_RingVertexCount = 0;
+
+		VertexArray m_IconVAO;
+		VertexBuffer m_IconVBO;
+		unsigned int m_IconEBO = 0;
+
+		unsigned int m_SoundIconTex = 0;
+		unsigned int m_CameraIconTex = 0;
+		static unsigned int s_SharedSoundIconTex;
+		static unsigned int s_SharedCameraIconTex;
+		static const int s_SoundIconSize = 64;
+		static const int s_CameraIconSize = 64;
 	};
 }

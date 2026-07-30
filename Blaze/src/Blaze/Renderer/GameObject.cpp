@@ -45,7 +45,9 @@ namespace Blaze {
 
 	void GameObject::Draw(const CameraProp& prop,Shader& const m_Shader)
 	{
-		if (m_Type == ObjectType::Camera)
+		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound)
+			return;
+		if ((m_Type == ObjectType::Circle || m_Type == ObjectType::Box) && !m_Texture.IsValid())
 			return;
 
 		m_Shader.SetUniform4fv(m_Color, "color");
@@ -90,11 +92,126 @@ namespace Blaze {
 	void GameObject::SetType(ObjectType type)
 	{
 		m_Type = type;
+		if (type == ObjectType::Sound)
+		{
+			m_HasCollision = false;
+			m_DrivesView = false;
+		}
 	}
 
 	void GameObject::SetZoom(float zoom)
 	{
 		m_Zoom = glm::max(zoom, 0.05f);
+	}
+
+	void GameObject::SetLayer(int layer)
+	{
+		m_Layer = layer;
+	}
+
+	void GameObject::AddCollision(CollisionType type)
+	{
+		if (m_Type == ObjectType::Sound || m_Type == ObjectType::Camera)
+			return;
+		m_HasCollision = true;
+		SetCollisionType(type);
+	}
+
+	void GameObject::RemoveCollision()
+	{
+		m_HasCollision = false;
+	}
+
+	void GameObject::SetCollisionType(CollisionType type)
+	{
+		if (m_Type == ObjectType::Sound || m_Type == ObjectType::Camera)
+			return;
+		m_CollisionType = type;
+		m_HasCollision = true;
+		if (type == CollisionType::Circle)
+			m_ColliderShape = ColliderShape::Circle;
+		else if (type == CollisionType::Block)
+			m_ColliderShape = ColliderShape::Block;
+	}
+
+	void GameObject::SetColliderShape(ColliderShape shape)
+	{
+		m_ColliderShape = shape;
+	}
+
+	void GameObject::SetCollisionRadius(float radius)
+	{
+		m_CollisionRadius = glm::max(radius, 0.01f);
+	}
+
+	void GameObject::SetCollisionSize(glm::vec2 size)
+	{
+		m_CollisionSize.x = glm::max(size.x, 0.01f);
+		m_CollisionSize.y = glm::max(size.y, 0.01f);
+	}
+
+	void GameObject::SetRigidbodyMass(float mass)
+	{
+		m_RigidbodyMass = glm::max(mass, 0.01f);
+	}
+
+	void GameObject::SetRigidbodyGravityScale(float scale)
+	{
+		m_RigidbodyGravityScale = scale;
+	}
+
+	void GameObject::SetRigidbodyKinematic(bool kinematic)
+	{
+		m_RigidbodyKinematic = kinematic;
+	}
+
+	void GameObject::AddAudio()
+	{
+		m_HasAudio = true;
+	}
+
+	void GameObject::RemoveAudio()
+	{
+		m_HasAudio = false;
+		m_AudioPath.clear();
+	}
+
+	void GameObject::SetAudioPath(const std::string& path)
+	{
+		m_AudioPath = path;
+		m_HasAudio = true;
+	}
+
+	void GameObject::SetAudioVolume(float volume)
+	{
+		m_AudioVolume = glm::clamp(volume, 0.0f, 1.0f);
+	}
+
+	void GameObject::SetAudioLoop(bool loop)
+	{
+		m_AudioLoop = loop;
+	}
+
+	void GameObject::SetAudioPlayOnStart(bool playOnStart)
+	{
+		m_AudioPlayOnStart = playOnStart;
+	}
+
+	void GameObject::AddScript()
+	{
+		m_HasScript = true;
+	}
+
+	void GameObject::RemoveScript()
+	{
+		m_HasScript = false;
+		m_ScriptPath.clear();
+	}
+
+	void GameObject::SetScriptPath(const std::string& path)
+	{
+		m_ScriptPath = path;
+		m_HasScript = true;
 	}
 
 	void GameObject::RebuildMatrix()
@@ -156,6 +273,16 @@ namespace Blaze {
 
 	bool GameObject::IsHovered(const CameraProp& prop, const glm::vec2& worldPoint) const
 	{
+		if (m_Type == ObjectType::Sound || m_Type == ObjectType::Camera)
+		{
+			float sx = prop.projection[0][0];
+			float sy = prop.projection[1][1];
+			glm::vec2 pos(m_Pos);
+			float dx = (worldPoint.x - pos.x) / sx;
+			float dy = (worldPoint.y - pos.y) / sy;
+			return (dx * dx + dy * dy) <= (32.0f * 32.0f);
+		}
+
 		glm::vec2 min, max;
 		GetWorldAABB(prop, min, max);
 

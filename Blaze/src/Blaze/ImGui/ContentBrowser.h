@@ -28,14 +28,20 @@ namespace Blaze
 		static bool ConsumePendingDrop(std::string& outPath);
 	private:
 		bool IsTextureFile(std::string extension) const;
+		bool IsAudioFile(std::string extension) const;
+		bool IsScriptFile(std::string extension) const;
 		Texture* GetThumbnail(const std::string& path);
 		void ImportTexture();
+		void ImportAudio();
+		void CreateScript();
 		void CreateFolder();
 		void StartRename(const std::string& path);
 		void CommitRename();
 		void DrawContextMenu();
-		bool MoveTextureToFolder(const std::string& texturePath, const std::string& folderPath);
+		bool MoveAssetToFolder(const std::string& assetPath, const std::string& folderPath);
+		bool AcceptAssetDrop(const std::string& folderPath);
 		void InvalidateThumbnail(const std::string& path);
+		void DrawAssetRenameLabel(const std::string& fullPath, const std::string& name, float width);
 	private:
 		bool onFocus;
 		bool m_Open = true;

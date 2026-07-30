@@ -1,6 +1,7 @@
 #pragma once
 #include"bzpch.h"
 #include"../vendor/imgui/src/imgui.h"
+#include <iosfwd>
 
 namespace Blaze
 {
@@ -68,6 +69,9 @@ namespace Blaze
 
 		void SetObjects(const std::vector<GameObject*>& objects);
 		void SetSelectedObject(GameObject* object);
+		void ClearHierarchy();
+		void SaveHierarchy(std::ostream& out) const;
+		void LoadHierarchy(std::istream& in, const std::vector<GameObject*>& objects);
 
 		GameObject* ConsumePickedObject();
 		GameObject* ConsumePendingDelete();

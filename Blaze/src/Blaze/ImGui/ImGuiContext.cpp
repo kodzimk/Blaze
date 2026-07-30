@@ -6,6 +6,7 @@
 #include"../vendor/imgui/include/imgui_impl_opengl3.h"
 #include"Blaze/Core/Application.h"
 #include"Blaze/Core/Project.h"
+#include"Blaze/Scripting/ScriptEngine.h"
 #include"GLFW/glfw3.h"
 
 namespace Blaze
@@ -20,11 +21,19 @@ namespace Blaze
 		return ImGui::GetCurrentContext() != nullptr && ImGui::GetIO().WantTextInput;
 	}
 
+	bool UIBlocksMainEditor()
+	{
+		if (ScriptEditorWindow::IsBlockingMainEditor())
+			return true;
+		return UIWantTextInput();
+	}
+
 	Context::Context( GLFWwindow* window)
 	{
 
 		Init(window);
 		m_contextWindow = new ContentBrowser();
+		m_scriptEditor = new ScriptEditorWindow();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
 		m_componentsWindow = new ComponentsWindow();
@@ -42,6 +51,7 @@ namespace Blaze
 		delete m_menuBar;
 		delete m_objectWindow;
 		delete m_contextWindow;
+		delete m_scriptEditor;
 		delete m_propWindow;
 		delete m_componentsWindow;
 		delete m_startWindow;
@@ -127,10 +137,12 @@ namespace Blaze
 			m_startWindow->GetOpenPtr());
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
+		m_scriptEditor->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_componentsWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
 		m_gameWindow->OnUpdate();
+		ScriptEngine::DrawErrorWindow();
 		EndFrame();
 	}
 }
