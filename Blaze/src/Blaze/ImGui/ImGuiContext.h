@@ -7,6 +7,7 @@
 #include"PropertiesWindow.h"
 #include"ComponentsWindow.h"
 #include"ScriptEditorWindow.h"
+#include"ProjectSettingsWindow.h"
 #include"ViewPort.h"
 
 namespace Blaze
@@ -38,6 +39,7 @@ namespace Blaze
 		ObjectWindow* m_objectWindow;
 		ContentBrowser* m_contextWindow;
 		ScriptEditorWindow* m_scriptEditor;
+		ProjectSettingsWindow* m_projectSettings;
 		ViewPort* m_ViewPort;
 		MenuBar* m_menuBar;
 		GameWindow* m_gameWindow;

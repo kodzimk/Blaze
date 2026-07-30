@@ -43,13 +43,19 @@ namespace Blaze
 		// Shared editor icons for ImGui (palette / hierarchy). 0 if not ready.
 		static unsigned int GetSoundIconTextureID();
 		static unsigned int GetCameraIconTextureID();
+		static unsigned int GetScriptIconTextureID();
+		static unsigned int GetMapIconTextureID();
+		static unsigned int GetFolderIconTextureID();
 		static int GetSoundIconSize();
 		static int GetCameraIconSize();
+		static int GetScriptIconSize();
+		static int GetMapIconSize();
+		static int GetFolderIconSize();
 	private:
-		void DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color);
+		void DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color, float rotationDegrees = 0.0f);
 		void DrawArrowHead(const glm::vec2& center, const glm::vec2& axis0, const glm::vec2& axis1, const glm::vec4& color);
 		void DrawRing(const glm::vec2& center, const glm::vec2& radius, const glm::vec4& color);
-		void DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID);
+		void DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID, float rotationDegrees = 0.0f);
 		void EnsureSoundIcon();
 		void EnsureCameraIcon();
 	private:
@@ -77,7 +83,13 @@ namespace Blaze
 		unsigned int m_CameraIconTex = 0;
 		static unsigned int s_SharedSoundIconTex;
 		static unsigned int s_SharedCameraIconTex;
+		static unsigned int s_SharedScriptIconTex;
+		static unsigned int s_SharedMapIconTex;
+		static unsigned int s_SharedFolderIconTex;
 		static const int s_SoundIconSize = 64;
 		static const int s_CameraIconSize = 64;
+		static const int s_ScriptIconSize = 64;
+		static const int s_MapIconSize = 64;
+		static const int s_FolderIconSize = 64;
 	};
 }

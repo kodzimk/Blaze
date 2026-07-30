@@ -10,23 +10,24 @@ namespace Blaze {
 	class BLAZE_API Application
 	{
 	public:
-		Application();
+		Application(bool enableEditor = true);
 		virtual ~Application();
 
-		bool Application::OnWindowResize(WindowResizeEvent& e);
-		bool Application::OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
+		bool OnWindowClose(WindowCloseEvent& e);
 		void Run();
 		void OnEvent(Event& e);
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_window; }
 		inline Context* GetContext() const { return m_context; }
+		inline bool HasEditor() const { return m_context != nullptr; }
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 	private:
 		Window *m_window;
-		Context* m_context;
+		Context* m_context = nullptr;
 
 		bool m_running = true;
 		bool m_Minimized = false;

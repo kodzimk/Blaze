@@ -139,6 +139,79 @@ namespace Blaze
 		m_PlayState[object] = state;
 	}
 
+	glm::vec2 PhysicsWorld2D::GetLinearVelocity(GameObject* object) const
+	{
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		glm::vec2 v = GetVelocity(object);
+		return glm::vec2(v.x * sx, v.y * sy);
+	}
+
+	void PhysicsWorld2D::SetLinearVelocity(GameObject* object, const glm::vec2& velocityPixels)
+	{
+		if (!object)
+			return;
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		SetVelocity(object, glm::vec2(velocityPixels.x / sx, velocityPixels.y / sy));
+	}
+
+	void PhysicsWorld2D::AddLinearVelocity(GameObject* object, const glm::vec2& deltaPixels)
+	{
+		if (!object)
+			return;
+		SetLinearVelocity(object, GetLinearVelocity(object) + deltaPixels);
+	}
+
+	void PhysicsWorld2D::ApplyForce(GameObject* object, const glm::vec2& forcePixels)
+	{
+		if (!object)
+			return;
+		if (object->GetCollisionType() != CollisionType::PhysicsRigidbody2D || object->IsRigidbodyKinematic())
+			return;
+
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		glm::vec2 forcePlay(forcePixels.x / sx, forcePixels.y / sy);
+
+		auto it = m_PlayState.find(object);
+		if (it != m_PlayState.end())
+		{
+			it->second.pendingForce += forcePlay;
+			return;
+		}
+
+		PlayState state;
+		state.position = glm::vec2(object->GetPosition().x / sx, object->GetPosition().y / sy);
+		state.pendingForce = forcePlay;
+		m_PlayState[object] = state;
+	}
+
+	void PhysicsWorld2D::ApplyImpulse(GameObject* object, const glm::vec2& impulsePixels)
+	{
+		if (!object)
+			return;
+		if (object->GetCollisionType() != CollisionType::PhysicsRigidbody2D || object->IsRigidbodyKinematic())
+			return;
+
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		const float invMass = 1.0f / glm::max(object->GetRigidbodyMass(), 0.01f);
+		glm::vec2 deltaPlay((impulsePixels.x / sx) * invMass, (impulsePixels.y / sy) * invMass);
+
+		auto it = m_PlayState.find(object);
+		if (it != m_PlayState.end())
+		{
+			it->second.velocity += deltaPlay;
+			return;
+		}
+
+		PlayState state;
+		state.position = glm::vec2(object->GetPosition().x / sx, object->GetPosition().y / sy);
+		state.velocity = deltaPlay;
+		m_PlayState[object] = state;
+	}
+
 	void PhysicsWorld2D::Step(float dt, const std::vector<GameObject*>& objects)
 	{
 		if (dt <= 0.0f)
@@ -200,10 +273,12 @@ namespace Blaze
 
 			glm::vec2 editorPixel(object->GetPosition().x / sx, object->GetPosition().y / sy);
 			auto previous = m_PlayState.find(object);
+			glm::vec2 pendingForce = (previous != m_PlayState.end()) ? previous->second.pendingForce : glm::vec2(0.0f);
 			if (dynamic)
 			{
 				body.gravityScale = object->GetRigidbodyGravityScale();
 				body.invMass = 1.0f / glm::max(object->GetRigidbodyMass(), 0.01f);
+				body.pendingForce = pendingForce;
 				if (previous != m_PlayState.end())
 				{
 					body.position = previous->second.position;
@@ -219,10 +294,11 @@ namespace Blaze
 			{
 				body.invMass = 0.0f;
 				body.velocity = glm::vec2(0.0f);
+				body.pendingForce = glm::vec2(0.0f);
 				body.position = editorPixel;
 			}
 
-			live[object] = PlayState{ body.position, body.velocity };
+			live[object] = PlayState{ body.position, body.velocity, glm::vec2(0.0f) };
 			m_Bodies.push_back(body);
 		}
 
@@ -237,6 +313,8 @@ namespace Blaze
 				continue;
 
 			body.velocity += m_Gravity * body.gravityScale * dt;
+			body.velocity += body.pendingForce * body.invMass * dt;
+			body.pendingForce = glm::vec2(0.0f);
 			body.position += body.velocity * dt;
 		}
 	}
@@ -399,7 +477,8 @@ namespace Blaze
 				continue;
 			m_PlayState[body.object] = PlayState{
 				body.position,
-				body.isStatic ? glm::vec2(0.0f) : body.velocity
+				body.isStatic ? glm::vec2(0.0f) : body.velocity,
+				body.isStatic ? glm::vec2(0.0f) : body.pendingForce
 			};
 		}
 	}

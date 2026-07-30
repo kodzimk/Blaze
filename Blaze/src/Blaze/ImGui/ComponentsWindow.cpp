@@ -5,9 +5,11 @@
 #include "Blaze/Renderer/Texture.h"
 #include "Blaze/Audio/AudioEngine.h"
 #include "Blaze/ImGui/ScriptEditorWindow.h"
+#include "Blaze/Core/Project.h"
 #include "Blaze/Logging/Log.h"
 #include <filesystem>
 #include <cctype>
+#include <cstdio>
 #include <fstream>
 #include <vector>
 
@@ -106,9 +108,39 @@ namespace Blaze
 		}
 		onFocus = ImGui::IsWindowFocused();
 
+		if (m_MapSelected)
+		{
+			const std::string mapName = Project::GetActiveMap().empty()
+				? "Untitled Map"
+				: fs::path(Project::GetActiveMap()).stem().string();
+
+			ImGui::Text("Map: %s", mapName.c_str());
+			ImGui::TextDisabled("Level Blueprint / Map Script");
+			ImGui::Separator();
+
+			if (ImGui::CollapsingHeader("Map Script", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				const std::string scriptPath = Project::EnsureMapScript();
+				if (scriptPath.empty())
+				{
+					ImGui::TextDisabled("No map script");
+				}
+				else
+				{
+					ImGui::TextWrapped("%s", scriptPath.c_str());
+					if (ImGui::Button("Open Script", ImVec2(-1.0f, 0.0f)))
+						ScriptEditorWindow::OpenFile(scriptPath);
+				}
+			}
+
+			ImGui::End();
+			return;
+		}
+
 		if (!m_Selected)
 		{
 			ImGui::TextDisabled("No object selected");
+			ImGui::TextDisabled("Select the map root for Map Script");
 			ImGui::End();
 			return;
 		}
@@ -122,27 +154,76 @@ namespace Blaze
 
 		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			glm::vec3 position = m_Selected->GetPosition();
-			if (ImGui::InputFloat3("Position", &position.x, "%.3f"))
-				m_Selected->SetPosition(position);
+			if (GameObject* parent = m_Selected->GetParent())
+				ImGui::TextDisabled("Parent: %s", parent->GetName().c_str());
+			else
+				ImGui::TextDisabled("Parent: (none)");
 
-			float rotation = m_Selected->GetRotation();
-			if (ImGui::InputFloat("Rotation", &rotation, 0.0f, 0.0f, "%.3f"))
-				m_Selected->SetRotation(rotation);
+			glm::vec3 localPos = m_Selected->GetLocalPosition();
+			if (ImGui::InputFloat3("Local Position", &localPos.x, "%.3f"))
+				m_Selected->SetLocalPosition(localPos);
 
-			glm::vec2 scale = m_Selected->GetScale();
-			if (ImGui::InputFloat2("Scale", &scale.x, "%.3f"))
+			float localRot = m_Selected->GetLocalRotation();
+			if (ImGui::InputFloat("Local Rotation", &localRot, 0.0f, 0.0f, "%.3f"))
+				m_Selected->SetLocalRotation(localRot);
+
+			glm::vec2 localScale = m_Selected->GetLocalScale();
+			if (ImGui::InputFloat2("Local Scale", &localScale.x, "%.3f"))
 			{
-				scale.x = glm::max(scale.x, 0.05f);
-				scale.y = glm::max(scale.y, 0.05f);
-				m_Selected->SetScale(scale);
+				localScale.x = glm::max(localScale.x, 0.05f);
+				localScale.y = glm::max(localScale.y, 0.05f);
+				m_Selected->SetLocalScale(localScale);
 			}
+
+			glm::vec3 worldPos = m_Selected->GetWorldPosition();
+			ImGui::TextDisabled("World: %.1f, %.1f  rot %.1f", worldPos.x, worldPos.y, m_Selected->GetWorldRotation());
 
 			int layer = m_Selected->GetLayer();
 			if (ImGui::InputInt("Layer", &layer))
 				m_Selected->SetLayer(layer);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Higher layers render in front");
+		}
+
+		if (ImGui::CollapsingHeader("Tags", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			const std::vector<std::string>& tags = m_Selected->GetTags();
+			int removeIndex = -1;
+
+			for (size_t i = 0; i < tags.size(); ++i)
+			{
+				ImGui::PushID((int)i);
+
+				char buf[128] = {};
+				std::snprintf(buf, sizeof(buf), "%s", tags[i].c_str());
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 28.0f);
+				if (ImGui::InputText("##tag", buf, sizeof(buf)))
+					m_Selected->SetTagAt(i, buf);
+
+				ImGui::SameLine();
+				if (ImGui::Button("x", ImVec2(22.0f, 0.0f)))
+					removeIndex = (int)i;
+
+				ImGui::PopID();
+			}
+
+			if (removeIndex >= 0)
+				m_Selected->RemoveTagAt((size_t)removeIndex);
+
+			if (ImGui::Button("+", ImVec2(28.0f, 0.0f)))
+			{
+				std::string name = "Tag";
+				int suffix = 1;
+				while (m_Selected->HasTag(name))
+				{
+					name = "Tag" + std::to_string(suffix);
+					++suffix;
+				}
+				m_Selected->AddTag(name);
+			}
+			ImGui::SameLine();
+			ImGui::TextDisabled("Add tag");
 		}
 
 		if (m_Selected->IsCamera())
@@ -266,6 +347,44 @@ namespace Blaze
 				ImGui::EndPopup();
 			}
 			ImGui::EndGroup();
+
+			ImGui::Separator();
+			ImGui::Text("Flipbook / Sprite Sheet");
+			ImGui::TextDisabled("Grid on the texture (left-to-right, top-to-bottom)");
+
+			int cols = m_Selected->GetFlipbookColumns();
+			int rows = m_Selected->GetFlipbookRows();
+			int frameCount = m_Selected->GetFlipbookFrameCount();
+			float fps = m_Selected->GetFlipbookFps();
+			int frame = m_Selected->GetFlipbookFrame();
+			bool playing = m_Selected->IsFlipbookPlaying();
+			bool loop = m_Selected->GetFlipbookLoop();
+
+			if (ImGui::InputInt("Columns", &cols))
+				m_Selected->SetFlipbookColumns(cols);
+			if (ImGui::InputInt("Rows", &rows))
+				m_Selected->SetFlipbookRows(rows);
+			if (ImGui::InputInt("Frame Count", &frameCount))
+				m_Selected->SetFlipbookFrameCount(frameCount);
+			ImGui::TextDisabled("0 = use Columns x Rows");
+			if (ImGui::InputFloat("FPS", &fps, 1.0f, 5.0f, "%.1f"))
+				m_Selected->SetFlipbookFps(fps);
+			if (ImGui::SliderInt("Frame", &frame, 0, glm::max(m_Selected->GetFlipbookTotalFrames() - 1, 0)))
+				m_Selected->SetFlipbookFrame(frame);
+			if (ImGui::Checkbox("Playing", &playing))
+				m_Selected->SetFlipbookPlaying(playing);
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Loop", &loop))
+				m_Selected->SetFlipbookLoop(loop);
+
+			if (ImGui::Button("Play"))
+				m_Selected->PlayFlipbook();
+			ImGui::SameLine();
+			if (ImGui::Button("Pause"))
+				m_Selected->PauseFlipbook();
+			ImGui::SameLine();
+			if (ImGui::Button("Stop"))
+				m_Selected->StopFlipbook();
 		}
 
 		if (m_Selected->HasAudio())

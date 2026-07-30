@@ -160,6 +160,13 @@ namespace Blaze {
 		return m_prop.vSync;
 	}
 
+	void Window::SetTitle(const std::string& title)
+	{
+		m_prop.title = title;
+		if (m_window)
+			glfwSetWindowTitle(m_window, title.c_str());
+	}
+
 	Window* Window::Create()
 	{
 		return new Window(1600, 900, "Blaze Engine");

@@ -124,7 +124,7 @@ namespace Blaze
 		return action;
 	}
 
-	void MenuBar::OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen)
+	void MenuBar::OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen)
 	{
 		if (!ImGui::BeginMainMenuBar())
 			return;
@@ -142,6 +142,15 @@ namespace Blaze
 				s_FileAction = FileAction::Save;
 			if (ImGui::MenuItem("Save As..."))
 				s_FileAction = FileAction::SaveAs;
+			ImGui::Separator();
+			if (ImGui::MenuItem("Project Settings..."))
+			{
+				if (projectSettingsOpen)
+					*projectSettingsOpen = true;
+				s_FileAction = FileAction::ProjectSettings;
+			}
+			if (ImGui::MenuItem("Build Project..."))
+				s_FileAction = FileAction::BuildProject;
 			ImGui::Separator();
 			if (ImGui::MenuItem("Close Project"))
 				s_FileAction = FileAction::CloseProject;
@@ -183,7 +192,9 @@ namespace Blaze
 		auto prune = [&](std::vector<GameObject*>& list)
 		{
 			list.erase(std::remove_if(list.begin(), list.end(),
-				[&](GameObject* o) { return !o || live.find(o) == live.end(); }), list.end());
+				[&](GameObject* o) {
+					return !o || live.find(o) == live.end() || o->GetParent() != nullptr;
+				}), list.end());
 		};
 
 		prune(m_RootObjects);
@@ -196,7 +207,9 @@ namespace Blaze
 
 		for (GameObject* object : objects)
 		{
-			if (object && placed.find(object) == placed.end())
+			if (!object || object->GetParent())
+				continue;
+			if (placed.find(object) == placed.end())
 				m_RootObjects.push_back(object);
 		}
 	}
@@ -210,6 +223,19 @@ namespace Blaze
 	void ObjectWindow::SetSelectedObject(GameObject* object)
 	{
 		m_Selected = object;
+		if (object)
+			m_MapSelected = false;
+	}
+
+	void ObjectWindow::SetMapSelected(bool selected)
+	{
+		m_MapSelected = selected;
+		if (selected)
+		{
+			m_Selected = nullptr;
+			m_PendingPick = nullptr;
+			m_PendingFocus = nullptr;
+		}
 	}
 
 	void ObjectWindow::ClearHierarchy()
@@ -220,7 +246,9 @@ namespace Blaze
 		m_Selected = nullptr;
 		m_PendingPick = nullptr;
 		m_PendingDelete = nullptr;
+		m_PendingFocus = nullptr;
 		m_PendingDeleteFolderId = -1;
+		m_MapSelected = false;
 		m_RenamingObject = nullptr;
 		m_RenamingFolderId = -1;
 	}
@@ -338,6 +366,13 @@ namespace Blaze
 		return deleted;
 	}
 
+	GameObject* ObjectWindow::ConsumePendingFocus()
+	{
+		GameObject* focus = m_PendingFocus;
+		m_PendingFocus = nullptr;
+		return focus;
+	}
+
 	void ObjectWindow::CreateFolder()
 	{
 		Folder folder;
@@ -393,6 +428,9 @@ namespace Blaze
 	{
 		if (!object)
 			return;
+
+		if (object->GetParent())
+			object->ClearParent(true);
 
 		RemoveObjectFromHierarchy(object);
 		if (folderId < 0)
@@ -561,15 +599,36 @@ namespace Blaze
 				ImGui::EndDragDropSource();
 			}
 
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
+				{
+					GameObject* child = *(GameObject**)payload->Data;
+					if (child && child != object)
+					{
+						RemoveObjectFromHierarchy(child);
+						if (child->SetParent(object, true))
+							BZ_INFO("Parented '{0}' under '{1}'", child->GetName(), object->GetName());
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+
 			ImGui::PopStyleVar();
 
 			if (clicked)
 			{
 				m_Selected = object;
 				m_PendingPick = object;
+				m_MapSelected = false;
 			}
 			if (doubleClicked)
-				StartRenameObject(object);
+			{
+				m_Selected = object;
+				m_PendingPick = object;
+				m_PendingFocus = object;
+				m_MapSelected = false;
+			}
 		}
 
 		if (ImGui::BeginPopupContextItem("ObjectItemContext"))
@@ -577,14 +636,33 @@ namespace Blaze
 			m_Selected = object;
 			m_PendingPick = object;
 
+			if (ImGui::MenuItem("Focus"))
+				m_PendingFocus = object;
 			if (ImGui::MenuItem("Rename"))
 				StartRenameObject(object);
+			if (object->GetParent() && ImGui::MenuItem("Unparent"))
+			{
+				GameObject* parent = object->GetParent();
+				object->ClearParent(true);
+				RemoveObjectFromHierarchy(object);
+				m_RootObjects.push_back(object);
+				BZ_INFO("Unparented '{0}' from '{1}'", object->GetName(), parent ? parent->GetName() : "");
+			}
 			if (ImGui::MenuItem("Delete"))
 			{
 				RemoveObjectFromHierarchy(object);
 				m_PendingDelete = object;
 			}
 			ImGui::EndPopup();
+		}
+
+		for (GameObject* child : object->GetChildren())
+		{
+			if (!child)
+				continue;
+			ImGui::Indent(12.0f);
+			DrawObjectProp(child);
+			ImGui::Unindent(12.0f);
 		}
 
 		ImGui::PopID();
@@ -616,8 +694,19 @@ namespace Blaze
 		}
 		else
 		{
-			open = ImGui::TreeNodeEx("##foldernode", flags, "[Folder] %s", folder.name.c_str());
-		}
+			open = ImGui::TreeNodeEx("##foldernode", flags, "   %s", folder.name.c_str());
+			{
+				unsigned int folderTex = Gizmo2D::GetFolderIconTextureID();
+				if (folderTex != 0)
+				{
+					ImVec2 p = ImGui::GetItemRectMin();
+					const float icon = 16.0f;
+					p.x += ImGui::GetTreeNodeToLabelSpacing();
+					p.y += (ImGui::GetItemRectSize().y - icon) * 0.5f;
+					ImGui::GetWindowDrawList()->AddImage(
+						(ImTextureID)(intptr_t)folderTex, p, ImVec2(p.x + icon, p.y + icon));
+				}
+			}		}
 
 		folder.open = open;
 
@@ -650,6 +739,90 @@ namespace Blaze
 		ImGui::PopID();
 	}
 
+	std::string ObjectWindow::GetActiveMapDisplayName()
+	{
+		const std::string& mapPath = Project::GetActiveMap();
+		if (mapPath.empty())
+			return "Untitled Map";
+		return std::filesystem::path(mapPath).stem().string();
+	}
+
+	void ObjectWindow::DrawMapRoot()
+	{
+		const std::string mapName = GetActiveMapDisplayName();
+
+		ImGuiTreeNodeFlags flags =
+			ImGuiTreeNodeFlags_OpenOnArrow |
+			ImGuiTreeNodeFlags_DefaultOpen |
+			ImGuiTreeNodeFlags_SpanAvailWidth |
+			ImGuiTreeNodeFlags_Framed;
+		if (m_MapSelected)
+			flags |= ImGuiTreeNodeFlags_Selected;
+
+		ImGui::PushID("ActiveMapRoot");
+		const bool open = ImGui::TreeNodeEx("##maproot", flags, "   %s", mapName.c_str());
+		{
+			unsigned int mapTex = Gizmo2D::GetMapIconTextureID();
+			if (mapTex != 0)
+			{
+				ImVec2 p = ImGui::GetItemRectMin();
+				const float icon = 16.0f;
+				p.x += ImGui::GetTreeNodeToLabelSpacing();
+				p.y += (ImGui::GetItemRectSize().y - icon) * 0.5f;
+				ImGui::GetWindowDrawList()->AddImage(
+					(ImTextureID)(intptr_t)mapTex, p, ImVec2(p.x + icon, p.y + icon));
+			}
+		}
+		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+			SetMapSelected(true);
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
+			{
+				GameObject* object = *(GameObject**)payload->Data;
+				MoveObjectToFolder(object, -1);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		if (ImGui::BeginPopupContextItem("MapRootContext"))
+		{
+			if (ImGui::MenuItem("Select Map"))
+				SetMapSelected(true);
+			if (ImGui::MenuItem("Create Folder"))
+				CreateFolder();
+			ImGui::EndPopup();
+		}
+
+		if (open)
+		{
+			if (m_Folders.empty() && m_RootObjects.empty())
+				ImGui::TextDisabled("No objects in map");
+
+			for (Folder& folder : m_Folders)
+				DrawFolder(folder);
+
+			for (GameObject* object : m_RootObjects)
+				DrawObjectProp(object);
+
+			ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, 28.0f));
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
+				{
+					GameObject* object = *(GameObject**)payload->Data;
+					MoveObjectToFolder(object, -1);
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
 	void ObjectWindow::DrawContextMenu()
 	{
 		if (ImGui::BeginPopupContextWindow("ObjectsWindowContext",
@@ -674,25 +847,10 @@ namespace Blaze
 
 		onFocus = ImGui::IsWindowFocused();
 
-		if (m_Folders.empty() && m_RootObjects.empty())
-			ImGui::TextDisabled("No objects in scene");
-
-		for (Folder& folder : m_Folders)
-			DrawFolder(folder);
-
-		for (GameObject* object : m_RootObjects)
-			DrawObjectProp(object);
-
-		ImGui::Dummy(ImVec2(ImGui::GetContentRegionAvail().x, 28.0f));
-		if (ImGui::BeginDragDropTarget())
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_SceneObjectPayload))
-			{
-				GameObject* object = *(GameObject**)payload->Data;
-				MoveObjectToFolder(object, -1);
-			}
-			ImGui::EndDragDropTarget();
-		}
+		if (Project::HasProject())
+			DrawMapRoot();
+		else
+			ImGui::TextDisabled("No project loaded");
 
 		DrawContextMenu();
 

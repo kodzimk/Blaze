@@ -27,12 +27,7 @@ public:
 
 		Blaze::GameWindow::BeginCapture();
 
-		float zoom = cameraObject->GetZoom();
-		glm::mat4 gameView(1.0f);
-		gameView = glm::scale(gameView, glm::vec3(zoom, zoom, 1.0f));
-		gameView = glm::translate(gameView, -cameraObject->GetPosition());
-
-		render->BeginScene(gameView, "matrix");
+		render->BeginScene(cameraObject->GetCameraViewMatrix(), "matrix");
 		render->Render(*camera);
 		render->EndScene();
 
@@ -96,6 +91,14 @@ public:
 		return count;
 	}
 
+	void FocusEditorOnObject(Blaze::GameObject* object)
+	{
+		if (!object || !camera)
+			return;
+
+		camera->FocusOn(object->GetPosition());
+	}
+
 	Blaze::ObjectWindow* GetObjectsWindow()
 	{
 		if (auto* context = Blaze::Application::Get().GetContext())
@@ -126,6 +129,26 @@ public:
 	{
 		if (auto* context = Blaze::Application::Get().GetContext())
 			context->m_contextWindow->SetRootDirectory(Blaze::Project::GetContentDirectory());
+	}
+
+	void OpenMapFile(const std::string& path)
+	{
+		if (path.empty() || !Blaze::Project::HasProject())
+			return;
+
+		if (Blaze::StartWindow::IsPlaying())
+			Blaze::StartWindow::SetPlaying(false);
+
+		m_Selected = nullptr;
+		m_DragAxis = Blaze::GizmoAxis::None;
+		if (!Blaze::Project::LoadMap(path, *render, vertices, indices, GetObjectsWindow()))
+			return;
+
+		if (CountCameraObjects() == 0)
+			CreateDefaultCamera();
+
+		ApplyProjectToBrowser();
+		BZ_INFO("Opened map: {0}", path);
 	}
 
 	void HandleHubActions()
@@ -197,6 +220,18 @@ public:
 				Blaze::Project::CloseProject();
 				if (auto* context = Blaze::Application::Get().GetContext())
 					context->m_contextWindow->SetRootDirectory("content");
+				break;
+			}
+			case Blaze::FileAction::ProjectSettings:
+			{
+				if (auto* context = Blaze::Application::Get().GetContext())
+					context->m_projectSettings->Open();
+				break;
+			}
+			case Blaze::FileAction::BuildProject:
+			{
+				if (Blaze::Project::SaveScene(*render, GetObjectsWindow()))
+					Blaze::Project::BuildGame();
 				break;
 			}
 			default:
@@ -286,9 +321,19 @@ public:
 		if (auto* context = Blaze::Application::Get().GetContext())
 		{
 			context->m_objectWindow->SetObjects(render->GetObjects());
-			context->m_objectWindow->SetSelectedObject(m_Selected);
-			context->m_componentsWindow->SetObjects(render->GetObjects());
-			context->m_componentsWindow->SetSelectedObject(m_Selected);
+			if (context->m_objectWindow->IsMapSelected())
+			{
+				m_Selected = nullptr;
+				context->m_componentsWindow->SetObjects(render->GetObjects());
+				context->m_componentsWindow->SetMapSelected(true);
+			}
+			else
+			{
+				context->m_objectWindow->SetSelectedObject(m_Selected);
+				context->m_componentsWindow->SetObjects(render->GetObjects());
+				context->m_componentsWindow->SetMapSelected(false);
+				context->m_componentsWindow->SetSelectedObject(m_Selected);
+			}
 		}
 	}
 
@@ -303,6 +348,18 @@ public:
 			camera->CameraMove();
 		HandleFileMenu();
 
+		std::string openMapPath;
+		if (Blaze::ContentBrowser::ConsumePendingOpenMap(openMapPath))
+			OpenMapFile(openMapPath);
+		else if (Blaze::ProjectSettingsWindow::ConsumePendingOpenMap(openMapPath))
+			OpenMapFile(openMapPath);
+		else if (Blaze::ScriptEngine::ConsumePendingOpenMap(openMapPath))
+		{
+			OpenMapFile(openMapPath);
+			m_WasPlaying = false;
+			Blaze::StartWindow::SetPlaying(true);
+		}
+
 		if (Blaze::UIBlocksMainEditor())
 			m_DragAxis = Blaze::GizmoAxis::None;
 
@@ -310,6 +367,12 @@ public:
 		{
 			if (Blaze::GameObject* picked = context->m_objectWindow->ConsumePickedObject())
 				m_Selected = picked;
+
+			if (Blaze::GameObject* focusObject = context->m_objectWindow->ConsumePendingFocus())
+			{
+				m_Selected = focusObject;
+				FocusEditorOnObject(focusObject);
+			}
 
 			if (Blaze::GameObject* toDelete = context->m_objectWindow->ConsumePendingDelete())
 			{
@@ -327,9 +390,20 @@ public:
 			}
 
 			context->m_objectWindow->SetObjects(render->GetObjects());
-			context->m_objectWindow->SetSelectedObject(m_Selected);
-			context->m_componentsWindow->SetObjects(render->GetObjects());
-			context->m_componentsWindow->SetSelectedObject(m_Selected);
+			if (context->m_objectWindow->IsMapSelected())
+			{
+				m_Selected = nullptr;
+				m_DragAxis = Blaze::GizmoAxis::None;
+				context->m_componentsWindow->SetObjects(render->GetObjects());
+				context->m_componentsWindow->SetMapSelected(true);
+			}
+			else
+			{
+				context->m_objectWindow->SetSelectedObject(m_Selected);
+				context->m_componentsWindow->SetObjects(render->GetObjects());
+				context->m_componentsWindow->SetMapSelected(false);
+				context->m_componentsWindow->SetSelectedObject(m_Selected);
+			}
 		}
 
 		std::string droppedObjectType;
@@ -474,6 +548,8 @@ public:
 			if (!m_WasPlaying)
 			{
 				CaptureEditorSnapshot();
+				Blaze::ScriptEngine::SetRenderer(render);
+				Blaze::ScriptEngine::SetPhysicsWorld(physics);
 				if (!Blaze::ScriptEngine::OnPlayModeStart(render->GetObjects()))
 				{
 					// Syntax/compile error — abort play before physics/audio/scripts run
@@ -498,6 +574,7 @@ public:
 				Blaze::ScriptEngine::OnCollisionEvents(physics->ConsumeCollisionEvents());
 				FlushScriptDestroys();
 				physics->ApplyPlayTransforms(render->GetObjects());
+				render->Update(dt);
 				RenderGameView();
 				RestoreEditorSnapshot();
 			}
@@ -511,6 +588,9 @@ public:
 			m_EditorSnapshot.clear();
 		}
 		m_WasPlaying = Blaze::StartWindow::IsPlaying();
+
+		if (!Blaze::StartWindow::IsPlaying())
+			render->Update(dt);
 
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
@@ -607,6 +687,29 @@ public:
 					}
 				}
 
+				if (auto* context = Blaze::Application::Get().GetContext())
+				{
+					if (found)
+						context->m_objectWindow->SetMapSelected(false);
+				}
+
+				if (found && m_Selected)
+				{
+					const auto now = std::chrono::steady_clock::now();
+					const double elapsed = std::chrono::duration<double>(now - m_LastViewportClickTime).count();
+					if (m_Selected == m_LastViewportClickObject && elapsed < 0.35)
+					{
+						FocusEditorOnObject(m_Selected);
+						m_LastViewportClickObject = nullptr;
+						m_LastViewportClickTime = {};
+					}
+					else
+					{
+						m_LastViewportClickObject = m_Selected;
+						m_LastViewportClickTime = now;
+					}
+				}
+
 				if (m_Selected && gizmo->GetMode() == Blaze::GizmoMode::Translate)
 				{
 					m_DragAxis = Blaze::GizmoAxis::XY;
@@ -627,6 +730,12 @@ public:
 			auto& e = (Blaze::KeyPressedEvent&)event;
 			const bool ctrl = Blaze::Input::IsKeyPressed(BZ_KEY_LEFT_CONTROL) ||
 				Blaze::Input::IsKeyPressed(BZ_KEY_RIGHT_CONTROL);
+
+			if (e.GetKeyCode() == BZ_KEY_F && !ctrl && m_Selected)
+			{
+				FocusEditorOnObject(m_Selected);
+				return;
+			}
 
 			if (e.GetKeyCode() == BZ_KEY_S && ctrl)
 			{
@@ -686,18 +795,22 @@ public:
 	std::chrono::steady_clock::time_point m_LastTime;
 	bool m_WasPlaying = false;
 	std::vector<EditorPose> m_EditorSnapshot;
+	Blaze::GameObject* m_LastViewportClickObject = nullptr;
+	std::chrono::steady_clock::time_point m_LastViewportClickTime{};
 
 	const char* vertexShaderSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 pos;\n"
 		"layout (location = 1) in vec2 texCoord;\n"
 		"uniform mat4 matrix;\n"
 		"uniform mat4 ortho;\n"
-		"out vec2 TexCoord;\n"
 		"uniform mat4 object_matrix;\n"
+		"uniform vec2 uv_scale;\n"
+		"uniform vec2 uv_offset;\n"
+		"out vec2 TexCoord;\n"
 		"void main()\n"
 		"{\n"
 		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos,1.0f));\n"
-		"   TexCoord = texCoord;\n"
+		"   TexCoord = texCoord * uv_scale + uv_offset;\n"
 		"}\0";
 
 	const char* fragmentShaderSource = "#version 330 core\n"
@@ -707,7 +820,7 @@ public:
 		"uniform sampler2D in_texture;\n"
 		"void main()\n"
 		"{\n"
-		"   FragColor = texture(in_texture,TexCoord);\n"
+		"   FragColor = texture(in_texture,TexCoord) * color;\n"
 		"}\n\0";
 };
 

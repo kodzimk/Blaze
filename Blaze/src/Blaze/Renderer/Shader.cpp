@@ -47,7 +47,11 @@ namespace Blaze
 	}
 	void Shader::SetUniform1i(int data, const char* uniform_name)
 	{
-		glUniform1f(glGetUniformLocation(m_Program, uniform_name), data);
+		glUniform1i(glGetUniformLocation(m_Program, uniform_name), data);
+	}
+	void Shader::SetUniform2fv(const glm::vec2& data, const char* uniform_name)
+	{
+		glUniform2fv(glGetUniformLocation(m_Program, uniform_name), 1, glm::value_ptr(data));
 	}
 	void Shader::SetUniform3fv(const glm::vec3& data,const char* uniform_name)
 	{

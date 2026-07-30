@@ -17,6 +17,8 @@ namespace Blaze
 		static void Stop(GameObject* object);
 		static void StopAll();
 		static bool IsPlaying(GameObject* object);
+		static void SyncVolume(GameObject* object);
+		static void SyncLoop(GameObject* object);
 
 		static void OnPlayModeStart(const std::vector<GameObject*>& objects);
 		static void OnPlayModeStop();

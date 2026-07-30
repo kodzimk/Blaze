@@ -14,7 +14,9 @@ namespace Blaze
 		OpenProject,
 		Save,
 		SaveAs,
-		CloseProject
+		CloseProject,
+		ProjectSettings,
+		BuildProject
 	};
 
 	enum class HubAction
@@ -45,7 +47,7 @@ namespace Blaze
 		MenuBar();
 		virtual ~MenuBar();
 
-		void OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen);
+		void OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen = nullptr);
 		bool OnFocus() const { return onFocus; }
 
 		static FileAction ConsumeFileAction();
@@ -75,6 +77,9 @@ namespace Blaze
 
 		GameObject* ConsumePickedObject();
 		GameObject* ConsumePendingDelete();
+		GameObject* ConsumePendingFocus();
+		bool IsMapSelected() const { return m_MapSelected; }
+		void SetMapSelected(bool selected);
 
 	private:
 		struct Folder
@@ -95,7 +100,9 @@ namespace Blaze
 		void CommitRename();
 		void DrawObjectProp(GameObject* object);
 		void DrawFolder(Folder& folder);
+		void DrawMapRoot();
 		void DrawContextMenu();
+		static std::string GetActiveMapDisplayName();
 	private:
 		bool onFocus;
 		bool m_Open = true;
@@ -107,7 +114,9 @@ namespace Blaze
 		GameObject* m_Selected = nullptr;
 		GameObject* m_PendingPick = nullptr;
 		GameObject* m_PendingDelete = nullptr;
+		GameObject* m_PendingFocus = nullptr;
 		int m_PendingDeleteFolderId = -1;
+		bool m_MapSelected = false;
 
 		GameObject* m_RenamingObject = nullptr;
 		int m_RenamingFolderId = -1;

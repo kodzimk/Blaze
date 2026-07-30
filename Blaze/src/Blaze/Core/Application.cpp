@@ -12,19 +12,23 @@ namespace Blaze {
 	#define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
 
 	Application* Application::s_Instance = nullptr;
-	Application::Application()
+	Application::Application(bool enableEditor)
 		: m_running(true)
 	{
 		s_Instance = this;
 		m_window = Window::Create();
 		m_window->SetCallBackEvent(BIND_EVENT_FN(OnEvent));
-	
-		m_context = new Context((GLFWwindow*)m_window->GetNativeWindow());
+
+		if (enableEditor)
+			m_context = new Context((GLFWwindow*)m_window->GetNativeWindow());
+		else
+			m_context = nullptr;
 	}
 
 	Application::~Application()
 	{
 		delete m_context;
+		m_context = nullptr;
 		delete m_window;
 	}
 
@@ -52,12 +56,12 @@ namespace Blaze {
 		while(m_running)
 		{   
 			m_window->Clear(0.1f, 0.1f, 0.1f,255.0f);
-			if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
+			if (m_context)
 			{
-				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			}
-			else {
-				glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
+					glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				else
+					glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			}
 
 			if (!m_Minimized)
@@ -67,7 +71,8 @@ namespace Blaze {
 				}
 
 			}
-			m_context->OnUpdate();
+			if (m_context)
+				m_context->OnUpdate();
 			m_window->OnUpdate();
 		}
 

@@ -37,6 +37,7 @@ namespace Blaze
 
 		void SetVSync(bool enabled);
 		bool IsVSync() const;
+		void SetTitle(const std::string& title);
 
 		static 	Window* Create();
 	private:

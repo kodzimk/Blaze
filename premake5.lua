@@ -75,7 +75,8 @@ project "Blaze"
 
 		postbuildcommands
 		{
-			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
+			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox"),
+			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Runtime")
 		}
 
 	filter "configurations:Debug"
@@ -134,6 +135,65 @@ project "Sandbox"
 		defines
 		{
 			"BZ_PLATFORM_WINDOWS"
+		}
+
+	filter "configurations:Debug"
+		defines "BZ_DEBUG"
+			buildoptions "/MDd"
+		symbols "On"
+
+	filter "configurations:Release"
+		defines "BZ_RELEASE"
+			buildoptions "/MD"
+		optimize "On"
+
+	filter "configurations:Dist"
+		defines "BZ_DIST"
+			buildoptions "/MD"
+		optimize "On"
+
+project "Runtime"
+	location "Runtime"
+	kind "ConsoleApp"
+	language "C++"
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	buildoptions 
+	{ 
+		"/utf-8"
+    }
+
+	files
+	{
+		"%{prj.name}/src/**.h",
+		"%{prj.name}/src/**.cpp",
+	}
+
+	includedirs
+	{
+		"Blaze/vendor/spdlog/include",
+		"Blaze/vendor/GLAD/include",
+		"Blaze/src",
+		"Blaze/vendor/glm/glm"
+	}
+
+	links
+	{
+		"Blaze"
+	}
+
+
+	filter "system:windows"
+		cppdialect "C++17"
+		staticruntime "On"
+		systemversion "latest"
+
+		defines
+		{
+			"BZ_PLATFORM_WINDOWS",
+			"BZ_RUNTIME"
 		}
 
 	filter "configurations:Debug"

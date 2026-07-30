@@ -20,5 +20,6 @@
 #include"Blaze/ImGui/PropertiesWindow.h"
 #include"Blaze/ImGui/ComponentsWindow.h"
 #include"Blaze/ImGui/ContentBrowser.h"
+#include"Blaze/ImGui/ProjectSettingsWindow.h"
 
 #include "Blaze/Core/EntryPoint.h"

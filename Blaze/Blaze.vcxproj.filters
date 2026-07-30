@@ -135,6 +135,9 @@
     <ClInclude Include="src\Blaze\ImGui\ScriptEditorWindow.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ProjectSettingsWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
@@ -1500,6 +1503,9 @@
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ScriptEditorWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ProjectSettingsWindow.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">

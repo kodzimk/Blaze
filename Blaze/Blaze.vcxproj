@@ -94,7 +94,10 @@
       <ImportLibrary>..\bin\Debug-windows-x86_64\Blaze\Blaze.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>IF EXIST ..\bin\Debug-windows-x86_64\Blaze\Blaze.dll\ (xcopy /Q /E /Y /I ..\bin\Debug-windows-x86_64\Blaze\Blaze.dll ..\bin\Debug-windows-x86_64\Sandbox &gt; nul) ELSE (xcopy /Q /Y /I ..\bin\Debug-windows-x86_64\Blaze\Blaze.dll ..\bin\Debug-windows-x86_64\Sandbox &gt; nul)</Command>
+      <Command>mkdir ..\bin\Debug-windows-x86_64\Sandbox 2&gt;nul
+mkdir ..\bin\Debug-windows-x86_64\Runtime 2&gt;nul
+copy /Y ..\bin\Debug-windows-x86_64\Blaze\Blaze.dll ..\bin\Debug-windows-x86_64\Sandbox\Blaze.dll &gt; nul
+copy /Y ..\bin\Debug-windows-x86_64\Blaze\Blaze.dll ..\bin\Debug-windows-x86_64\Runtime\Blaze.dll &gt; nul</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -121,7 +124,10 @@
       <ImportLibrary>..\bin\Release-windows-x86_64\Blaze\Blaze.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>IF EXIST ..\bin\Release-windows-x86_64\Blaze\Blaze.dll\ (xcopy /Q /E /Y /I ..\bin\Release-windows-x86_64\Blaze\Blaze.dll ..\bin\Release-windows-x86_64\Sandbox &gt; nul) ELSE (xcopy /Q /Y /I ..\bin\Release-windows-x86_64\Blaze\Blaze.dll ..\bin\Release-windows-x86_64\Sandbox &gt; nul)</Command>
+      <Command>mkdir ..\bin\Release-windows-x86_64\Sandbox 2&gt;nul
+mkdir ..\bin\Release-windows-x86_64\Runtime 2&gt;nul
+copy /Y ..\bin\Release-windows-x86_64\Blaze\Blaze.dll ..\bin\Release-windows-x86_64\Sandbox\Blaze.dll &gt; nul
+copy /Y ..\bin\Release-windows-x86_64\Blaze\Blaze.dll ..\bin\Release-windows-x86_64\Runtime\Blaze.dll &gt; nul</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
@@ -148,7 +154,10 @@
       <ImportLibrary>..\bin\Dist-windows-x86_64\Blaze\Blaze.lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>IF EXIST ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll\ (xcopy /Q /E /Y /I ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Sandbox &gt; nul) ELSE (xcopy /Q /Y /I ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Sandbox &gt; nul)</Command>
+      <Command>mkdir ..\bin\Dist-windows-x86_64\Sandbox 2&gt;nul
+mkdir ..\bin\Dist-windows-x86_64\Runtime 2&gt;nul
+copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Sandbox\Blaze.dll &gt; nul
+copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Runtime\Blaze.dll &gt; nul</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -170,6 +179,7 @@
     <ClInclude Include="src\Blaze\Event\MouseEvent.h" />
     <ClInclude Include="src\Blaze\ImGui\ContentBrowser.h" />
     <ClInclude Include="src\Blaze\ImGui\ScriptEditorWindow.h" />
+    <ClInclude Include="src\Blaze\ImGui\ProjectSettingsWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
@@ -627,6 +637,7 @@
     <ClCompile Include="src\Blaze\Core\WindowsInput.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ContentBrowser.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ScriptEditorWindow.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\ProjectSettingsWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />

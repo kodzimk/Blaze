@@ -45,6 +45,15 @@ namespace Blaze {
 
 	}
 
+	void Renderer::Update(float dt)
+	{
+		for (GameObject* object : m_objects)
+		{
+			if (object)
+				object->UpdateAnimation(dt);
+		}
+	}
+
 	void Renderer::CreateObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices,glm::vec4 color)
 	{
 		m_objects.push_back(new GameObject(vertices,indices,color,"Object" + std::to_string(m_objects.size() + 1)));

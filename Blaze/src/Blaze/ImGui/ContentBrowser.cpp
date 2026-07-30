@@ -4,6 +4,7 @@
 #include "Blaze/Renderer/Texture.h"
 #include "Blaze/Renderer/Gizmo.h"
 #include "Blaze/Logging/Log.h"
+#include "Blaze/Core/Project.h"
 #include "Blaze/ImGui/ScriptEditorWindow.h"
 #include <filesystem>
 #include <cctype>
@@ -23,10 +24,12 @@ namespace Blaze
 	float ContentBrowser::m_width = 1000.f;
 	std::string ContentBrowser::s_DraggingPath;
 	std::string ContentBrowser::s_PendingDropPath;
+	std::string ContentBrowser::s_PendingOpenMap;
 
 	static const char* s_TexturePayload = "BLAZE_TEXTURE";
 	static const char* s_AudioPayload = "BLAZE_AUDIO";
 	static const char* s_ScriptPayload = "BLAZE_SCRIPT";
+	static const char* s_MapPayload = "BLAZE_MAP";
 
 	ContentBrowser::ContentBrowser()
 		: onFocus(false), m_RootDir("content"), m_CurrentDir("content")
@@ -67,6 +70,13 @@ namespace Blaze
 		for (auto& c : extension)
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".lua";
+	}
+
+	bool ContentBrowser::IsMapFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".map";
 	}
 
 	Texture* ContentBrowser::GetThumbnail(const std::string& path)
@@ -225,6 +235,37 @@ namespace Blaze
 		StartRename(scriptPath.string());
 	}
 
+	void ContentBrowser::CreateMap()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path mapPath = fs::path(m_CurrentDir) / "NewMap.map";
+		int suffix = 1;
+		while (fs::exists(mapPath))
+		{
+			mapPath = fs::path(m_CurrentDir) / ("NewMap (" + std::to_string(suffix) + ").map");
+			++suffix;
+		}
+
+		const std::string scriptRel = Project::CreateMapScriptForMap(mapPath.string());
+
+		std::ofstream out(mapPath);
+		if (!out.is_open())
+		{
+			BZ_INFO("Failed to create map: {0}", mapPath.string());
+			return;
+		}
+
+		out << "BlazeMap 1\n";
+		if (!scriptRel.empty())
+			out << "mapscript " << scriptRel << "\n";
+		out.close();
+
+		BZ_INFO("Created map: {0}", mapPath.string());
+		StartRename(mapPath.string());
+	}
+
 	void ContentBrowser::CreateFolder()
 	{
 		if (!fs::exists(m_CurrentDir))
@@ -341,6 +382,8 @@ namespace Blaze
 				ImportAudio();
 			if (ImGui::MenuItem("Create Script"))
 				CreateScript();
+			if (ImGui::MenuItem("Create Map"))
+				CreateMap();
 			if (ImGui::MenuItem("New Folder"))
 				CreateFolder();
 			ImGui::EndPopup();
@@ -413,6 +456,12 @@ namespace Blaze
 			if (MoveAssetToFolder(sourcePath, folderPath))
 				moved = true;
 		}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_MapPayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
 		return moved;
 	}
 
@@ -476,7 +525,20 @@ namespace Blaze
 
 			if (entry.is_directory())
 			{
-				if (ImGui::Button("[DIR]", ImVec2(thumbSize, thumbSize)))
+				unsigned int folderTex = Gizmo2D::GetFolderIconTextureID();
+				bool clicked = false;
+				if (folderTex != 0)
+				{
+					clicked = ImGui::ImageButton("##folder", (ImTextureID)(intptr_t)folderTex,
+						ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
+						ImVec4(0.14f, 0.14f, 0.14f, 1.0f), ImVec4(1, 1, 1, 1));
+				}
+				else
+				{
+					clicked = ImGui::Button("[DIR]", ImVec2(thumbSize, thumbSize));
+				}
+
+				if (clicked)
 				{
 					if (!m_RenamingPath.empty())
 						CommitRename();
@@ -561,7 +623,17 @@ namespace Blaze
 			}
 			else if (IsScriptFile(path.extension().string()))
 			{
-				ImGui::Button("[LUA]", ImVec2(thumbSize, thumbSize));
+				unsigned int scriptTex = Gizmo2D::GetScriptIconTextureID();
+				if (scriptTex != 0)
+				{
+					ImGui::ImageButton("##script", (ImTextureID)(intptr_t)scriptTex,
+						ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
+						ImVec4(0.14f, 0.14f, 0.14f, 1.0f), ImVec4(1, 1, 1, 1));
+				}
+				else
+				{
+					ImGui::Button("[LUA]", ImVec2(thumbSize, thumbSize));
+				}
 
 				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 					ScriptEditorWindow::OpenFile(fullPath);
@@ -570,6 +642,8 @@ namespace Blaze
 				{
 					ImGui::SetDragDropPayload(s_ScriptPayload, fullPath.c_str(), fullPath.size() + 1);
 					s_DraggingPath = fullPath;
+					if (scriptTex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)scriptTex, ImVec2(48.0f, 48.0f));
 					ImGui::TextUnformatted(name.c_str());
 					ImGui::EndDragDropSource();
 				}
@@ -578,6 +652,50 @@ namespace Blaze
 				{
 					if (ImGui::MenuItem("Edit Script"))
 						ScriptEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsMapFile(path.extension().string()))
+			{
+				unsigned int mapTex = Gizmo2D::GetMapIconTextureID();
+				if (mapTex != 0)
+				{
+					ImGui::ImageButton("##map", (ImTextureID)(intptr_t)mapTex,
+						ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
+						ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(1, 1, 1, 1));
+				}
+				else
+				{
+					ImGui::Button("[MAP]", ImVec2(thumbSize, thumbSize));
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					s_PendingOpenMap = fullPath;
+					BZ_INFO("Opening map: {0}", fullPath);
+				}
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_MapPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					if (mapTex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)mapTex, ImVec2(48.0f, 48.0f));
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("MapItemContext"))
+				{
+					if (ImGui::MenuItem("Open Map"))
+					{
+						s_PendingOpenMap = fullPath;
+						BZ_INFO("Opening map: {0}", fullPath);
+					}
 					if (ImGui::MenuItem("Rename"))
 						StartRename(fullPath);
 					ImGui::EndPopup();
@@ -615,6 +733,16 @@ namespace Blaze
 
 		outPath = s_PendingDropPath;
 		s_PendingDropPath.clear();
+		return true;
+	}
+
+	bool ContentBrowser::ConsumePendingOpenMap(std::string& outPath)
+	{
+		if (s_PendingOpenMap.empty())
+			return false;
+
+		outPath = s_PendingOpenMap;
+		s_PendingOpenMap.clear();
 		return true;
 	}
 

@@ -26,14 +26,17 @@ namespace Blaze
 		void SetRootDirectory(const std::string& path);
 
 		static bool ConsumePendingDrop(std::string& outPath);
+		static bool ConsumePendingOpenMap(std::string& outPath);
 	private:
 		bool IsTextureFile(std::string extension) const;
 		bool IsAudioFile(std::string extension) const;
 		bool IsScriptFile(std::string extension) const;
+		bool IsMapFile(std::string extension) const;
 		Texture* GetThumbnail(const std::string& path);
 		void ImportTexture();
 		void ImportAudio();
 		void CreateScript();
+		void CreateMap();
 		void CreateFolder();
 		void StartRename(const std::string& path);
 		void CommitRename();
@@ -55,6 +58,7 @@ namespace Blaze
 
 		static std::string s_DraggingPath;
 		static std::string s_PendingDropPath;
+		static std::string s_PendingOpenMap;
 	public:
 		static float m_width;
 		static float m_height;

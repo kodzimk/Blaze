@@ -1,7 +1,11 @@
 #include "ScriptEngine.h"
 #include "OnScreenDebug.h"
 #include "Blaze/Renderer/GameObject.h"
+#include "Blaze/Renderer/Renderer.h"
+#include "Blaze/Renderer/Camera.h"
+#include "Blaze/Audio/AudioEngine.h"
 #include "Blaze/Core/Input.h"
+#include "Blaze/Core/Project.h"
 #include "Blaze/Event/KeyCodes.h"
 #include "Blaze/Event/MouseButtonCodes.h"
 #include "Blaze/Logging/Log.h"
@@ -17,6 +21,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <filesystem>
 #include <memory>
 #include <regex>
 #include <unordered_map>
@@ -39,11 +44,14 @@ namespace Blaze
 	static std::unique_ptr<sol::state> s_Lua;
 	static bool s_Ready = false;
 	static std::unordered_map<GameObject*, ScriptInstance> s_Instances;
+	static ScriptInstance s_MapInstance;
+	static bool s_HasMapInstance = false;
 	static std::unordered_map<int, bool> s_KeyWasDown;
 	static std::unordered_map<int, bool> s_MouseWasDown;
 	static GameObject* s_CurrentObject = nullptr;
 	static std::vector<GameObject*> s_PendingDestroy;
 	static std::unordered_set<GameObject*> s_LiveObjects;
+	static std::string s_PendingOpenMap;
 
 	struct ScriptObject
 	{
@@ -82,6 +90,67 @@ namespace Blaze
 			glm::vec2 s = raw->GetScale();
 			return std::make_tuple(s.x, s.y);
 		}
+
+		std::tuple<float, float, float, float> GetColor() const
+		{
+			if (!IsValid())
+				return std::make_tuple(1.0f, 1.0f, 1.0f, 1.0f);
+			glm::vec4 c = raw->GetColor();
+			return std::make_tuple(c.r, c.g, c.b, c.a);
+		}
+
+		void SetColor(float r, float g, float b, float a)
+		{
+			if (IsValid())
+				raw->SetColor(r, g, b, a);
+		}
+
+		void SetColorRGB(float r, float g, float b)
+		{
+			SetColor(r, g, b, 1.0f);
+		}
+
+		std::string GetTag() const
+		{
+			return IsValid() ? raw->GetTag() : std::string();
+		}
+
+		std::string GetTags() const
+		{
+			return IsValid() ? raw->GetTagsString() : std::string();
+		}
+
+		bool HasTag(const std::string& tag) const
+		{
+			return IsValid() && raw->HasTag(tag);
+		}
+
+		void SetTag(const std::string& tag)
+		{
+			if (IsValid())
+				raw->SetTag(tag);
+		}
+
+		void AddTag(const std::string& tag)
+		{
+			if (IsValid())
+				raw->AddTag(tag);
+		}
+	};
+
+	static Renderer* s_Renderer = nullptr;
+	static PhysicsWorld2D* s_Physics = nullptr;
+
+	static const std::vector<float> s_DefaultVertices = {
+		 50.f,  50.f, 0.0f, 1.0f, 1.0f,
+		 50.f, -50.f, 0.0f, 1.0f, 0.0f,
+		-50.f, -50.f, 0.0f, 0.0f, 0.0f,
+		-50.f,  50.f, 0.0f, 0.0f, 1.0f,
+	};
+
+	static const std::vector<unsigned int> s_DefaultIndices = {
+		0, 1, 3,
+		1, 2, 3
 	};
 
 	struct ScriptError
@@ -124,7 +193,7 @@ namespace Blaze
 	{
 		ScriptError entry;
 		entry.phase = phase;
-		entry.objectName = object ? object->GetName() : "<none>";
+		entry.objectName = object ? object->GetName() : (scriptPath.empty() ? std::string("<none>") : std::string("[Map]"));
 		entry.scriptPath = scriptPath.empty() && object ? object->GetScriptPath() : scriptPath;
 		entry.where = ExtractWhere(entry.scriptPath, errWhat);
 		entry.message = errWhat;
@@ -291,6 +360,8 @@ namespace Blaze
 		return -1;
 	}
 
+	static bool AttachRuntimeScript(GameObject* object, bool callStart);
+
 	static void BindApi(sol::state& lua)
 	{
 		lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table);
@@ -301,6 +372,13 @@ namespace Blaze
 			"GetLocation", &ScriptObject::GetLocation,
 			"GetRotation", &ScriptObject::GetRotation,
 			"GetScale", &ScriptObject::GetScale,
+			"GetColor", &ScriptObject::GetColor,
+			"SetColor", sol::overload(&ScriptObject::SetColor, &ScriptObject::SetColorRGB),
+			"GetTag", &ScriptObject::GetTag,
+			"GetTags", &ScriptObject::GetTags,
+			"HasTag", &ScriptObject::HasTag,
+			"SetTag", &ScriptObject::SetTag,
+			"AddTag", &ScriptObject::AddTag,
 			"IsValid", &ScriptObject::IsValid);
 
 		lua.set_function("print", [](sol::variadic_args args)
@@ -326,6 +404,128 @@ namespace Blaze
 			[]()
 			{
 				ScriptEngine::QueueDestroy(s_CurrentObject);
+			}));
+
+		lua.set_function("SetTag", sol::overload(
+			[](const std::string& tag)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetTag(tag);
+			},
+			[](const ScriptObject& object, const std::string& tag)
+			{
+				if (object.IsValid())
+					object.raw->SetTag(tag);
+			}));
+
+		lua.set_function("AddTag", sol::overload(
+			[](const std::string& tag)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AddTag(tag);
+			},
+			[](const ScriptObject& object, const std::string& tag)
+			{
+				if (object.IsValid())
+					object.raw->AddTag(tag);
+			}));
+
+		lua.set_function("GetTag", []()
+		{
+			return s_CurrentObject ? s_CurrentObject->GetTag() : std::string();
+		});
+
+		lua.set_function("HasTag", sol::overload(
+			[](const std::string& tag)
+			{
+				return s_CurrentObject && s_CurrentObject->HasTag(tag);
+			},
+			[](const ScriptObject& object, const std::string& tag)
+			{
+				return object.HasTag(tag);
+			}));
+
+		lua.set_function("FindByTag", [](const std::string& tag) -> sol::object
+		{
+			GameObject* found = ScriptEngine::FindByTag(tag);
+			if (!found || !s_Lua)
+				return sol::make_object(s_Lua->lua_state(), sol::lua_nil);
+			return sol::make_object(*s_Lua, ScriptObject(found));
+		});
+
+		lua.set_function("FindAllByTag", [](const std::string& tag)
+		{
+			sol::table result = s_Lua->create_table();
+			int index = 1;
+			for (GameObject* object : ScriptEngine::FindAllByTag(tag))
+				result[index++] = ScriptObject(object);
+			return result;
+		});
+
+		lua.set_function("GetCurrentMapName", []()
+		{
+			return ScriptEngine::GetCurrentMapName();
+		});
+
+		lua.set_function("OpenMap", [](const std::string& mapName)
+		{
+			return ScriptEngine::RequestOpenMap(mapName);
+		});
+
+		lua.set_function("Spawn", sol::overload(
+			[]()
+			{
+				GameObject* object = ScriptEngine::SpawnObject("sprite", "", "", 0.0f, 0.0f, 0.0f);
+				return ScriptObject(object);
+			},
+			[](const std::string& typeName)
+			{
+				GameObject* object = ScriptEngine::SpawnObject(typeName, "", "", 0.0f, 0.0f, 0.0f);
+				return ScriptObject(object);
+			},
+			[](const sol::table& opts)
+			{
+				std::string typeName = "sprite";
+				std::string name;
+				std::string tag;
+				float x = 0.0f, y = 0.0f, z = 0.0f;
+
+				if (sol::optional<std::string> t = opts["type"]) typeName = *t;
+				if (sol::optional<std::string> n = opts["name"]) name = *n;
+				if (sol::optional<std::string> tg = opts["tag"]) tag = *tg;
+				if (sol::optional<std::string> tags = opts["tags"]) tag = *tags;
+				if (sol::optional<float> ox = opts["x"]) x = *ox;
+				if (sol::optional<float> oy = opts["y"]) y = *oy;
+				if (sol::optional<float> oz = opts["z"]) z = *oz;
+
+				GameObject* object = ScriptEngine::SpawnObject(typeName, name, tag, x, y, z);
+				if (!object)
+					return ScriptObject();
+
+				if (sol::optional<std::string> tex = opts["texture"])
+					object->SetTexture(*tex);
+				if (sol::optional<sol::table> color = opts["color"])
+				{
+					float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
+					const sol::table& c = *color;
+					if (sol::optional<float> v = c["r"]) r = *v;
+					else if (sol::optional<float> v = c[1]) r = *v;
+					if (sol::optional<float> v = c["g"]) g = *v;
+					else if (sol::optional<float> v = c[2]) g = *v;
+					if (sol::optional<float> v = c["b"]) b = *v;
+					else if (sol::optional<float> v = c[3]) b = *v;
+					if (sol::optional<float> v = c["a"]) a = *v;
+					else if (sol::optional<float> v = c[4]) a = *v;
+					object->SetColor(r, g, b, a);
+				}
+				if (sol::optional<std::string> script = opts["script"])
+				{
+					object->AddScript();
+					object->SetScriptPath(*script);
+					AttachRuntimeScript(object, true);
+				}
+
+				return ScriptObject(object);
 			}));
 
 		sol::table log = lua.create_named_table("Log");
@@ -457,6 +657,74 @@ namespace Blaze
 			return std::make_tuple(s.x, s.y);
 		});
 
+		lua.set_function("SetColor", sol::overload(
+			[](float r, float g, float b)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetColor(r, g, b, 1.0f);
+			},
+			[](float r, float g, float b, float a)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetColor(r, g, b, a);
+			},
+			[](const sol::table& color)
+			{
+				if (!s_CurrentObject)
+					return;
+				float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
+				if (sol::optional<float> v = color["r"]) r = *v;
+				else if (sol::optional<float> v = color[1]) r = *v;
+				if (sol::optional<float> v = color["g"]) g = *v;
+				else if (sol::optional<float> v = color[2]) g = *v;
+				if (sol::optional<float> v = color["b"]) b = *v;
+				else if (sol::optional<float> v = color[3]) b = *v;
+				if (sol::optional<float> v = color["a"]) a = *v;
+				else if (sol::optional<float> v = color[4]) a = *v;
+				s_CurrentObject->SetColor(r, g, b, a);
+			},
+			[](const ScriptObject& object, float r, float g, float b)
+			{
+				if (object.IsValid())
+					object.raw->SetColor(r, g, b, 1.0f);
+			},
+			[](const ScriptObject& object, float r, float g, float b, float a)
+			{
+				if (object.IsValid())
+					object.raw->SetColor(r, g, b, a);
+			},
+			[](const ScriptObject& object, const sol::table& color)
+			{
+				if (!object.IsValid())
+					return;
+				float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
+				if (sol::optional<float> v = color["r"]) r = *v;
+				else if (sol::optional<float> v = color[1]) r = *v;
+				if (sol::optional<float> v = color["g"]) g = *v;
+				else if (sol::optional<float> v = color[2]) g = *v;
+				if (sol::optional<float> v = color["b"]) b = *v;
+				else if (sol::optional<float> v = color[3]) b = *v;
+				if (sol::optional<float> v = color["a"]) a = *v;
+				else if (sol::optional<float> v = color[4]) a = *v;
+				object.raw->SetColor(r, g, b, a);
+			}));
+
+		lua.set_function("GetColor", sol::overload(
+			[]()
+			{
+				if (!s_CurrentObject)
+					return std::make_tuple(1.0f, 1.0f, 1.0f, 1.0f);
+				glm::vec4 c = s_CurrentObject->GetColor();
+				return std::make_tuple(c.r, c.g, c.b, c.a);
+			},
+			[](const ScriptObject& object)
+			{
+				if (!object.IsValid())
+					return std::make_tuple(1.0f, 1.0f, 1.0f, 1.0f);
+				glm::vec4 c = object.raw->GetColor();
+				return std::make_tuple(c.r, c.g, c.b, c.a);
+			}));
+
 		auto applyTranslate = [](float x, float y)
 		{
 			if (!s_CurrentObject)
@@ -495,6 +763,546 @@ namespace Blaze
 
 				applyTranslate(x, y);
 			}));
+
+		auto readVec2 = [](const sol::table& t, float& x, float& y)
+		{
+			x = 0.0f;
+			y = 0.0f;
+			if (sol::optional<float> nx = t["x"]) x = *nx;
+			else if (sol::optional<float> i1 = t[1]) x = *i1;
+			if (sol::optional<float> ny = t["y"]) y = *ny;
+			else if (sol::optional<float> i2 = t[2]) y = *i2;
+		};
+
+		lua.set_function("SetVelocity", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				s_Physics->SetLinearVelocity(s_CurrentObject, glm::vec2(x, y));
+			},
+			[readVec2](const sol::table& velocity)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				float x, y;
+				readVec2(velocity, x, y);
+				s_Physics->SetLinearVelocity(s_CurrentObject, glm::vec2(x, y));
+			},
+			[](const ScriptObject& object, float x, float y)
+			{
+				if (!s_Physics || !object.IsValid()) return;
+				s_Physics->SetLinearVelocity(object.raw, glm::vec2(x, y));
+			},
+			[readVec2](const ScriptObject& object, const sol::table& velocity)
+			{
+				if (!s_Physics || !object.IsValid()) return;
+				float x, y;
+				readVec2(velocity, x, y);
+				s_Physics->SetLinearVelocity(object.raw, glm::vec2(x, y));
+			}));
+
+		lua.set_function("GetVelocity", sol::overload(
+			[]()
+			{
+				if (!s_Physics || !s_CurrentObject)
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec2 v = s_Physics->GetLinearVelocity(s_CurrentObject);
+				return std::make_tuple(v.x, v.y);
+			},
+			[](const ScriptObject& object)
+			{
+				if (!s_Physics || !object.IsValid())
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec2 v = s_Physics->GetLinearVelocity(object.raw);
+				return std::make_tuple(v.x, v.y);
+			}));
+
+		lua.set_function("AddVelocity", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				s_Physics->AddLinearVelocity(s_CurrentObject, glm::vec2(x, y));
+			},
+			[readVec2](const sol::table& delta)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				float x, y;
+				readVec2(delta, x, y);
+				s_Physics->AddLinearVelocity(s_CurrentObject, glm::vec2(x, y));
+			},
+			[](const ScriptObject& object, float x, float y)
+			{
+				if (!s_Physics || !object.IsValid()) return;
+				s_Physics->AddLinearVelocity(object.raw, glm::vec2(x, y));
+			}));
+
+		lua.set_function("ApplyForce", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				s_Physics->ApplyForce(s_CurrentObject, glm::vec2(x, y));
+			},
+			[readVec2](const sol::table& force)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				float x, y;
+				readVec2(force, x, y);
+				s_Physics->ApplyForce(s_CurrentObject, glm::vec2(x, y));
+			},
+			[](const ScriptObject& object, float x, float y)
+			{
+				if (!s_Physics || !object.IsValid()) return;
+				s_Physics->ApplyForce(object.raw, glm::vec2(x, y));
+			}));
+
+		lua.set_function("ApplyImpulse", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				s_Physics->ApplyImpulse(s_CurrentObject, glm::vec2(x, y));
+			},
+			[readVec2](const sol::table& impulse)
+			{
+				if (!s_Physics || !s_CurrentObject) return;
+				float x, y;
+				readVec2(impulse, x, y);
+				s_Physics->ApplyImpulse(s_CurrentObject, glm::vec2(x, y));
+			},
+			[](const ScriptObject& object, float x, float y)
+			{
+				if (!s_Physics || !object.IsValid()) return;
+				s_Physics->ApplyImpulse(object.raw, glm::vec2(x, y));
+			}));
+
+		lua.set_function("SetGravity", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_Physics) return;
+				float sx, sy;
+				sx = Camera::m_prop.projection[0][0];
+				sy = Camera::m_prop.projection[1][1];
+				if (glm::abs(sx) < 1e-8f) sx = 1.0f;
+				if (glm::abs(sy) < 1e-8f) sy = 1.0f;
+				s_Physics->SetGravity(glm::vec2(x / sx, y / sy));
+			},
+			[readVec2](const sol::table& gravity)
+			{
+				if (!s_Physics) return;
+				float x, y;
+				readVec2(gravity, x, y);
+				float sx = Camera::m_prop.projection[0][0];
+				float sy = Camera::m_prop.projection[1][1];
+				if (glm::abs(sx) < 1e-8f) sx = 1.0f;
+				if (glm::abs(sy) < 1e-8f) sy = 1.0f;
+				s_Physics->SetGravity(glm::vec2(x / sx, y / sy));
+			}));
+
+		lua.set_function("GetGravity", []()
+		{
+			if (!s_Physics)
+				return std::make_tuple(0.0f, 0.0f);
+			float sx = Camera::m_prop.projection[0][0];
+			float sy = Camera::m_prop.projection[1][1];
+			if (glm::abs(sx) < 1e-8f) sx = 1.0f;
+			if (glm::abs(sy) < 1e-8f) sy = 1.0f;
+			glm::vec2 g = s_Physics->GetGravity();
+			return std::make_tuple(g.x * sx, g.y * sy);
+		});
+
+		lua.set_function("SetGravityScale", sol::overload(
+			[](float scale)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetRigidbodyGravityScale(scale);
+			},
+			[](const ScriptObject& object, float scale)
+			{
+				if (object.IsValid())
+					object.raw->SetRigidbodyGravityScale(scale);
+			}));
+
+		lua.set_function("GetGravityScale", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetRigidbodyGravityScale() : 1.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetRigidbodyGravityScale() : 1.0f;
+			}));
+
+		lua.set_function("SetKinematic", sol::overload(
+			[](bool kinematic)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetRigidbodyKinematic(kinematic);
+			},
+			[](const ScriptObject& object, bool kinematic)
+			{
+				if (object.IsValid())
+					object.raw->SetRigidbodyKinematic(kinematic);
+			}));
+
+		lua.set_function("IsKinematic", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsRigidbodyKinematic();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsRigidbodyKinematic();
+			}));
+
+		lua.set_function("SetMass", sol::overload(
+			[](float mass)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetRigidbodyMass(mass);
+			},
+			[](const ScriptObject& object, float mass)
+			{
+				if (object.IsValid())
+					object.raw->SetRigidbodyMass(mass);
+			}));
+
+		lua.set_function("GetMass", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetRigidbodyMass() : 1.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetRigidbodyMass() : 1.0f;
+			}));
+
+		lua.set_function("HasPhysics", sol::overload(
+			[]()
+			{
+				return s_CurrentObject
+					&& s_CurrentObject->HasCollision()
+					&& s_CurrentObject->GetCollisionType() == CollisionType::PhysicsRigidbody2D;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid()
+					&& object.raw->HasCollision()
+					&& object.raw->GetCollisionType() == CollisionType::PhysicsRigidbody2D;
+			}));
+
+		lua.set_function("PlayAudio", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					AudioEngine::Play(s_CurrentObject);
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					AudioEngine::Play(object.raw);
+			}));
+
+		lua.set_function("StopAudio", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					AudioEngine::Stop(s_CurrentObject);
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					AudioEngine::Stop(object.raw);
+			}));
+
+		lua.set_function("IsAudioPlaying", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && AudioEngine::IsPlaying(s_CurrentObject);
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && AudioEngine::IsPlaying(object.raw);
+			}));
+
+		lua.set_function("SetAudioVolume", sol::overload(
+			[](float volume)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetAudioVolume(volume);
+				AudioEngine::SyncVolume(s_CurrentObject);
+			},
+			[](const ScriptObject& object, float volume)
+			{
+				if (!object.IsValid())
+					return;
+				object.raw->SetAudioVolume(volume);
+				AudioEngine::SyncVolume(object.raw);
+			}));
+
+		lua.set_function("GetAudioVolume", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAudioVolume() : 1.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAudioVolume() : 1.0f;
+			}));
+
+		lua.set_function("SetAudioLoop", sol::overload(
+			[](bool loop)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetAudioLoop(loop);
+				AudioEngine::SyncLoop(s_CurrentObject);
+			},
+			[](const ScriptObject& object, bool loop)
+			{
+				if (!object.IsValid())
+					return;
+				object.raw->SetAudioLoop(loop);
+				AudioEngine::SyncLoop(object.raw);
+			}));
+
+		lua.set_function("GetAudioLoop", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->GetAudioLoop();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->GetAudioLoop();
+			}));
+
+		lua.set_function("SetAudioPath", sol::overload(
+			[](const std::string& path)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetAudioPath(path);
+			},
+			[](const ScriptObject& object, const std::string& path)
+			{
+				if (object.IsValid())
+					object.raw->SetAudioPath(path);
+			}));
+
+		lua.set_function("GetAudioPath", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAudioPath() : std::string();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAudioPath() : std::string();
+			}));
+
+		lua.set_function("HasAudio", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->HasAudio();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->HasAudio();
+			}));
+
+		lua.set_function("SetFlipbook", sol::overload(
+			[](int columns, int rows)
+			{
+				if (!s_CurrentObject) return;
+				s_CurrentObject->SetFlipbookColumns(columns);
+				s_CurrentObject->SetFlipbookRows(rows);
+			},
+			[](int columns, int rows, float fps)
+			{
+				if (!s_CurrentObject) return;
+				s_CurrentObject->SetFlipbookColumns(columns);
+				s_CurrentObject->SetFlipbookRows(rows);
+				s_CurrentObject->SetFlipbookFps(fps);
+			},
+			[](const ScriptObject& object, int columns, int rows)
+			{
+				if (!object.IsValid()) return;
+				object.raw->SetFlipbookColumns(columns);
+				object.raw->SetFlipbookRows(rows);
+			},
+			[](const ScriptObject& object, int columns, int rows, float fps)
+			{
+				if (!object.IsValid()) return;
+				object.raw->SetFlipbookColumns(columns);
+				object.raw->SetFlipbookRows(rows);
+				object.raw->SetFlipbookFps(fps);
+			}));
+
+		lua.set_function("SetFlipbookFrameCount", sol::overload(
+			[](int count)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetFlipbookFrameCount(count);
+			},
+			[](const ScriptObject& object, int count)
+			{
+				if (object.IsValid())
+					object.raw->SetFlipbookFrameCount(count);
+			}));
+
+		lua.set_function("SetFlipbookFps", sol::overload(
+			[](float fps)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetFlipbookFps(fps);
+			},
+			[](const ScriptObject& object, float fps)
+			{
+				if (object.IsValid())
+					object.raw->SetFlipbookFps(fps);
+			}));
+
+		lua.set_function("PlayFlipbook", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->PlayFlipbook();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->PlayFlipbook();
+			}));
+
+		lua.set_function("StopFlipbook", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->StopFlipbook();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->StopFlipbook();
+			}));
+
+		lua.set_function("PauseFlipbook", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->PauseFlipbook();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->PauseFlipbook();
+			}));
+
+		lua.set_function("SetFlipbookFrame", sol::overload(
+			[](int frame)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetFlipbookFrame(frame);
+			},
+			[](const ScriptObject& object, int frame)
+			{
+				if (object.IsValid())
+					object.raw->SetFlipbookFrame(frame);
+			}));
+
+		lua.set_function("GetFlipbookFrame", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetFlipbookFrame() : 0;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetFlipbookFrame() : 0;
+			}));
+
+		lua.set_function("SetFlipbookLoop", sol::overload(
+			[](bool loop)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetFlipbookLoop(loop);
+			},
+			[](const ScriptObject& object, bool loop)
+			{
+				if (object.IsValid())
+					object.raw->SetFlipbookLoop(loop);
+			}));
+
+		lua.set_function("IsFlipbookPlaying", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsFlipbookPlaying();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsFlipbookPlaying();
+			}));
+
+		lua.set_function("SetParent", sol::overload(
+			[](const ScriptObject& parent)
+			{
+				if (!s_CurrentObject)
+					return false;
+				if (!parent.IsValid())
+					return s_CurrentObject->SetParent(nullptr, true);
+				return s_CurrentObject->SetParent(parent.raw, true);
+			},
+			[]()
+			{
+				if (!s_CurrentObject)
+					return false;
+				return s_CurrentObject->SetParent(nullptr, true);
+			},
+			[](const ScriptObject& object, const ScriptObject& parent)
+			{
+				if (!object.IsValid())
+					return false;
+				if (!parent.IsValid())
+					return object.raw->SetParent(nullptr, true);
+				return object.raw->SetParent(parent.raw, true);
+			}));
+
+		lua.set_function("GetParent", sol::overload(
+			[]() -> sol::object
+			{
+				if (!s_CurrentObject || !s_CurrentObject->GetParent() || !s_Lua)
+					return sol::make_object(s_Lua->lua_state(), sol::lua_nil);
+				return sol::make_object(*s_Lua, ScriptObject(s_CurrentObject->GetParent()));
+			},
+			[](const ScriptObject& object) -> sol::object
+			{
+				if (!object.IsValid() || !object.raw->GetParent() || !s_Lua)
+					return sol::make_object(s_Lua->lua_state(), sol::lua_nil);
+				return sol::make_object(*s_Lua, ScriptObject(object.raw->GetParent()));
+			}));
+
+		lua.set_function("ClearParent", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->ClearParent(true);
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->ClearParent(true);
+			}));
+
+		lua.set_function("GetWorldLocation", sol::overload(
+			[]()
+			{
+				if (!s_CurrentObject)
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec3 p = s_CurrentObject->GetWorldPosition();
+				return std::make_tuple(p.x, p.y);
+			},
+			[](const ScriptObject& object)
+			{
+				if (!object.IsValid())
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec3 p = object.raw->GetWorldPosition();
+				return std::make_tuple(p.x, p.y);
+			}));
 	}
 
 	bool ScriptEngine::Init()
@@ -531,8 +1339,223 @@ namespace Blaze
 	void ScriptEngine::Shutdown()
 	{
 		OnPlayModeStop();
+		s_PendingOpenMap.clear();
+		s_Renderer = nullptr;
+		s_Physics = nullptr;
 		s_Lua.reset();
 		s_Ready = false;
+	}
+
+	void ScriptEngine::SetRenderer(Renderer* renderer)
+	{
+		s_Renderer = renderer;
+	}
+
+	void ScriptEngine::SetPhysicsWorld(PhysicsWorld2D* physics)
+	{
+		s_Physics = physics;
+	}
+
+	GameObject* ScriptEngine::FindByTag(const std::string& tag)
+	{
+		if (!s_Renderer || tag.empty())
+			return nullptr;
+		for (GameObject* object : s_Renderer->GetObjects())
+		{
+			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
+				return object;
+		}
+		return nullptr;
+	}
+
+	std::vector<GameObject*> ScriptEngine::FindAllByTag(const std::string& tag)
+	{
+		std::vector<GameObject*> result;
+		if (!s_Renderer || tag.empty())
+			return result;
+		for (GameObject* object : s_Renderer->GetObjects())
+		{
+			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
+				result.push_back(object);
+		}
+		return result;
+	}
+
+	std::string ScriptEngine::GetCurrentMapName()
+	{
+		const std::string& active = Project::GetActiveMap();
+		if (active.empty())
+			return {};
+		return std::filesystem::path(active).stem().string();
+	}
+
+	bool ScriptEngine::RequestOpenMap(const std::string& mapNameOrPath)
+	{
+		const std::string resolved = Project::ResolveMapPath(mapNameOrPath);
+		if (resolved.empty())
+		{
+			BZ_ERROR("OpenMap failed: map not found '{0}'", mapNameOrPath);
+			return false;
+		}
+
+		s_PendingOpenMap = resolved;
+		BZ_INFO("OpenMap queued: {0}", resolved);
+		return true;
+	}
+
+	bool ScriptEngine::ConsumePendingOpenMap(std::string& outPath)
+	{
+		if (s_PendingOpenMap.empty())
+			return false;
+		outPath = s_PendingOpenMap;
+		s_PendingOpenMap.clear();
+		return true;
+	}
+
+	static bool AttachRuntimeScript(GameObject* object, bool callStart)
+	{
+		if (!object || !object->HasScript() || !s_Lua || !s_Ready)
+			return false;
+		if (object->GetScriptPath().empty())
+			return false;
+		if (s_Instances.find(object) != s_Instances.end())
+			return true;
+
+		ScriptInstance instance;
+		instance.object = object;
+		instance.env = sol::environment(*s_Lua, sol::create, s_Lua->globals());
+		instance.env["selfName"] = object->GetName();
+		instance.env["self"] = ScriptObject(object);
+
+		sol::protected_function_result result = s_Lua->safe_script_file(
+			object->GetScriptPath(),
+			instance.env,
+			sol::script_pass_on_error);
+		if (!result.valid())
+		{
+			sol::error err = result;
+			ReportLuaError("Spawn / compile", object, object->GetScriptPath(), err.what());
+			return false;
+		}
+
+		sol::object startObj = instance.env["OnStart"];
+		sol::object updateObj = instance.env["OnUpdate"];
+		sol::object beginObj = instance.env["OnCollisionBegin"];
+		if (!beginObj.valid() || beginObj.get_type() == sol::type::lua_nil)
+			beginObj = instance.env["OnCollisionEnter"];
+		sol::object endObj = instance.env["OnCollisionEnd"];
+		if (!endObj.valid() || endObj.get_type() == sol::type::lua_nil)
+			endObj = instance.env["OnCollisionExit"];
+
+		if (startObj.is<sol::protected_function>())
+			instance.onStart = startObj.as<sol::protected_function>();
+		else if (startObj.is<sol::function>())
+			instance.onStart = startObj.as<sol::function>();
+		if (updateObj.is<sol::protected_function>())
+			instance.onUpdate = updateObj.as<sol::protected_function>();
+		else if (updateObj.is<sol::function>())
+			instance.onUpdate = updateObj.as<sol::function>();
+		if (beginObj.is<sol::protected_function>())
+			instance.onCollisionBegin = beginObj.as<sol::protected_function>();
+		else if (beginObj.is<sol::function>())
+			instance.onCollisionBegin = beginObj.as<sol::function>();
+		if (endObj.is<sol::protected_function>())
+			instance.onCollisionEnd = endObj.as<sol::protected_function>();
+		else if (endObj.is<sol::function>())
+			instance.onCollisionEnd = endObj.as<sol::function>();
+
+		if (callStart && instance.onStart.valid())
+		{
+			GameObject* prev = s_CurrentObject;
+			s_CurrentObject = object;
+			sol::protected_function_result startResult = instance.onStart();
+			if (!startResult.valid())
+			{
+				sol::error err = startResult;
+				ReportLuaError("Spawn OnStart", object, object->GetScriptPath(), err.what());
+			}
+			s_CurrentObject = prev;
+			instance.started = true;
+		}
+
+		StorePlayTransform(object);
+		s_Instances[object] = std::move(instance);
+		return true;
+	}
+
+	GameObject* ScriptEngine::SpawnObject(const std::string& typeName,
+		const std::string& name,
+		const std::string& tag,
+		float x, float y, float z)
+	{
+		if (!s_Renderer || !s_Ready)
+			return nullptr;
+
+		s_Renderer->CreateObject(s_DefaultVertices, s_DefaultIndices);
+		if (s_Renderer->GetObjects().empty())
+			return nullptr;
+
+		GameObject* object = s_Renderer->GetObjects().back();
+		std::string type = typeName;
+		for (char& c : type)
+			c = (char)std::tolower((unsigned char)c);
+
+		if (type == "circle")
+		{
+			object->SetName(name.empty() ? "Circle" : name);
+			object->SetType(ObjectType::Circle);
+			object->AddCollision(CollisionType::Circle);
+			object->SetCollisionRadius(50.0f);
+		}
+		else if (type == "box")
+		{
+			object->SetName(name.empty() ? "Box" : name);
+			object->SetType(ObjectType::Box);
+			object->AddCollision(CollisionType::Block);
+			object->SetCollisionSize(glm::vec2(100.0f, 100.0f));
+		}
+		else if (type == "camera")
+		{
+			object->SetName(name.empty() ? "Camera" : name);
+			object->SetType(ObjectType::Camera);
+		}
+		else if (type == "sound")
+		{
+			object->SetName(name.empty() ? "Sound" : name);
+			object->SetType(ObjectType::Sound);
+			object->AddAudio();
+		}
+		else if (type == "empty")
+		{
+			object->SetName(name.empty() ? "Empty" : name);
+			object->SetType(ObjectType::Empty);
+		}
+		else
+		{
+			object->SetName(name.empty() ? "Sprite" : name);
+			object->SetType(ObjectType::Sprite);
+			object->SetTexture("content/texture/container.jpg");
+		}
+
+		if (!name.empty())
+			object->SetName(name);
+		if (!tag.empty())
+		{
+			if (tag.find(',') != std::string::npos || tag.find(';') != std::string::npos)
+				object->SetTagsFromString(tag);
+			else
+				object->SetTag(tag);
+		}
+
+		glm::vec3 pos(x, y, z);
+		object->SetPosition(pos);
+		s_LiveObjects.insert(object);
+		StorePlayTransform(object);
+
+		if (object->HasScript())
+			AttachRuntimeScript(object, true);
+
+		return object;
 	}
 
 	bool ScriptEngine::IsReady()
@@ -581,6 +1604,8 @@ namespace Blaze
 	void ScriptEngine::OnPlayModeStop()
 	{
 		s_Instances.clear();
+		s_MapInstance = ScriptInstance{};
+		s_HasMapInstance = false;
 		s_PlayTransforms.clear();
 		s_KeyWasDown.clear();
 		s_MouseWasDown.clear();
@@ -588,6 +1613,84 @@ namespace Blaze
 		s_LiveObjects.clear();
 		s_CurrentObject = nullptr;
 		OnScreenDebug::Clear();
+	}
+
+	static bool BindScriptCallbacks(ScriptInstance& instance)
+	{
+		sol::object startObj = instance.env["OnStart"];
+		sol::object updateObj = instance.env["OnUpdate"];
+		sol::object beginObj = instance.env["OnCollisionBegin"];
+		if (!beginObj.valid() || beginObj.get_type() == sol::type::lua_nil)
+			beginObj = instance.env["OnCollisionEnter"];
+		sol::object endObj = instance.env["OnCollisionEnd"];
+		if (!endObj.valid() || endObj.get_type() == sol::type::lua_nil)
+			endObj = instance.env["OnCollisionExit"];
+
+		if (startObj.is<sol::protected_function>())
+			instance.onStart = startObj.as<sol::protected_function>();
+		else if (startObj.is<sol::function>())
+			instance.onStart = startObj.as<sol::function>();
+
+		if (updateObj.is<sol::protected_function>())
+			instance.onUpdate = updateObj.as<sol::protected_function>();
+		else if (updateObj.is<sol::function>())
+			instance.onUpdate = updateObj.as<sol::function>();
+
+		if (beginObj.is<sol::protected_function>())
+			instance.onCollisionBegin = beginObj.as<sol::protected_function>();
+		else if (beginObj.is<sol::function>())
+			instance.onCollisionBegin = beginObj.as<sol::function>();
+
+		if (endObj.is<sol::protected_function>())
+			instance.onCollisionEnd = endObj.as<sol::protected_function>();
+		else if (endObj.is<sol::function>())
+			instance.onCollisionEnd = endObj.as<sol::function>();
+
+		return true;
+	}
+
+	static bool LoadMapScriptInstance(bool& compileOk)
+	{
+		s_HasMapInstance = false;
+		s_MapInstance = ScriptInstance{};
+
+		const std::string& mapScript = Project::GetMapScript();
+		if (mapScript.empty())
+			return true;
+
+		std::error_code ec;
+		if (!std::filesystem::exists(mapScript, ec))
+		{
+			ReportLuaError("Load / compile map script (press Start)", nullptr, mapScript,
+				"Map script file not found");
+			compileOk = false;
+			return false;
+		}
+
+		ScriptInstance instance;
+		instance.object = nullptr;
+		instance.env = sol::environment(*s_Lua, sol::create, s_Lua->globals());
+		instance.env["selfName"] = "[Map]";
+		instance.env["mapName"] = std::filesystem::path(Project::GetActiveMap()).stem().string();
+		instance.env["self"] = sol::lua_nil;
+
+		sol::protected_function_result result = s_Lua->safe_script_file(
+			mapScript,
+			instance.env,
+			sol::script_pass_on_error);
+
+		if (!result.valid())
+		{
+			sol::error err = result;
+			ReportLuaError("Load / compile map script (press Start)", nullptr, mapScript, err.what());
+			compileOk = false;
+			return false;
+		}
+
+		BindScriptCallbacks(instance);
+		s_MapInstance = std::move(instance);
+		s_HasMapInstance = true;
+		return true;
 	}
 
 	bool ScriptEngine::OnPlayModeStart(const std::vector<GameObject*>& objects)
@@ -670,12 +1773,16 @@ namespace Blaze
 			s_Instances[object] = std::move(instance);
 		}
 
+		LoadMapScriptInstance(compileOk);
+
 		if (!compileOk)
 		{
 			BZ_ERROR("Play cancelled — fix Lua errors before Start");
 			std::fprintf(stderr, "\n*** Play cancelled — fix Lua errors before Start ***\n\n");
 			std::fflush(stderr);
 			s_Instances.clear();
+			s_MapInstance = ScriptInstance{};
+			s_HasMapInstance = false;
 			s_PlayTransforms.clear();
 			s_CurrentObject = nullptr;
 			return false;
@@ -684,6 +1791,19 @@ namespace Blaze
 		ApplyPlayTransforms();
 		try
 		{
+			if (s_HasMapInstance && s_MapInstance.onStart.valid())
+			{
+				s_CurrentObject = nullptr;
+				s_MapInstance.env["self"] = sol::lua_nil;
+				sol::protected_function_result result = s_MapInstance.onStart();
+				if (!result.valid())
+				{
+					sol::error err = result;
+					ReportLuaError("Map OnStart (press Start)", nullptr,
+						Project::GetMapScript(), err.what());
+				}
+			}
+
 			for (auto& entry : s_Instances)
 			{
 				ScriptInstance& instance = entry.second;
@@ -723,6 +1843,18 @@ namespace Blaze
 
 		try
 		{
+			if (s_HasMapInstance && s_MapInstance.onUpdate.valid())
+			{
+				s_CurrentObject = nullptr;
+				s_MapInstance.env["self"] = sol::lua_nil;
+				sol::protected_function_result result = s_MapInstance.onUpdate(dt);
+				if (!result.valid())
+				{
+					sol::error err = result;
+					ReportLuaError("Map OnUpdate", nullptr, Project::GetMapScript(), err.what());
+				}
+			}
+
 			for (auto& entry : s_Instances)
 			{
 				ScriptInstance& instance = entry.second;

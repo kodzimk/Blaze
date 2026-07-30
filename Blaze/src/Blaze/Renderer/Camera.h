@@ -26,6 +26,8 @@ namespace Blaze {
 		void CameraMove();
 		void SetCameraPos(glm::vec3 pos);
 		void TranslateCamera(glm::vec3 translate);
+		void FocusOn(const glm::vec3& worldPos);
+		void FocusOnBounds(const glm::vec2& worldMin, const glm::vec2& worldMax);
 	public:
 		static CameraProp m_prop;
 		static float zoom;

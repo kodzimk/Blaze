@@ -32,6 +32,13 @@ namespace Blaze
 		glm::vec2 GetVelocity(GameObject* object) const;
 		void SetVelocity(GameObject* object, const glm::vec2& velocity);
 
+		// Pixel-space helpers for scripts (match SetLocation / Translate units).
+		glm::vec2 GetLinearVelocity(GameObject* object) const;
+		void SetLinearVelocity(GameObject* object, const glm::vec2& velocityPixels);
+		void AddLinearVelocity(GameObject* object, const glm::vec2& deltaPixels);
+		void ApplyForce(GameObject* object, const glm::vec2& forcePixels);
+		void ApplyImpulse(GameObject* object, const glm::vec2& impulsePixels);
+
 		std::vector<CollisionEvent> ConsumeCollisionEvents();
 
 	private:
@@ -42,6 +49,7 @@ namespace Blaze
 			GameObject* object = nullptr;
 			glm::vec2 position = glm::vec2(0.0f);
 			glm::vec2 velocity = glm::vec2(0.0f);
+			glm::vec2 pendingForce = glm::vec2(0.0f);
 			float invMass = 0.0f;
 			float gravityScale = 1.0f;
 			bool isStatic = true;
@@ -54,6 +62,7 @@ namespace Blaze
 		{
 			glm::vec2 position = glm::vec2(0.0f);
 			glm::vec2 velocity = glm::vec2(0.0f);
+			glm::vec2 pendingForce = glm::vec2(0.0f);
 		};
 
 		struct Contact

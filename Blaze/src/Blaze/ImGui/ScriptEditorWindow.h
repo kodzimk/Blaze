@@ -4,6 +4,7 @@
 #include <vector>
 
 struct ImGuiInputTextCallbackData;
+struct ImVec2;
 
 namespace Blaze
 {
@@ -47,6 +48,7 @@ namespace Blaze
 		bool ApplyCompletionToCallback(ImGuiInputTextCallbackData* data);
 		void ApplyCompletionToBuffer();
 		void DrawCompletionsPopup();
+		void DrawLuaSyntaxHighlight(const char* text, const ImVec2& textPos);
 
 		static int ScriptEditCallback(ImGuiInputTextCallbackData* data);
 		static const CompletionItem* GetCompletionCatalog(int& outCount);

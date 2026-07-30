@@ -100,4 +100,32 @@ namespace Blaze
 		m_prop.pos += translate;
 		ScaleCamera();
 	}
+
+	void Camera::FocusOn(const glm::vec3& worldPos)
+	{
+		m_prop.pos.x = worldPos.x;
+		m_prop.pos.y = worldPos.y;
+		ScaleCamera();
+	}
+
+	void Camera::FocusOnBounds(const glm::vec2& worldMin, const glm::vec2& worldMax)
+	{
+		glm::vec2 size = worldMax - worldMin;
+		glm::vec2 center = (worldMin + worldMax) * 0.5f;
+
+		const float padding = 1.6f;
+		float needW = std::max(std::abs(size.x) * padding, 80.0f);
+		float needH = std::max(std::abs(size.y) * padding, 80.0f);
+
+		// Visible world width/height ≈ 2 / zoom (see ScreenToWorld).
+		float zoomX = 2.0f / needW;
+		float zoomY = 2.0f / needH;
+		zoom = std::min(zoomX, zoomY);
+		if (!std::isfinite(zoom) || zoom < 0.05f)
+			zoom = 0.05f;
+		if (zoom > 20.0f)
+			zoom = 20.0f;
+
+		FocusOn(glm::vec3(center.x, center.y, m_prop.pos.z));
+	}
 }

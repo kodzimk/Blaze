@@ -98,6 +98,26 @@ namespace Blaze
 		return ma_sound_is_playing(&it->second.sound) == MA_TRUE;
 	}
 
+	void AudioEngine::SyncVolume(GameObject* object)
+	{
+		if (!object || !s_Ready)
+			return;
+		auto it = s_Sounds.find(object);
+		if (it == s_Sounds.end() || !it->second.initialized)
+			return;
+		ma_sound_set_volume(&it->second.sound, object->GetAudioVolume());
+	}
+
+	void AudioEngine::SyncLoop(GameObject* object)
+	{
+		if (!object || !s_Ready)
+			return;
+		auto it = s_Sounds.find(object);
+		if (it == s_Sounds.end() || !it->second.initialized)
+			return;
+		ma_sound_set_looping(&it->second.sound, object->GetAudioLoop() ? MA_TRUE : MA_FALSE);
+	}
+
 	void AudioEngine::Play(GameObject* object)
 	{
 		if (!object || !object->HasAudio())

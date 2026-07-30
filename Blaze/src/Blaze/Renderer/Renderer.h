@@ -13,8 +13,9 @@ namespace Blaze {
 		void BeginScene(const Camera& camera,const char* uniform_matrix_name);
 		void BeginScene(const glm::mat4& viewMatrix, const char* uniform_matrix_name);
 		void EndScene();
+		void Update(float dt);
 		 
-		void CreateObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices,glm::vec4 color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+		void CreateObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices,glm::vec4 color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		void CreateObject(GameObject *object);
 		bool DestroyObject(GameObject* object);
 		void Render(const Camera& camera);

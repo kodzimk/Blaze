@@ -15,6 +15,9 @@ namespace Blaze
 		static void Shutdown();
 		static bool IsReady();
 
+		static void SetRenderer(Renderer* renderer);
+		static void SetPhysicsWorld(PhysicsWorld2D* physics);
+
 		// Returns false if any script fails to compile — play should be cancelled.
 		static bool OnPlayModeStart(const std::vector<GameObject*>& objects);
 		static void OnUpdate(float dt, const std::vector<GameObject*>& objects);
@@ -24,6 +27,18 @@ namespace Blaze
 		static void RemoveObject(GameObject* object);
 		static void QueueDestroy(GameObject* object);
 		static std::vector<GameObject*> ConsumePendingDestroys();
+
+		static GameObject* SpawnObject(const std::string& typeName,
+			const std::string& name,
+			const std::string& tag,
+			float x, float y, float z);
+
+		static GameObject* FindByTag(const std::string& tag);
+		static std::vector<GameObject*> FindAllByTag(const std::string& tag);
+
+		static std::string GetCurrentMapName();
+		static bool RequestOpenMap(const std::string& mapNameOrPath);
+		static bool ConsumePendingOpenMap(std::string& outPath);
 
 		// Lua error popup (also printed to the console when Start is pressed)
 		static void DrawErrorWindow();

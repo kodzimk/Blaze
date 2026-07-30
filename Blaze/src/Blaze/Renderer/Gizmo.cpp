@@ -19,6 +19,9 @@ namespace Blaze
 {
 	unsigned int Gizmo2D::s_SharedSoundIconTex = 0;
 	unsigned int Gizmo2D::s_SharedCameraIconTex = 0;
+	unsigned int Gizmo2D::s_SharedScriptIconTex = 0;
+	unsigned int Gizmo2D::s_SharedMapIconTex = 0;
+	unsigned int Gizmo2D::s_SharedFolderIconTex = 0;
 
 	static const char* s_GizmoVertexSource = "#version 330 core\n"
 		"layout (location = 0) in vec3 pos;\n"
@@ -326,6 +329,161 @@ namespace Blaze
 		return candidates;
 	}
 
+	static void ClearIconRect(std::vector<unsigned char>& px, int size, float x0, float y0, float x1, float y1)
+	{
+		const int ix0 = (int)std::floor(x0);
+		const int iy0 = (int)std::floor(y0);
+		const int ix1 = (int)std::ceil(x1);
+		const int iy1 = (int)std::ceil(y1);
+		for (int y = iy0; y <= iy1; ++y)
+		{
+			for (int x = ix0; x <= ix1; ++x)
+			{
+				if (x < 0 || y < 0 || x >= size || y >= size)
+					continue;
+				const size_t i = ((size_t)y * size + x) * 4;
+				px[i + 0] = 0;
+				px[i + 1] = 0;
+				px[i + 2] = 0;
+				px[i + 3] = 0;
+			}
+		}
+	}
+
+	// Classic folder tab silhouette (white on transparent).
+	static unsigned int CreateFolderIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+
+		// Tab
+		FillIconRoundedRect(px, size, s * 0.14f, s * 0.22f, s * 0.48f, s * 0.40f, s * 0.04f);
+		// Body
+		FillIconRoundedRect(px, size, s * 0.14f, s * 0.34f, s * 0.86f, s * 0.82f, s * 0.06f);
+
+		return UploadIconTexture(px, size, size);
+	}
+
+	// Document page with folded corner + code lines (cutouts).
+	static unsigned int CreateScriptIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+
+		FillIconRoundedRect(px, size, s * 0.22f, s * 0.10f, s * 0.78f, s * 0.90f, s * 0.04f);
+
+		// Folded top-right corner
+		ClearIconRect(px, size, s * 0.58f, s * 0.10f, s * 0.78f, s * 0.30f);
+		FillIconTriangle(px, size,
+			s * 0.58f, s * 0.10f,
+			s * 0.58f, s * 0.30f,
+			s * 0.78f, s * 0.30f);
+
+		const float lineH = s * 0.055f;
+		ClearIconRect(px, size, s * 0.32f, s * 0.40f, s * 0.68f, s * 0.40f + lineH);
+		ClearIconRect(px, size, s * 0.32f, s * 0.50f, s * 0.62f, s * 0.50f + lineH);
+		ClearIconRect(px, size, s * 0.32f, s * 0.60f, s * 0.70f, s * 0.60f + lineH);
+		ClearIconRect(px, size, s * 0.32f, s * 0.70f, s * 0.55f, s * 0.70f + lineH);
+
+		return UploadIconTexture(px, size, size);
+	}
+
+	// UE5-style Level/World icon: mountain landscape on dark background.
+	static unsigned int CreateMapIconTexture(int size)
+	{
+		namespace fs = std::filesystem;
+		const unsigned char bgR = 0, bgG = 0, bgB = 0;
+
+		std::vector<fs::path> candidates = IconSearchPaths("map.png");
+
+		int width = 0, height = 0, channels = 0;
+		unsigned char* data = nullptr;
+		for (const fs::path& path : candidates)
+		{
+			std::error_code ec;
+			if (!fs::exists(path, ec))
+				continue;
+			data = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
+			if (data)
+				break;
+		}
+
+		if (data && width > 0 && height > 0)
+		{
+			std::vector<unsigned char> out((size_t)width * height * 4);
+			for (int i = 0; i < width * height; ++i)
+			{
+				unsigned char r = data[i * 4 + 0];
+				unsigned char g = data[i * 4 + 1];
+				unsigned char b = data[i * 4 + 2];
+				unsigned char a = data[i * 4 + 3];
+				float luminance = (0.299f * r + 0.587f * g + 0.114f * b) / 255.0f;
+				float ink = luminance * (a / 255.0f);
+				if (ink > 0.35f)
+				{
+					out[i * 4 + 0] = 245;
+					out[i * 4 + 1] = 245;
+					out[i * 4 + 2] = 245;
+				}
+				else
+				{
+					out[i * 4 + 0] = 0;
+					out[i * 4 + 1] = 0;
+					out[i * 4 + 2] = 0;
+				}
+				out[i * 4 + 3] = 255; // fully opaque — no transparent checker
+			}
+			stbi_image_free(data);
+			return UploadIconTexture(out, width, height);
+		}
+
+		// Procedural fallback: dark tile + mountain silhouette
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		for (int i = 0; i < size * size; ++i)
+		{
+			px[i * 4 + 0] = bgR;
+			px[i * 4 + 1] = bgG;
+			px[i * 4 + 2] = bgB;
+			px[i * 4 + 3] = 255;
+		}
+
+		const float s = (float)size;
+		auto putWhite = [&](int x, int y)
+		{
+			if (x < 0 || y < 0 || x >= size || y >= size) return;
+			size_t i = ((size_t)y * size + x) * 4;
+			px[i + 0] = 245; px[i + 1] = 245; px[i + 2] = 245; px[i + 3] = 255;
+		};
+
+		// Reuse silhouette helpers into a temp alpha buffer, then composite.
+		std::vector<unsigned char> mask((size_t)size * size * 4, 0);
+		FillIconRoundedRect(mask, size, s * 0.10f, s * 0.62f, s * 0.90f, s * 0.86f, s * 0.04f);
+		FillIconTriangle(mask, size,
+			s * 0.12f, s * 0.66f,
+			s * 0.42f, s * 0.66f,
+			s * 0.30f, s * 0.18f);
+		FillIconTriangle(mask, size,
+			s * 0.28f, s * 0.66f,
+			s * 0.58f, s * 0.66f,
+			s * 0.42f, s * 0.28f);
+		FillIconTriangle(mask, size,
+			s * 0.48f, s * 0.66f,
+			s * 0.88f, s * 0.66f,
+			s * 0.68f, s * 0.34f);
+		FillIconRect(mask, size, s * 0.14f, s * 0.58f, s * 0.86f, s * 0.70f);
+
+		for (int y = 0; y < size; ++y)
+		{
+			for (int x = 0; x < size; ++x)
+			{
+				if (mask[((size_t)y * size + x) * 4 + 3] > 0)
+					putWhite(x, y);
+			}
+		}
+
+		return UploadIconTexture(px, size, size);
+	}
+
 	// Unity movie-camera silhouette: body + twin film reels + trapezoid lens.
 	static unsigned int CreateCameraIconTexture(int size)
 	{
@@ -480,6 +638,27 @@ namespace Blaze
 		return s_SharedCameraIconTex;
 	}
 
+	unsigned int Gizmo2D::GetScriptIconTextureID()
+	{
+		if (s_SharedScriptIconTex == 0)
+			s_SharedScriptIconTex = CreateScriptIconTexture(s_ScriptIconSize);
+		return s_SharedScriptIconTex;
+	}
+
+	unsigned int Gizmo2D::GetMapIconTextureID()
+	{
+		if (s_SharedMapIconTex == 0)
+			s_SharedMapIconTex = CreateMapIconTexture(s_MapIconSize);
+		return s_SharedMapIconTex;
+	}
+
+	unsigned int Gizmo2D::GetFolderIconTextureID()
+	{
+		if (s_SharedFolderIconTex == 0)
+			s_SharedFolderIconTex = CreateFolderIconTexture(s_FolderIconSize);
+		return s_SharedFolderIconTex;
+	}
+
 	int Gizmo2D::GetSoundIconSize()
 	{
 		return s_SoundIconSize;
@@ -488,6 +667,21 @@ namespace Blaze
 	int Gizmo2D::GetCameraIconSize()
 	{
 		return s_CameraIconSize;
+	}
+
+	int Gizmo2D::GetScriptIconSize()
+	{
+		return s_ScriptIconSize;
+	}
+
+	int Gizmo2D::GetMapIconSize()
+	{
+		return s_MapIconSize;
+	}
+
+	int Gizmo2D::GetFolderIconSize()
+	{
+		return s_FolderIconSize;
 	}
 
 	void Gizmo2D::Draw(const Camera& camera, const GameObject& object)
@@ -580,15 +774,24 @@ namespace Blaze
 		float sx = prop.projection[0][0];
 		float sy = prop.projection[1][1];
 		glm::vec2 center(cameraObject.GetPosition());
+		const float rotation = cameraObject.GetRotation();
 
 		float z = glm::max(cameraObject.GetZoom(), 1e-4f);
 		glm::vec2 half(1.0f / z, 1.0f / z);
 		glm::vec2 thickness(2.5f * sx, 2.5f * sy);
 
-		DrawQuad(glm::vec2(center.x, center.y + half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCameraRange);
-		DrawQuad(glm::vec2(center.x, center.y - half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCameraRange);
-		DrawQuad(glm::vec2(center.x - half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCameraRange);
-		DrawQuad(glm::vec2(center.x + half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCameraRange);
+		const float rad = glm::radians(rotation);
+		const float c = glm::cos(rad);
+		const float s = glm::sin(rad);
+		auto rotateLocal = [&](float lx, float ly)
+		{
+			return center + glm::vec2(lx * c - ly * s, lx * s + ly * c);
+		};
+
+		DrawQuad(rotateLocal(0.0f, half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCameraRange, rotation);
+		DrawQuad(rotateLocal(0.0f, -half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCameraRange, rotation);
+		DrawQuad(rotateLocal(-half.x, 0.0f), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCameraRange, rotation);
+		DrawQuad(rotateLocal(half.x, 0.0f), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCameraRange, rotation);
 	}
 
 	void Gizmo2D::DrawCameraIcon(const Camera& camera, const GameObject& cameraObject)
@@ -603,7 +806,7 @@ namespace Blaze
 		glm::vec2 center(cameraObject.GetPosition());
 
 		const float halfPx = 22.0f;
-		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_CameraIconTex);
+		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_CameraIconTex, cameraObject.GetRotation());
 	}
 
 	void Gizmo2D::DrawSoundIcon(const Camera& camera, const GameObject& soundObject)
@@ -621,7 +824,7 @@ namespace Blaze
 		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_SoundIconTex);
 	}
 
-	void Gizmo2D::DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID)
+	void Gizmo2D::DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID, float rotationDegrees)
 	{
 		GLboolean blendWas = glIsEnabled(GL_BLEND);
 		GLint srcRGB = 0, dstRGB = 0;
@@ -636,6 +839,7 @@ namespace Blaze
 		m_IconShader.SetUniformMatrix4fv(viewMatrix, "matrix");
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(center, 0.0f));
+		transform = glm::rotate(transform, glm::radians(rotationDegrees), glm::vec3(0.0f, 0.0f, 1.0f));
 		transform = glm::scale(transform, glm::vec3(halfSize, 1.0f));
 		m_IconShader.SetUniformMatrix4fv(transform, "transform");
 		m_IconShader.SetUniform1i(0, "icon");
@@ -684,9 +888,11 @@ namespace Blaze
 		return GizmoAxis::None;
 	}
 
-	void Gizmo2D::DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color)
+	void Gizmo2D::DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color, float rotationDegrees)
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(center, 0.0f));
+		if (glm::abs(rotationDegrees) > 1e-4f)
+			transform = glm::rotate(transform, glm::radians(rotationDegrees), glm::vec3(0.0f, 0.0f, 1.0f));
 		transform = glm::scale(transform, glm::vec3(halfSize, 1.0f));
 
 		m_Shader.SetUniformMatrix4fv(transform, "transform");

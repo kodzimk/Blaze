@@ -17,6 +17,7 @@ namespace Blaze
 		void SetUniform1f(float data, const char* uniform_name);
 		void SetUniform1i(int data, const char* uniform_name);
 
+		void SetUniform2fv(const glm::vec2& data, const char* uniform_name);
 		void SetUniform3fv(const glm::vec3& data, const char* uniform_name);
 		void SetUniform4fv(const glm::vec4& data, const char* uniform_name);
 

@@ -1,6 +1,7 @@
 #include "ScriptEditorWindow.h"
 
 #include "../vendor/imgui/src/imgui.h"
+#include "../vendor/imgui/src/imgui_internal.h"
 #include "Blaze/Logging/Log.h"
 #include <algorithm>
 #include <cctype>
@@ -8,6 +9,7 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 
 namespace Blaze
 {
@@ -23,7 +25,17 @@ namespace Blaze
 			{ "OnCollisionEnter", "OnCollisionEnter", "alias of OnCollisionBegin" },
 			{ "OnCollisionExit", "OnCollisionExit", "alias of OnCollisionEnd" },
 			{ "Destroy", "Destroy", "Destroy(gameObject) or Destroy()" },
-			{ "self", "self", "this GameObject" },
+			{ "Spawn", "Spawn", "Spawn() / Spawn(\"box\") / Spawn({type=,tag=,x=,y=})" },
+			{ "FindByTag", "FindByTag", "obj = FindByTag(\"Player\")" },
+			{ "FindAllByTag", "FindAllByTag", "list = FindAllByTag(\"Enemy\")" },
+			{ "SetTag", "SetTag", "SetTag(\"Player\")" },
+			{ "AddTag", "AddTag", "AddTag(\"Enemy\")" },
+			{ "GetTag", "GetTag", "tag = GetTag()" },
+			{ "HasTag", "HasTag", "HasTag(\"Player\")" },
+			{ "GetCurrentMapName", "GetCurrentMapName", "name = GetCurrentMapName()" },
+			{ "OpenMap", "OpenMap", "OpenMap(\"Main\") or OpenMap(\"Level2\")" },
+			{ "self", "self", "this GameObject (nil in map scripts)" },
+			{ "mapName", "mapName", "current map name (map scripts)" },
 
 			{ "print", "print", "print(...)" },
 			{ "PrintString", "PrintString", "PrintString(message, duration?)" },
@@ -33,9 +45,49 @@ namespace Blaze
 			{ "SetRotation", "SetRotation", "SetRotation(degrees)" },
 			{ "GetRotation", "GetRotation", "degrees = GetRotation()" },
 			{ "Rotate", "Rotate", "Rotate(degrees)" },
+			{ "SetColor", "SetColor", "SetColor(r,g,b [,a]) or SetColor({r=,g=,b=,a=})" },
+			{ "GetColor", "GetColor", "r,g,b,a = GetColor()" },
 			{ "SetScale", "SetScale", "SetScale(x [, y])" },
 			{ "GetScale", "GetScale", "x, y = GetScale()" },
 			{ "Translate", "Translate", "Translate(x, y) or Translate({x=, y=})" },
+			{ "SetVelocity", "SetVelocity", "SetVelocity(x, y) - needs PhysicsRigidbody2D" },
+			{ "GetVelocity", "GetVelocity", "vx, vy = GetVelocity()" },
+			{ "AddVelocity", "AddVelocity", "AddVelocity(x, y)" },
+			{ "ApplyForce", "ApplyForce", "ApplyForce(fx, fy) - continuous force" },
+			{ "ApplyImpulse", "ApplyImpulse", "ApplyImpulse(ix, iy) - instant kick" },
+			{ "SetGravity", "SetGravity", "SetGravity(x, y) world gravity" },
+			{ "GetGravity", "GetGravity", "gx, gy = GetGravity()" },
+			{ "SetGravityScale", "SetGravityScale", "SetGravityScale(1.0)" },
+			{ "GetGravityScale", "GetGravityScale", "scale = GetGravityScale()" },
+			{ "SetKinematic", "SetKinematic", "SetKinematic(true/false)" },
+			{ "IsKinematic", "IsKinematic", "IsKinematic()" },
+			{ "SetMass", "SetMass", "SetMass(mass)" },
+			{ "GetMass", "GetMass", "mass = GetMass()" },
+			{ "HasPhysics", "HasPhysics", "HasPhysics() - rigidbody collision?" },
+			{ "PlayAudio", "PlayAudio", "PlayAudio() or PlayAudio(obj)" },
+			{ "StopAudio", "StopAudio", "StopAudio() or StopAudio(obj)" },
+			{ "IsAudioPlaying", "IsAudioPlaying", "IsAudioPlaying()" },
+			{ "SetAudioVolume", "SetAudioVolume", "SetAudioVolume(0.0 to 1.0)" },
+			{ "GetAudioVolume", "GetAudioVolume", "vol = GetAudioVolume()" },
+			{ "SetAudioLoop", "SetAudioLoop", "SetAudioLoop(true/false)" },
+			{ "GetAudioLoop", "GetAudioLoop", "GetAudioLoop()" },
+			{ "SetAudioPath", "SetAudioPath", "SetAudioPath(\"content/audio/x.wav\")" },
+			{ "GetAudioPath", "GetAudioPath", "path = GetAudioPath()" },
+			{ "HasAudio", "HasAudio", "HasAudio()" },
+			{ "SetFlipbook", "SetFlipbook", "SetFlipbook(cols, rows [, fps])" },
+			{ "SetFlipbookFrameCount", "SetFlipbookFrameCount", "SetFlipbookFrameCount(n) 0=full grid" },
+			{ "SetFlipbookFps", "SetFlipbookFps", "SetFlipbookFps(12)" },
+			{ "PlayFlipbook", "PlayFlipbook", "PlayFlipbook()" },
+			{ "StopFlipbook", "StopFlipbook", "StopFlipbook()" },
+			{ "PauseFlipbook", "PauseFlipbook", "PauseFlipbook()" },
+			{ "SetFlipbookFrame", "SetFlipbookFrame", "SetFlipbookFrame(index)" },
+			{ "GetFlipbookFrame", "GetFlipbookFrame", "frame = GetFlipbookFrame()" },
+			{ "SetFlipbookLoop", "SetFlipbookLoop", "SetFlipbookLoop(true)" },
+			{ "IsFlipbookPlaying", "IsFlipbookPlaying", "IsFlipbookPlaying()" },
+			{ "SetParent", "SetParent", "SetParent(obj) or SetParent() to clear" },
+			{ "GetParent", "GetParent", "parent = GetParent()" },
+			{ "ClearParent", "ClearParent", "ClearParent() keep world pose" },
+			{ "GetWorldLocation", "GetWorldLocation", "x, y = GetWorldLocation()" },
 			{ "MOUSE_LEFT", "MOUSE_LEFT", "mouse button constant" },
 			{ "MOUSE_RIGHT", "MOUSE_RIGHT", "mouse button constant" },
 			{ "MOUSE_MIDDLE", "MOUSE_MIDDLE", "mouse button constant" },
@@ -400,6 +452,207 @@ namespace Blaze
 		m_RefocusEditor = true;
 	}
 
+	static bool IsLuaIdentStart(char c)
+	{
+		return std::isalpha((unsigned char)c) || c == '_';
+	}
+
+	static bool IsLuaIdentChar(char c)
+	{
+		return std::isalnum((unsigned char)c) || c == '_';
+	}
+
+	static bool IsLuaKeyword(const char* start, int len)
+	{
+		static const char* kWords[] = {
+			"and", "break", "do", "else", "elseif", "end", "false", "for", "function",
+			"goto", "if", "in", "local", "nil", "not", "or", "repeat", "return",
+			"then", "true", "until", "while"
+		};
+		for (const char* word : kWords)
+		{
+			if ((int)std::strlen(word) == len && std::strncmp(start, word, (size_t)len) == 0)
+				return true;
+		}
+		return false;
+	}
+
+	void ScriptEditorWindow::DrawLuaSyntaxHighlight(const char* text, const ImVec2& textPos)
+	{
+		if (!text)
+			return;
+
+		ImDrawList* draw = ImGui::GetWindowDrawList();
+		ImFont* font = ImGui::GetFont();
+		const float fontSize = ImGui::GetFontSize();
+		const float lineH = ImGui::GetTextLineHeight();
+
+		const ImU32 colDefault = IM_COL32(220, 220, 225, 255);
+		const ImU32 colKeyword = IM_COL32(86, 156, 214, 255);
+		const ImU32 colString  = IM_COL32(206, 145, 120, 255);
+		const ImU32 colComment = IM_COL32(106, 153, 85, 255);
+		const ImU32 colNumber  = IM_COL32(181, 206, 168, 255);
+		const ImU32 colApi     = IM_COL32(78, 201, 176, 255);
+		const ImU32 colFunc    = IM_COL32(220, 220, 170, 255);
+
+		static const std::unordered_set<std::string> kApi = {
+			"Input", "Translate", "Rotate", "SetLocation", "SetPosition", "GetLocation",
+			"SetRotation", "GetRotation", "SetScale", "GetScale", "SetColor", "GetColor",
+			"Destroy", "Spawn", "FindByTag", "FindAllByTag", "SetTag", "AddTag", "GetTag",
+			"HasTag", "print", "PrintString", "Log", "OnStart", "OnUpdate",
+			"OnCollisionBegin", "OnCollisionEnd", "OpenMap", "GetCurrentMapName",
+			"SetVelocity", "GetVelocity", "AddVelocity", "ApplyForce", "ApplyImpulse",
+			"SetGravity", "GetGravity", "SetGravityScale", "GetGravityScale",
+			"SetKinematic", "IsKinematic", "SetMass", "GetMass", "HasPhysics",
+			"PlayAudio", "StopAudio", "IsAudioPlaying", "SetAudioVolume", "GetAudioVolume",
+			"SetAudioLoop", "GetAudioLoop", "SetAudioPath", "GetAudioPath", "HasAudio",
+			"SetFlipbook", "SetFlipbookFrameCount", "SetFlipbookFps", "PlayFlipbook", "StopFlipbook",
+			"PauseFlipbook", "SetFlipbookFrame", "GetFlipbookFrame", "SetFlipbookLoop", "IsFlipbookPlaying",
+			"SetParent", "GetParent", "ClearParent", "GetWorldLocation",
+			"self", "mapName", "selfName"
+		};
+
+		ImVec2 pen = textPos;
+		const char* p = text;
+		while (*p)
+		{
+			if (*p == '\n')
+			{
+				pen.x = textPos.x;
+				pen.y += lineH;
+				++p;
+				continue;
+			}
+			if (*p == '\r')
+			{
+				++p;
+				continue;
+			}
+
+			// Comment: -- or --[[
+			if (p[0] == '-' && p[1] == '-')
+			{
+				const char* start = p;
+				if (p[2] == '[' && p[3] == '[')
+				{
+					p += 4;
+					while (*p && !(p[0] == ']' && p[1] == ']'))
+					{
+						if (*p == '\n')
+						{
+							draw->AddText(font, fontSize, pen, colComment, start, p);
+							pen.x = textPos.x;
+							pen.y += lineH;
+							start = p + 1;
+						}
+						++p;
+					}
+					if (*p)
+						p += 2;
+				}
+				else
+				{
+					while (*p && *p != '\n')
+						++p;
+				}
+				ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+				draw->AddText(font, fontSize, pen, colComment, start, p);
+				pen.x += size.x;
+				continue;
+			}
+
+			// String
+			if (*p == '"' || *p == '\'')
+			{
+				const char quote = *p;
+				const char* start = p++;
+				while (*p && *p != quote && *p != '\n')
+				{
+					if (*p == '\\' && p[1])
+						p += 2;
+					else
+						++p;
+				}
+				if (*p == quote)
+					++p;
+				ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+				draw->AddText(font, fontSize, pen, colString, start, p);
+				pen.x += size.x;
+				continue;
+			}
+			if (p[0] == '[' && p[1] == '[')
+			{
+				const char* start = p;
+				p += 2;
+				while (*p && !(p[0] == ']' && p[1] == ']'))
+				{
+					if (*p == '\n')
+					{
+						draw->AddText(font, fontSize, pen, colString, start, p);
+						pen.x = textPos.x;
+						pen.y += lineH;
+						start = p + 1;
+					}
+					++p;
+				}
+				if (*p)
+					p += 2;
+				ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+				draw->AddText(font, fontSize, pen, colString, start, p);
+				pen.x += size.x;
+				continue;
+			}
+
+			// Number
+			if (std::isdigit((unsigned char)*p) || (*p == '.' && std::isdigit((unsigned char)p[1])))
+			{
+				const char* start = p++;
+				while (std::isdigit((unsigned char)*p) || *p == '.' || *p == 'e' || *p == 'E' || *p == 'x' || *p == 'X')
+					++p;
+				ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+				draw->AddText(font, fontSize, pen, colNumber, start, p);
+				pen.x += size.x;
+				continue;
+			}
+
+			// Identifier / keyword / API
+			if (IsLuaIdentStart(*p))
+			{
+				const char* start = p++;
+				while (IsLuaIdentChar(*p))
+					++p;
+				const int len = (int)(p - start);
+				ImU32 color = colDefault;
+				if (IsLuaKeyword(start, len))
+					color = colKeyword;
+				else
+				{
+					std::string word(start, start + len);
+					if (kApi.find(word) != kApi.end())
+						color = colApi;
+					else
+					{
+						const char* q = p;
+						while (*q == ' ' || *q == '\t')
+							++q;
+						if (*q == '(')
+							color = colFunc;
+					}
+				}
+				ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+				draw->AddText(font, fontSize, pen, color, start, p);
+				pen.x += size.x;
+				continue;
+			}
+
+			// Single character / punctuation
+			const char* start = p++;
+			ImVec2 size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, start, p);
+			draw->AddText(font, fontSize, pen, colDefault, start, p);
+			pen.x += size.x;
+		}
+	}
+
 	void ScriptEditorWindow::DrawCompletionsPopup()
 	{
 		if (!m_ShowCompletions || m_Filtered.empty() || !m_HasPopupAnchor)
@@ -526,9 +779,6 @@ namespace Blaze
 		if (ImGui::Button("Save"))
 			SaveFile();
 		ImGui::SameLine();
-		if (ImGui::Button("Float Reset"))
-			m_PlaceFloating = true;
-		ImGui::SameLine();
 		ImGui::TextDisabled("Ctrl+S save  |  Ctrl+Space IntelliSense");
 		ImGui::Separator();
 
@@ -611,12 +861,87 @@ namespace Blaze
 			m_RefocusEditor = false;
 		}
 
+		// Full-height text box so the outer child scrolls both highlight + editor together.
+		int lineCount = 1;
+		for (char c : m_EditBuf)
+		{
+			if (c == '\0')
+				break;
+			if (c == '\n')
+				++lineCount;
+		}
+		const float lineH = ImGui::GetTextLineHeight();
+		const ImVec2 framePad = ImGui::GetStyle().FramePadding;
+		float contentH = (float)lineCount * lineH + framePad.y * 2.0f + 4.0f;
+		if (contentH < textSize.y)
+			contentH = textSize.y;
+		ImVec2 editorSize(textSize.x, contentH);
+
+		// Colored tokens under transparent InputText (keeps caret/selection on top).
+		{
+			ImVec2 cursorScreen = ImGui::GetCursorScreenPos();
+			ImDrawList* dl = ImGui::GetWindowDrawList();
+			const ImU32 frameBg = ImGui::GetColorU32(ImGuiCol_FrameBg);
+			dl->AddRectFilled(cursorScreen,
+				ImVec2(cursorScreen.x + editorSize.x, cursorScreen.y + editorSize.y), frameBg);
+			DrawLuaSyntaxHighlight(m_EditBuf.data(),
+				ImVec2(cursorScreen.x + framePad.x, cursorScreen.y + framePad.y));
+		}
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 		if (ImGui::InputTextMultiline("##ScriptCode", m_EditBuf.data(), m_EditBuf.size(),
-			textSize, textFlags, ScriptEditCallback, &m_EditUserData))
+			editorSize, textFlags, ScriptEditCallback, &m_EditUserData))
 		{
 			m_Dirty = true;
 			m_SuppressCompletions = false;
 			SyncStringFromEditBuffer();
+		}
+		const bool editorItemActive = ImGui::IsItemActive();
+		const ImVec2 itemMin = ImGui::GetItemRectMin();
+		ImGui::PopStyleColor(4);
+
+		// ImGui draws the caret with ImGuiCol_Text (which is transparent above) — draw our own.
+		if (editorItemActive)
+		{
+			const char* text = m_EditBuf.data();
+			int cursor = m_CursorPos;
+			int len = 0;
+			while (text[len])
+				++len;
+			if (cursor < 0) cursor = 0;
+			if (cursor > len) cursor = len;
+
+			int lineStart = 0;
+			int line = 0;
+			for (int i = 0; i < cursor; ++i)
+			{
+				if (text[i] == '\n')
+				{
+					++line;
+					lineStart = i + 1;
+				}
+			}
+
+			ImFont* font = ImGui::GetFont();
+			const float fontSize = ImGui::GetFontSize();
+			ImVec2 prefixSize = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text + lineStart, text + cursor);
+			ImVec2 caretPos(
+				itemMin.x + framePad.x + prefixSize.x,
+				itemMin.y + framePad.y + (float)line * lineH);
+
+			const float blink = (float)ImFmod((float)ImGui::GetTime(), 1.20f);
+			if (blink <= 0.80f)
+			{
+				ImDrawList* dl = ImGui::GetWindowDrawList();
+				dl->AddLine(
+					ImVec2(caretPos.x, caretPos.y + 0.5f),
+					ImVec2(caretPos.x, caretPos.y + lineH - 1.5f),
+					IM_COL32(230, 230, 235, 255),
+					1.0f);
+			}
 		}
 
 		// Anchor popup under the code box; draw later after End() so it stays on top.

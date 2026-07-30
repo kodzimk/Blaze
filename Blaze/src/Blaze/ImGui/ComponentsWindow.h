@@ -14,7 +14,8 @@ namespace Blaze
 		virtual ~ComponentsWindow();
 
 		void OnUpdate();
-		void SetSelectedObject(GameObject* object) { m_Selected = object; }
+		void SetSelectedObject(GameObject* object) { m_Selected = object; if (object) m_MapSelected = false; }
+		void SetMapSelected(bool selected) { m_MapSelected = selected; if (selected) m_Selected = nullptr; }
 		void SetObjects(const std::vector<GameObject*>& objects) { m_Objects = objects; }
 		bool OnFocus() const { return onFocus; }
 		bool IsOpen() const { return m_Open; }
@@ -26,6 +27,7 @@ namespace Blaze
 	private:
 		bool onFocus;
 		bool m_Open = true;
+		bool m_MapSelected = false;
 		GameObject* m_Selected = nullptr;
 		std::vector<GameObject*> m_Objects;
 		std::unordered_map<std::string, Texture*> m_Thumbnails;

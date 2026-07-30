@@ -34,6 +34,7 @@ namespace Blaze
 		Init(window);
 		m_contextWindow = new ContentBrowser();
 		m_scriptEditor = new ScriptEditorWindow();
+		m_projectSettings = new ProjectSettingsWindow();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
 		m_componentsWindow = new ComponentsWindow();
@@ -52,6 +53,7 @@ namespace Blaze
 		delete m_objectWindow;
 		delete m_contextWindow;
 		delete m_scriptEditor;
+		delete m_projectSettings;
 		delete m_propWindow;
 		delete m_componentsWindow;
 		delete m_startWindow;
@@ -134,10 +136,12 @@ namespace Blaze
 			m_objectWindow->GetOpenPtr(),
 			m_propWindow->GetOpenPtr(),
 			m_componentsWindow->GetOpenPtr(),
-			m_startWindow->GetOpenPtr());
+			m_startWindow->GetOpenPtr(),
+			m_projectSettings->GetOpenPtr());
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_scriptEditor->OnUpdate();
+		m_projectSettings->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_componentsWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
