@@ -91,6 +91,7 @@ namespace Blaze
 				ev.type = CollisionEvent::Type::Begin;
 				ev.a = key.first;
 				ev.b = key.second;
+				ev.isTrigger = contact.isTrigger;
 				m_Events.push_back(ev);
 			}
 		}
@@ -103,6 +104,9 @@ namespace Blaze
 				ev.type = CollisionEvent::Type::End;
 				ev.a = key.first;
 				ev.b = key.second;
+				const bool triggerA = key.first && key.first->IsTrigger();
+				const bool triggerB = key.second && key.second->IsTrigger();
+				ev.isTrigger = triggerA || triggerB;
 				m_Events.push_back(ev);
 			}
 		}
@@ -267,6 +271,9 @@ namespace Blaze
 			body.halfSize = object->GetCollisionSize() * 0.5f;
 			body.halfSize.x = glm::max(body.halfSize.x, 0.01f);
 			body.halfSize.y = glm::max(body.halfSize.y, 0.01f);
+			body.isTrigger = object->IsTrigger();
+			body.layer = object->GetCollisionLayer();
+			body.mask = object->GetCollisionMask();
 
 			const bool dynamic = (type == CollisionType::PhysicsRigidbody2D && !object->IsRigidbodyKinematic());
 			body.isStatic = !dynamic;
@@ -401,12 +408,16 @@ namespace Blaze
 			{
 				const Body& a = m_Bodies[i];
 				const Body& b = m_Bodies[j];
-				// Detect static-static too so trigger/callback overlaps still fire.
-				// ResolveContacts no-ops pairs with zero inverse mass.
+
+				const bool aHitsB = (a.mask & (1u << (b.layer & 31))) != 0;
+				const bool bHitsA = (b.mask & (1u << (a.layer & 31))) != 0;
+				if (!aHitsB || !bHitsA)
+					continue;
 
 				Contact contact;
 				contact.a = (int)i;
 				contact.b = (int)j;
+				contact.isTrigger = a.isTrigger || b.isTrigger;
 				bool hit = false;
 
 				if (a.shape == ShapeKind::Circle && b.shape == ShapeKind::Circle)
@@ -431,6 +442,9 @@ namespace Blaze
 	{
 		for (const Contact& contact : contacts)
 		{
+			if (contact.isTrigger)
+				continue;
+
 			Body& a = m_Bodies[contact.a];
 			Body& b = m_Bodies[contact.b];
 

@@ -5,12 +5,15 @@
 #include "Blaze/Renderer/Texture.h"
 #include "Blaze/Audio/AudioEngine.h"
 #include "Blaze/ImGui/ScriptEditorWindow.h"
+#include "Blaze/ImGui/PropertiesWindow.h"
 #include "Blaze/Core/Project.h"
+#include "Blaze/Editor/UndoStack.h"
 #include "Blaze/Logging/Log.h"
 #include <filesystem>
 #include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <memory>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -19,6 +22,8 @@ namespace Blaze
 {
 	float ComponentsWindow::width = 300.f;
 	float ComponentsWindow::height = 400.f;
+	int ComponentsWindow::s_TilePaintBrush = 0;
+	bool ComponentsWindow::s_TilePaintMode = false;
 
 	static const char* s_TexturePayload = "BLAZE_TEXTURE";
 	static const char* s_AudioPayload = "BLAZE_AUDIO";
@@ -48,6 +53,30 @@ namespace Blaze
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".wav" || extension == ".mp3" ||
 			   extension == ".ogg" || extension == ".flac";
+	}
+
+	static bool IsFontExtension(std::string extension)
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".ttf" || extension == ".otf";
+	}
+
+	static void CollectContentFonts(const fs::path& root, std::vector<std::string>& out)
+	{
+		if (!fs::exists(root))
+			return;
+
+		std::error_code ec;
+		for (auto it = fs::recursive_directory_iterator(root, ec); it != fs::recursive_directory_iterator(); ++it)
+		{
+			if (ec)
+				break;
+			if (!it->is_regular_file())
+				continue;
+			if (IsFontExtension(it->path().extension().string()))
+				out.push_back(it->path().generic_string());
+		}
 	}
 
 	static void CollectContentTextures(const fs::path& root, std::vector<std::string>& out)
@@ -150,30 +179,82 @@ namespace Blaze
 			ImGui::TextDisabled("Type: Camera");
 		else if (m_Selected->IsSound())
 			ImGui::TextDisabled("Type: Sound");
+		else if (m_Selected->IsText())
+			ImGui::TextDisabled("Type: Text");
+		else if (m_Selected->IsTilemap())
+			ImGui::TextDisabled("Type: Tilemap");
+
+		bool visible = m_Selected->IsVisible();
+		if (ImGui::Checkbox("Visible", &visible))
+			m_Selected->SetVisible(visible);
 		ImGui::Separator();
 
 		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			const bool playLocked = StartWindow::IsPlaying();
+			if (playLocked)
+				ImGui::TextDisabled("Locked while playing — edit in Game view only");
+
 			if (GameObject* parent = m_Selected->GetParent())
 				ImGui::TextDisabled("Parent: %s", parent->GetName().c_str());
 			else
 				ImGui::TextDisabled("Parent: (none)");
 
-			glm::vec3 localPos = m_Selected->GetLocalPosition();
+			if (playLocked)
+				ImGui::BeginDisabled();
+
+			auto pushTransformIfChanged = [this]()
+			{
+				if (!m_Selected || !m_TransformEditActive)
+					return;
+				LocalTransformSnap after = LocalTransformSnap::Capture(*m_Selected);
+				if (!m_TransformEditBefore.Equals(after))
+				{
+					UndoStack::Get().Push(std::make_unique<TransformCommand>(
+						m_Selected, m_TransformEditBefore, after));
+				}
+				m_TransformEditActive = false;
+			};
+
+			LocalTransformSnap beforePos = LocalTransformSnap::Capture(*m_Selected);
+			glm::vec3 localPos = beforePos.position;
 			if (ImGui::InputFloat3("Local Position", &localPos.x, "%.3f"))
 				m_Selected->SetLocalPosition(localPos);
+			if (ImGui::IsItemActivated())
+			{
+				m_TransformEditBefore = beforePos;
+				m_TransformEditActive = true;
+			}
+			if (ImGui::IsItemDeactivatedAfterEdit())
+				pushTransformIfChanged();
 
-			float localRot = m_Selected->GetLocalRotation();
+			LocalTransformSnap beforeRot = LocalTransformSnap::Capture(*m_Selected);
+			float localRot = beforeRot.rotation;
 			if (ImGui::InputFloat("Local Rotation", &localRot, 0.0f, 0.0f, "%.3f"))
 				m_Selected->SetLocalRotation(localRot);
+			if (ImGui::IsItemActivated())
+			{
+				m_TransformEditBefore = beforeRot;
+				m_TransformEditActive = true;
+			}
+			if (ImGui::IsItemDeactivatedAfterEdit())
+				pushTransformIfChanged();
 
-			glm::vec2 localScale = m_Selected->GetLocalScale();
+			LocalTransformSnap beforeScale = LocalTransformSnap::Capture(*m_Selected);
+			glm::vec2 localScale = beforeScale.scale;
 			if (ImGui::InputFloat2("Local Scale", &localScale.x, "%.3f"))
 			{
 				localScale.x = glm::max(localScale.x, 0.05f);
 				localScale.y = glm::max(localScale.y, 0.05f);
 				m_Selected->SetLocalScale(localScale);
 			}
+			if (ImGui::IsItemActivated())
+			{
+				m_TransformEditBefore = beforeScale;
+				m_TransformEditActive = true;
+			}
+			if (ImGui::IsItemDeactivatedAfterEdit())
+				pushTransformIfChanged();
 
 			glm::vec3 worldPos = m_Selected->GetWorldPosition();
 			ImGui::TextDisabled("World: %.1f, %.1f  rot %.1f", worldPos.x, worldPos.y, m_Selected->GetWorldRotation());
@@ -183,6 +264,9 @@ namespace Blaze
 				m_Selected->SetLayer(layer);
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Higher layers render in front");
+
+			if (playLocked)
+				ImGui::EndDisabled();
 		}
 
 		if (ImGui::CollapsingHeader("Tags", ImGuiTreeNodeFlags_DefaultOpen))
@@ -239,14 +323,318 @@ namespace Blaze
 						m_Selected->SetDrivesView(false);
 				}
 				if (isMain)
-					ImGui::TextDisabled("This camera renders the Game view");
+					ImGui::TextDisabled("Renders Game view. Parent under an object to follow it.");
 
 				float zoom = m_Selected->GetZoom();
 				if (ImGui::InputFloat("Zoom", &zoom, 0.0f, 0.0f, "%.3f"))
 					m_Selected->SetZoom(zoom);
 			}
 		}
-		else if (!m_Selected->IsSound() && ImGui::CollapsingHeader("Sprite Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+		else if (m_Selected->IsTilemap() && ImGui::CollapsingHeader("Tilemap", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Tileset Texture");
+
+			const float previewSize = 64.0f;
+			ImVec2 cursor = ImGui::GetCursorScreenPos();
+
+			if (m_Selected->HasTexture())
+			{
+				ImGui::Image((ImTextureID)(intptr_t)m_Selected->GetTextureID(), ImVec2(previewSize, previewSize));
+			}
+			else
+			{
+				ImGui::Dummy(ImVec2(previewSize, previewSize));
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				drawList->AddRectFilled(cursor, ImVec2(cursor.x + previewSize, cursor.y + previewSize), IM_COL32(40, 40, 40, 255));
+				drawList->AddRect(cursor, ImVec2(cursor.x + previewSize, cursor.y + previewSize), IM_COL32(90, 90, 90, 255));
+				drawList->AddText(ImVec2(cursor.x + 10.0f, cursor.y + previewSize * 0.5f - 7.0f), IM_COL32(160, 160, 160, 255), "None");
+			}
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_TexturePayload))
+				{
+					std::string path((const char*)payload->Data);
+					m_Selected->SetTexture(path);
+					BZ_INFO("Assigned tileset: {0}", path);
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			const std::string& path = m_Selected->GetTexturePath();
+			if (path.empty())
+				ImGui::TextDisabled("No tileset");
+			else
+				ImGui::TextWrapped("%s", path.c_str());
+			ImGui::TextDisabled("Drag a sprite sheet from Content Browser");
+			ImGui::EndGroup();
+
+			ImGui::Separator();
+			int mapCols = m_Selected->GetTilemapColumns();
+			int mapRows = m_Selected->GetTilemapRows();
+			float cellSize = m_Selected->GetTileCellSize();
+			int setCols = m_Selected->GetTilesetColumns();
+			int setRows = m_Selected->GetTilesetRows();
+
+			if (ImGui::InputInt("Map Width", &mapCols))
+				m_Selected->SetTilemapSize(mapCols, m_Selected->GetTilemapRows());
+			if (ImGui::InputInt("Map Height", &mapRows))
+				m_Selected->SetTilemapSize(m_Selected->GetTilemapColumns(), mapRows);
+			if (ImGui::InputFloat("Cell Size", &cellSize, 1.0f, 8.0f, "%.0f"))
+				m_Selected->SetTileCellSize(cellSize);
+			if (ImGui::InputInt("Tileset Columns", &setCols))
+				m_Selected->SetTilesetGrid(setCols, m_Selected->GetTilesetRows());
+			if (ImGui::InputInt("Tileset Rows", &setRows))
+				m_Selected->SetTilesetGrid(m_Selected->GetTilesetColumns(), setRows);
+
+			ImGui::Separator();
+			ImGui::TextUnformatted("Paint brush");
+			bool paintMode = s_TilePaintMode;
+			if (ImGui::Checkbox("Lock paint (B)", &paintMode))
+				s_TilePaintMode = paintMode;
+			ImGui::TextDisabled("Click/drag map to paint. RMB erases.");
+			ImGui::TextDisabled("Grab red/green arrows to move (unless locked).");
+
+			int& s_PaintTile = s_TilePaintBrush;
+			const int tileCount = m_Selected->GetTilesetTileCount();
+			if (ImGui::SliderInt("Tile ID", &s_PaintTile, -1, glm::max(tileCount - 1, 0)))
+			{
+			}
+			ImGui::TextDisabled("-1 = erase");
+			if (ImGui::Button("Fill"))
+			{
+				std::vector<TileChange> changes;
+				const int cols = m_Selected->GetTilemapColumns();
+				const int rows = m_Selected->GetTilemapRows();
+				for (int y = 0; y < rows; ++y)
+				{
+					for (int x = 0; x < cols; ++x)
+					{
+						const int oldId = m_Selected->GetTile(x, y);
+						if (oldId == s_PaintTile)
+							continue;
+						changes.push_back({ x, y, oldId, s_PaintTile });
+					}
+				}
+				m_Selected->FillTiles(s_PaintTile);
+				if (!changes.empty())
+					UndoStack::Get().Push(std::make_unique<TileStrokeCommand>(m_Selected, std::move(changes)));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				std::vector<TileChange> changes;
+				const int cols = m_Selected->GetTilemapColumns();
+				const int rows = m_Selected->GetTilemapRows();
+				for (int y = 0; y < rows; ++y)
+				{
+					for (int x = 0; x < cols; ++x)
+					{
+						const int oldId = m_Selected->GetTile(x, y);
+						if (oldId < 0)
+							continue;
+						changes.push_back({ x, y, oldId, -1 });
+					}
+				}
+				m_Selected->ClearTiles();
+				if (!changes.empty())
+					UndoStack::Get().Push(std::make_unique<TileStrokeCommand>(m_Selected, std::move(changes)));
+			}
+
+			if (m_Selected->HasTexture() && tileCount > 0)
+			{
+				ImGui::TextUnformatted("Tileset picker");
+				const float brushThumb = 28.0f;
+				int brushCols = (int)(ImGui::GetContentRegionAvail().x / (brushThumb + 4.0f));
+				if (brushCols < 1) brushCols = 1;
+				ImGui::BeginChild("TilesetPicker", ImVec2(0.0f, brushThumb * 3.5f), true);
+				ImGui::Columns(brushCols, nullptr, false);
+				for (int id = 0; id < tileCount; ++id)
+				{
+					ImGui::PushID(id);
+					const int cols = glm::max(m_Selected->GetTilesetColumns(), 1);
+					const int rows = glm::max(m_Selected->GetTilesetRows(), 1);
+					const int col = id % cols;
+					const int rowFromTop = id / cols;
+					ImVec2 uv0((float)col / (float)cols, (float)rowFromTop / (float)rows);
+					ImVec2 uv1(((float)col + 1.0f) / (float)cols, ((float)rowFromTop + 1.0f) / (float)rows);
+					ImVec4 tint = (s_PaintTile == id) ? ImVec4(0.6f, 0.85f, 1.0f, 1.0f) : ImVec4(1, 1, 1, 1);
+					if (ImGui::ImageButton("##tile", (ImTextureID)(intptr_t)m_Selected->GetTextureID(),
+						ImVec2(brushThumb, brushThumb), uv0, uv1, ImVec4(0, 0, 0, 0), tint))
+					{
+						s_PaintTile = id;
+					}
+					ImGui::PopID();
+					ImGui::NextColumn();
+				}
+				ImGui::Columns(1);
+				ImGui::EndChild();
+			}
+
+			ImGui::TextUnformatted("Paint grid (hold & drag)");
+			ImGui::TextDisabled("LMB paint  |  RMB erase");
+			ImGui::BeginChild("TilePaintGrid", ImVec2(0.0f, 220.0f), true,
+				ImGuiWindowFlags_NoMove);
+			const float cellBtn = 18.0f;
+			const bool paintHeld = ImGui::IsMouseDown(ImGuiMouseButton_Left);
+			const bool eraseHeld = ImGui::IsMouseDown(ImGuiMouseButton_Right);
+			const bool anyStroke = paintHeld || eraseHeld;
+			if (!anyStroke && m_CompTileStrokeActive)
+			{
+				if (!m_CompTileStrokeChanges.empty())
+				{
+					UndoStack::Get().Push(std::make_unique<TileStrokeCommand>(
+						m_Selected, std::move(m_CompTileStrokeChanges)));
+				}
+				m_CompTileStrokeChanges.clear();
+				m_CompTileStrokeActive = false;
+			}
+			for (int y = m_Selected->GetTilemapRows() - 1; y >= 0; --y)
+			{
+				for (int x = 0; x < m_Selected->GetTilemapColumns(); ++x)
+				{
+					ImGui::PushID(y * 10000 + x);
+					const int tile = m_Selected->GetTile(x, y);
+					char label[16];
+					if (tile < 0)
+						std::snprintf(label, sizeof(label), " ");
+					else
+						std::snprintf(label, sizeof(label), "%d", tile);
+
+					ImGui::Button(label, ImVec2(cellBtn, cellBtn));
+					if (ImGui::IsItemHovered())
+					{
+						ImGui::SetTooltip("(%d, %d) = %d", x, y, tile);
+						if (paintHeld || eraseHeld)
+						{
+							const int newId = paintHeld ? s_PaintTile : -1;
+							if (tile != newId)
+							{
+								m_CompTileStrokeActive = true;
+								bool found = false;
+								for (TileChange& change : m_CompTileStrokeChanges)
+								{
+									if (change.x == x && change.y == y)
+									{
+										change.newId = newId;
+										found = true;
+										break;
+									}
+								}
+								if (!found)
+									m_CompTileStrokeChanges.push_back({ x, y, tile, newId });
+								m_Selected->SetTile(x, y, newId);
+							}
+						}
+					}
+					ImGui::PopID();
+					if (x + 1 < m_Selected->GetTilemapColumns())
+						ImGui::SameLine(0.0f, 1.0f);
+				}
+			}
+			ImGui::EndChild();
+		}
+		if (m_Selected->IsText())
+		{
+			if (ImGui::CollapsingHeader("Text Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				char buf[512];
+				std::snprintf(buf, sizeof(buf), "%s", m_Selected->GetText().c_str());
+				if (ImGui::InputTextMultiline("Content", buf, sizeof(buf), ImVec2(-1.0f, 80.0f)))
+					m_Selected->SetText(buf);
+
+				float fontSize = m_Selected->GetFontSize();
+				if (ImGui::DragFloat("Font Size", &fontSize, 0.5f, 1.0f, 512.0f, "%.1f"))
+					m_Selected->SetFontSize(fontSize);
+
+				ImGui::Text("Font");
+				const std::string& fontPath = m_Selected->GetFontPath();
+				if (fontPath.empty())
+					ImGui::TextDisabled("Default (Arial)");
+				else
+				{
+					const std::string fileName = fs::path(fontPath).filename().string();
+					ImGui::TextUnformatted(fileName.c_str());
+					if (ImGui::IsItemHovered())
+						ImGui::SetTooltip("%s", fontPath.c_str());
+				}
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BLAZE_FONT"))
+					{
+						m_Selected->SetFontPath(std::string((const char*)payload->Data));
+						BZ_INFO("Assigned font: {0}", m_Selected->GetFontPath());
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::TextDisabled("Drag from Content Browser or Select...");
+				if (ImGui::Button("Select Font...", ImVec2(-1.0f, 0.0f)))
+					ImGui::OpenPopup("ContentBrowserFontPicker");
+
+				if (ImGui::BeginPopup("ContentBrowserFontPicker"))
+				{
+					ImGui::TextUnformatted("Project fonts (.ttf / .otf)");
+					ImGui::Separator();
+
+					std::vector<std::string> fonts;
+					const std::string contentRoot = Project::HasProject()
+						? Project::GetContentDirectory()
+						: "content";
+					CollectContentFonts(contentRoot, fonts);
+					if (contentRoot != "content")
+						CollectContentFonts("content", fonts);
+
+					if (fonts.empty())
+					{
+						ImGui::TextDisabled("No fonts found. Import via Content Browser.");
+					}
+					else
+					{
+						ImGui::BeginChild("FontPickerList", ImVec2(320.0f, 240.0f), true);
+						for (const std::string& path : fonts)
+						{
+							ImGui::PushID(path.c_str());
+							const std::string label = fs::path(path).filename().string();
+							bool selected = (path == fontPath);
+							if (!selected && !fontPath.empty())
+							{
+								std::error_code ec;
+								selected = fs::equivalent(path, fontPath, ec);
+							}
+							if (ImGui::Selectable(label.c_str(), selected))
+							{
+								m_Selected->SetFontPath(path);
+								ImGui::CloseCurrentPopup();
+							}
+							if (ImGui::IsItemHovered())
+								ImGui::SetTooltip("%s", path.c_str());
+							ImGui::PopID();
+						}
+						ImGui::EndChild();
+					}
+
+					if (ImGui::Button("Use Default", ImVec2(-1.0f, 0.0f)))
+					{
+						m_Selected->SetFontPath("");
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
+				}
+
+				if (!fontPath.empty() && ImGui::Button("Clear Font", ImVec2(-1.0f, 0.0f)))
+					m_Selected->SetFontPath("");
+
+				glm::vec4 color = m_Selected->GetColor();
+				if (ImGui::ColorEdit4("Color", &color.x))
+					m_Selected->SetColor(color);
+			}
+		}
+		else if (!m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsTilemap()
+			&& ImGui::CollapsingHeader("Sprite Renderer", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Text("Texture");
 
@@ -657,6 +1045,34 @@ namespace Blaze
 						if (ImGui::InputFloat2("Size", &size.x, "%.3f"))
 							m_Selected->SetCollisionSize(size);
 					}
+				}
+
+				ImGui::Separator();
+				bool isTrigger = m_Selected->IsTrigger();
+				if (ImGui::Checkbox("Is Trigger", &isTrigger))
+					m_Selected->SetIsTrigger(isTrigger);
+				ImGui::TextDisabled("Triggers overlap only (no bounce). Use OnTriggerBegin");
+
+				const char* layerNames[] = {
+					"0 Default", "1 Player", "2 Enemy", "3 Projectile",
+					"4 Trigger", "5 Ground", "6 Pickup", "7 Custom"
+				};
+				int layer = m_Selected->GetCollisionLayer();
+				if (layer < 0) layer = 0;
+				if (layer > 7) layer = 7;
+				if (ImGui::Combo("Layer", &layer, layerNames, 8))
+					m_Selected->SetCollisionLayer(layer);
+
+				ImGui::TextUnformatted("Collides With");
+				for (int i = 0; i < 8; ++i)
+				{
+					bool enabled = m_Selected->CollidesWithLayer(i);
+					ImGui::PushID(i);
+					if (ImGui::Checkbox(layerNames[i], &enabled))
+						m_Selected->SetCollidesWithLayer(i, enabled);
+					ImGui::PopID();
+					if (i % 2 == 0)
+						ImGui::SameLine();
 				}
 
 				if (ImGui::Button("Remove Collision", ImVec2(-1.0f, 0.0f)))

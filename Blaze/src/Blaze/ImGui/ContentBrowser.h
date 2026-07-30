@@ -30,13 +30,17 @@ namespace Blaze
 	private:
 		bool IsTextureFile(std::string extension) const;
 		bool IsAudioFile(std::string extension) const;
+		bool IsFontFile(std::string extension) const;
 		bool IsScriptFile(std::string extension) const;
 		bool IsMapFile(std::string extension) const;
+		bool IsWidgetFile(std::string extension) const;
 		Texture* GetThumbnail(const std::string& path);
 		void ImportTexture();
 		void ImportAudio();
+		void ImportFont();
 		void CreateScript();
 		void CreateMap();
+		void CreateWidget();
 		void CreateFolder();
 		void StartRename(const std::string& path);
 		void CommitRename();

@@ -25,6 +25,8 @@ namespace Blaze
 	{
 		if (ScriptEditorWindow::IsBlockingMainEditor())
 			return true;
+		if (WidgetEditorWindow::IsBlockingMainEditorStatic())
+			return true;
 		return UIWantTextInput();
 	}
 
@@ -34,6 +36,7 @@ namespace Blaze
 		Init(window);
 		m_contextWindow = new ContentBrowser();
 		m_scriptEditor = new ScriptEditorWindow();
+		m_widgetEditor = new WidgetEditorWindow();
 		m_projectSettings = new ProjectSettingsWindow();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
@@ -53,6 +56,7 @@ namespace Blaze
 		delete m_objectWindow;
 		delete m_contextWindow;
 		delete m_scriptEditor;
+		delete m_widgetEditor;
 		delete m_projectSettings;
 		delete m_propWindow;
 		delete m_componentsWindow;
@@ -141,6 +145,7 @@ namespace Blaze
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_scriptEditor->OnUpdate();
+		m_widgetEditor->OnUpdate();
 		m_projectSettings->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_componentsWindow->OnUpdate();

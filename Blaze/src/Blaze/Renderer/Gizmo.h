@@ -38,6 +38,7 @@ namespace Blaze
 		void DrawCameraIcon(const Camera& camera, const GameObject& cameraObject);
 		void DrawSoundIcon(const Camera& camera, const GameObject& soundObject);
 		void DrawCollision(const Camera& camera, const GameObject& object);
+		void DrawTilemapGrid(const Camera& camera, const GameObject& tilemap, int hoverX = -1, int hoverY = -1);
 		GizmoAxis HitTest(const CameraProp& prop, const GameObject& object, const glm::vec2& worldPoint) const;
 
 		// Shared editor icons for ImGui (palette / hierarchy). 0 if not ready.

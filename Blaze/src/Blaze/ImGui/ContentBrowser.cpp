@@ -6,6 +6,8 @@
 #include "Blaze/Logging/Log.h"
 #include "Blaze/Core/Project.h"
 #include "Blaze/ImGui/ScriptEditorWindow.h"
+#include "Blaze/ImGui/WidgetEditorWindow.h"
+#include "Blaze/UI/WidgetAsset.h"
 #include <filesystem>
 #include <cctype>
 #include <cstring>
@@ -28,6 +30,7 @@ namespace Blaze
 
 	static const char* s_TexturePayload = "BLAZE_TEXTURE";
 	static const char* s_AudioPayload = "BLAZE_AUDIO";
+	static const char* s_FontPayload = "BLAZE_FONT";
 	static const char* s_ScriptPayload = "BLAZE_SCRIPT";
 	static const char* s_MapPayload = "BLAZE_MAP";
 
@@ -65,6 +68,13 @@ namespace Blaze
 			   extension == ".ogg" || extension == ".flac";
 	}
 
+	bool ContentBrowser::IsFontFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".ttf" || extension == ".otf";
+	}
+
 	bool ContentBrowser::IsScriptFile(std::string extension) const
 	{
 		for (auto& c : extension)
@@ -77,6 +87,13 @@ namespace Blaze
 		for (auto& c : extension)
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".map";
+	}
+
+	bool ContentBrowser::IsWidgetFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".widget";
 	}
 
 	Texture* ContentBrowser::GetThumbnail(const std::string& path)
@@ -200,6 +217,59 @@ namespace Blaze
 		BZ_INFO("Imported audio: {0}", destination.string());
 	}
 
+	void ContentBrowser::ImportFont()
+	{
+		char filePath[MAX_PATH] = {};
+
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = filePath;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.lpstrFilter =
+			"Font Files (*.ttf;*.otf)\0*.ttf;*.otf\0"
+			"TrueType (*.ttf)\0*.ttf\0"
+			"OpenType (*.otf)\0*.otf\0"
+			"All Files (*.*)\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if (!GetOpenFileNameA(&ofn))
+			return;
+
+		fs::path source(filePath);
+		if (!IsFontFile(source.extension().string()))
+		{
+			BZ_INFO("Import cancelled: unsupported font format '{0}'", source.extension().string());
+			return;
+		}
+
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path destination = fs::path(m_CurrentDir) / source.filename();
+		if (fs::exists(destination))
+		{
+			fs::path stem = source.stem();
+			fs::path ext = source.extension();
+			int suffix = 1;
+			do
+			{
+				destination = fs::path(m_CurrentDir) / (stem.string() + "_" + std::to_string(suffix) + ext.string());
+				++suffix;
+			} while (fs::exists(destination));
+		}
+
+		std::error_code ec;
+		fs::copy_file(source, destination, fs::copy_options::none, ec);
+		if (ec)
+		{
+			BZ_INFO("Failed to import font: {0}", ec.message());
+			return;
+		}
+
+		BZ_INFO("Imported font: {0}", destination.string());
+	}
+
 	void ContentBrowser::CreateScript()
 	{
 		if (!fs::exists(m_CurrentDir))
@@ -233,6 +303,31 @@ namespace Blaze
 
 		BZ_INFO("Created script: {0}", scriptPath.string());
 		StartRename(scriptPath.string());
+	}
+
+	void ContentBrowser::CreateWidget()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path widgetPath = fs::path(m_CurrentDir) / "NewWidget.widget";
+		int suffix = 1;
+		while (fs::exists(widgetPath))
+		{
+			widgetPath = fs::path(m_CurrentDir) / ("NewWidget (" + std::to_string(suffix) + ").widget");
+			++suffix;
+		}
+
+		WidgetAsset asset = WidgetAsset::CreateDefault(widgetPath.stem().string());
+		asset.SetPath(widgetPath.string());
+		if (!asset.SaveToFile(widgetPath.string()))
+		{
+			BZ_INFO("Failed to create widget: {0}", widgetPath.string());
+			return;
+		}
+
+		BZ_INFO("Created widget: {0}", widgetPath.string());
+		StartRename(widgetPath.string());
 	}
 
 	void ContentBrowser::CreateMap()
@@ -380,8 +475,12 @@ namespace Blaze
 				ImportTexture();
 			if (ImGui::MenuItem("Import Audio"))
 				ImportAudio();
+			if (ImGui::MenuItem("Import Font"))
+				ImportFont();
 			if (ImGui::MenuItem("Create Script"))
 				CreateScript();
+			if (ImGui::MenuItem("Create Widget"))
+				CreateWidget();
 			if (ImGui::MenuItem("Create Map"))
 				CreateMap();
 			if (ImGui::MenuItem("New Folder"))
@@ -445,6 +544,12 @@ namespace Blaze
 				moved = true;
 		}
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_AudioPayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_FontPayload))
 		{
 			std::string sourcePath((const char*)payload->Data);
 			if (MoveAssetToFolder(sourcePath, folderPath))
@@ -621,6 +726,27 @@ namespace Blaze
 
 				DrawAssetRenameLabel(fullPath, name, thumbSize);
 			}
+			else if (IsFontFile(path.extension().string()))
+			{
+				ImGui::Button("[FONT]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_FontPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("FontItemContext"))
+				{
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
 			else if (IsScriptFile(path.extension().string()))
 			{
 				unsigned int scriptTex = Gizmo2D::GetScriptIconTextureID();
@@ -652,6 +778,26 @@ namespace Blaze
 				{
 					if (ImGui::MenuItem("Edit Script"))
 						ScriptEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsWidgetFile(path.extension().string()))
+			{
+				if (ImGui::Button("[UI]", ImVec2(thumbSize, thumbSize)))
+				{
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					WidgetEditorWindow::OpenFile(fullPath);
+
+				if (ImGui::BeginPopupContextItem("WidgetItemContext"))
+				{
+					if (ImGui::MenuItem("Edit Widget"))
+						WidgetEditorWindow::OpenFile(fullPath);
 					if (ImGui::MenuItem("Rename"))
 						StartRename(fullPath);
 					ImGui::EndPopup();

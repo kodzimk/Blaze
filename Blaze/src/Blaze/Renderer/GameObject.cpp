@@ -2,10 +2,12 @@
 #include<glad/glad.h>
 #include"Blaze/Renderer/Camera.h"
 #include"Blaze/Renderer/Shader.h"
+#include"Blaze/UI/UISystem.h"
 #include<gtc/type_ptr.hpp>
 #include"Blaze/Logging/Log.h"
 #include <cctype>
 #include <algorithm>
+#include <cmath>
 
 namespace Blaze {
 	Blaze::GameObject::GameObject(const std::vector<float>& vertices, const std::vector<unsigned int>& indices, glm::vec4 color, std::string name)
@@ -47,8 +49,22 @@ namespace Blaze {
 
 	void GameObject::Draw(const CameraProp& prop,Shader& const m_Shader)
 	{
+		if (!m_Visible)
+			return;
 		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound)
 			return;
+		if (m_Type == ObjectType::Text)
+		{
+			if (!UISystem::IsReady())
+				UISystem::Init();
+			UISystem::DrawWorldText(m_Shader, prop, m_Matrix, m_VertexArray, m_Text, m_FontSize, m_Color, m_FontPath);
+			return;
+		}
+		if (m_Type == ObjectType::Tilemap)
+		{
+			DrawTilemap(prop, m_Shader);
+			return;
+		}
 		if ((m_Type == ObjectType::Circle || m_Type == ObjectType::Box) && !m_Texture.IsValid())
 			return;
 
@@ -61,6 +77,237 @@ namespace Blaze {
 		m_VertexArray.Bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		m_Texture.UnBind();
+	}
+
+	void GameObject::DrawTilemap(const CameraProp& prop, Shader& shader)
+	{
+		if (!m_Texture.IsValid() || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+			return;
+
+		const float cell = glm::max(m_TileCellSize, 1.0f);
+		const float mapW = (float)m_TilemapColumns * cell;
+		const float mapH = (float)m_TilemapRows * cell;
+		const float meshScale = cell / 100.0f; // default mesh is 100x100 (±50)
+
+		// Shader does: view * object_matrix * ortho * pos
+		// So translations injected into object_matrix must be in post-ortho units (mesh * projection scale),
+		// matching RebuildMatrixFromWorld — not raw mesh/pixel units.
+		const float sx = prop.projection[0][0];
+		const float sy = prop.projection[1][1];
+		if (glm::abs(sx) < 1e-8f || glm::abs(sy) < 1e-8f)
+			return;
+
+		shader.SetUniform4fv(m_Color, "color");
+		shader.SetUniform2fv(GetTilesetUVScale(), "uv_scale");
+
+		m_Texture.Bind();
+		m_VertexArray.Bind();
+
+		for (int row = 0; row < m_TilemapRows; ++row)
+		{
+			for (int col = 0; col < m_TilemapColumns; ++col)
+			{
+				const int idx = row * m_TilemapColumns + col;
+				if (idx < 0 || idx >= (int)m_Tiles.size())
+					continue;
+				const int tileId = m_Tiles[idx];
+				if (tileId < 0)
+					continue;
+
+				const float cx = ((float)col + 0.5f) * cell - mapW * 0.5f;
+				const float cy = ((float)row + 0.5f) * cell - mapH * 0.5f;
+
+				glm::mat4 tileLocal = glm::translate(glm::mat4(1.0f), glm::vec3(cx * sx, cy * sy, 0.0f));
+				tileLocal = glm::scale(tileLocal, glm::vec3(meshScale, meshScale, 1.0f));
+				const glm::mat4 world = m_Matrix * tileLocal;
+
+				shader.SetUniformMatrix4fv(world, "object_matrix");
+				shader.SetUniform2fv(GetTilesetUVOffset(tileId), "uv_offset");
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			}
+		}
+
+		m_Texture.UnBind();
+	}
+
+	int GameObject::GetTilesetTileCount() const
+	{
+		return glm::max(m_TilesetColumns, 1) * glm::max(m_TilesetRows, 1);
+	}
+
+	glm::vec2 GameObject::GetTilesetUVScale() const
+	{
+		const float cols = (float)glm::max(m_TilesetColumns, 1);
+		const float rows = (float)glm::max(m_TilesetRows, 1);
+		// Negative V: mesh has V=0 at bottom, stb textures have V=0 at top (no flip on load).
+		return glm::vec2(1.0f / cols, -1.0f / rows);
+	}
+
+	glm::vec2 GameObject::GetTilesetUVOffset(int tileId) const
+	{
+		const int cols = glm::max(m_TilesetColumns, 1);
+		const int rows = glm::max(m_TilesetRows, 1);
+		const int total = cols * rows;
+		const int id = glm::clamp(tileId, 0, total - 1);
+		const int col = id % cols;
+		const int rowFromTop = id / cols;
+		// Matches ImGui tileset picker: row 0 = top row of the sheet.
+		return glm::vec2(
+			(float)col / (float)cols,
+			(float)(rowFromTop + 1) / (float)rows);
+	}
+
+	void GameObject::InitTilemapDefaults()
+	{
+		m_TileCellSize = 32.0f;
+		m_TilesetColumns = 1;
+		m_TilesetRows = 1;
+		SetTilemapSize(16, 12);
+	}
+
+	void GameObject::RefreshTilemapBounds()
+	{
+		if (m_Type != ObjectType::Tilemap || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+			return;
+		const float cell = glm::max(m_TileCellSize, 1.0f);
+		const float halfW = (float)m_TilemapColumns * cell * 0.5f;
+		const float halfH = (float)m_TilemapRows * cell * 0.5f;
+		m_LocalMin = glm::vec2(-halfW, -halfH);
+		m_LocalMax = glm::vec2(halfW, halfH);
+	}
+
+	void GameObject::SetTilemapSize(int columns, int rows)
+	{
+		columns = glm::clamp(columns, 1, 256);
+		rows = glm::clamp(rows, 1, 256);
+		std::vector<int> next((size_t)columns * (size_t)rows, -1);
+		for (int y = 0; y < std::min(rows, m_TilemapRows); ++y)
+		{
+			for (int x = 0; x < std::min(columns, m_TilemapColumns); ++x)
+			{
+				const int oldIdx = y * m_TilemapColumns + x;
+				const int newIdx = y * columns + x;
+				if (oldIdx >= 0 && oldIdx < (int)m_Tiles.size())
+					next[newIdx] = m_Tiles[oldIdx];
+			}
+		}
+		m_TilemapColumns = columns;
+		m_TilemapRows = rows;
+		m_Tiles = std::move(next);
+		RefreshTilemapBounds();
+	}
+
+	void GameObject::SetTileCellSize(float size)
+	{
+		m_TileCellSize = glm::max(size, 1.0f);
+		RefreshTilemapBounds();
+	}
+
+	void GameObject::SetTilesetGrid(int columns, int rows)
+	{
+		m_TilesetColumns = glm::max(columns, 1);
+		m_TilesetRows = glm::max(rows, 1);
+	}
+
+	void GameObject::SetTile(int x, int y, int tileId)
+	{
+		if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
+			return;
+		const int idx = y * m_TilemapColumns + x;
+		if (idx < 0 || idx >= (int)m_Tiles.size())
+			return;
+		m_Tiles[idx] = tileId;
+	}
+
+	int GameObject::GetTile(int x, int y) const
+	{
+		if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
+			return -1;
+		const int idx = y * m_TilemapColumns + x;
+		if (idx < 0 || idx >= (int)m_Tiles.size())
+			return -1;
+		return m_Tiles[idx];
+	}
+
+	void GameObject::FillTiles(int tileId)
+	{
+		for (int& t : m_Tiles)
+			t = tileId;
+	}
+
+	void GameObject::ClearTiles()
+	{
+		FillTiles(-1);
+	}
+
+	void GameObject::SetTilesFromList(const std::vector<int>& tiles)
+	{
+		const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
+		if (expected == 0)
+			return;
+		m_Tiles.assign(expected, -1);
+		const size_t n = std::min(expected, tiles.size());
+		for (size_t i = 0; i < n; ++i)
+			m_Tiles[i] = tiles[i];
+	}
+
+	bool GameObject::WorldToTile(const CameraProp& prop, const glm::vec2& worldPoint, int& outX, int& outY) const
+	{
+		if (m_Type != ObjectType::Tilemap || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+			return false;
+
+		const float sx = prop.projection[0][0];
+		const float sy = prop.projection[1][1];
+		if (glm::abs(sx) < 1e-8f || glm::abs(sy) < 1e-8f)
+			return false;
+
+		const glm::vec3 worldPos = GetWorldPosition();
+		const float worldRot = GetWorldRotation();
+		const glm::vec2 worldScale = GetWorldScale();
+		if (glm::abs(worldScale.x) < 1e-8f || glm::abs(worldScale.y) < 1e-8f)
+			return false;
+
+		// Inverse of GetWorldAABB mapping: world = pos + rotate(local * scale) * projectionScale
+		glm::vec2 delta((worldPoint.x - worldPos.x) / sx, (worldPoint.y - worldPos.y) / sy);
+		const float c = glm::cos(glm::radians(-worldRot));
+		const float s = glm::sin(glm::radians(-worldRot));
+		glm::vec2 local(c * delta.x - s * delta.y, s * delta.x + c * delta.y);
+		local.x /= worldScale.x;
+		local.y /= worldScale.y;
+
+		const float cell = glm::max(m_TileCellSize, 1.0f);
+		const float mapW = (float)m_TilemapColumns * cell;
+		const float mapH = (float)m_TilemapRows * cell;
+		const float fx = (local.x + mapW * 0.5f) / cell;
+		const float fy = (local.y + mapH * 0.5f) / cell;
+		const int tx = (int)std::floor(fx);
+		const int ty = (int)std::floor(fy);
+		if (tx < 0 || ty < 0 || tx >= m_TilemapColumns || ty >= m_TilemapRows)
+			return false;
+
+		outX = tx;
+		outY = ty;
+		return true;
+	}
+
+	glm::vec2 GameObject::TileCenterWorld(const CameraProp& prop, int tileX, int tileY) const
+	{
+		const float sx = prop.projection[0][0];
+		const float sy = prop.projection[1][1];
+		const float cell = glm::max(m_TileCellSize, 1.0f);
+		const float mapW = (float)m_TilemapColumns * cell;
+		const float mapH = (float)m_TilemapRows * cell;
+		const float lx = ((float)tileX + 0.5f) * cell - mapW * 0.5f;
+		const float ly = ((float)tileY + 0.5f) * cell - mapH * 0.5f;
+
+		const glm::vec2 worldScale = GetWorldScale();
+		const float worldRot = GetWorldRotation();
+		glm::vec2 v(lx * worldScale.x, ly * worldScale.y);
+		const float c = glm::cos(glm::radians(worldRot));
+		const float s = glm::sin(glm::radians(worldRot));
+		glm::vec2 r(c * v.x - s * v.y, s * v.x + c * v.y);
+		const glm::vec3 worldPos = GetWorldPosition();
+		return glm::vec2(worldPos.x + r.x * sx, worldPos.y + r.y * sy);
 	}
 
 	int GameObject::GetFlipbookTotalFrames() const
@@ -103,7 +350,7 @@ namespace Blaze {
 	{
 		if (!m_FlipPlaying || dt <= 0.0f)
 			return;
-		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound)
+		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound || m_Type == ObjectType::Tilemap || m_Type == ObjectType::Text)
 			return;
 
 		const int total = GetFlipbookTotalFrames();
@@ -381,6 +628,56 @@ namespace Blaze {
 			m_HasCollision = false;
 			m_DrivesView = false;
 		}
+		else if (type == ObjectType::Tilemap)
+		{
+			m_DrivesView = false;
+			if (m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+				InitTilemapDefaults();
+			else
+				RefreshTilemapBounds();
+		}
+		else if (type == ObjectType::Text)
+		{
+			m_DrivesView = false;
+			if (m_Text.empty())
+				m_Text = "Text";
+			if (m_FontSize < 1.0f)
+				m_FontSize = 48.0f;
+			RefreshTextBounds();
+		}
+	}
+
+	void GameObject::SetText(const std::string& text)
+	{
+		m_Text = text;
+		if (m_Type == ObjectType::Text)
+			RefreshTextBounds();
+	}
+
+	void GameObject::SetFontSize(float size)
+	{
+		m_FontSize = glm::max(size, 1.0f);
+		if (m_Type == ObjectType::Text)
+			RefreshTextBounds();
+	}
+
+	void GameObject::SetFontPath(const std::string& path)
+	{
+		m_FontPath = path;
+		if (m_Type == ObjectType::Text)
+			RefreshTextBounds();
+	}
+
+	void GameObject::RefreshTextBounds()
+	{
+		if (m_Type != ObjectType::Text)
+			return;
+		if (!UISystem::IsReady())
+			UISystem::Init();
+		const float w = UISystem::MeasureTextWidth(m_Text.empty() ? " " : m_Text, m_FontSize, m_FontPath);
+		const float h = m_FontSize;
+		m_LocalMin = glm::vec2(-w * 0.5f, -h * 0.5f);
+		m_LocalMax = glm::vec2(w * 0.5f, h * 0.5f);
 	}
 
 	void GameObject::SetZoom(float zoom)
@@ -578,6 +875,38 @@ namespace Blaze {
 	void GameObject::SetRigidbodyKinematic(bool kinematic)
 	{
 		m_RigidbodyKinematic = kinematic;
+	}
+
+	void GameObject::SetIsTrigger(bool trigger)
+	{
+		m_IsTrigger = trigger;
+	}
+
+	void GameObject::SetCollisionLayer(int layer)
+	{
+		m_CollisionLayer = glm::clamp(layer, 0, 31);
+	}
+
+	void GameObject::SetCollisionMask(uint32_t mask)
+	{
+		m_CollisionMask = mask;
+	}
+
+	void GameObject::SetCollidesWithLayer(int layer, bool enabled)
+	{
+		layer = glm::clamp(layer, 0, 31);
+		const uint32_t bit = 1u << layer;
+		if (enabled)
+			m_CollisionMask |= bit;
+		else
+			m_CollisionMask &= ~bit;
+	}
+
+	bool GameObject::CollidesWithLayer(int layer) const
+	{
+		if (layer < 0 || layer > 31)
+			return false;
+		return (m_CollisionMask & (1u << layer)) != 0;
 	}
 
 	void GameObject::AddAudio()

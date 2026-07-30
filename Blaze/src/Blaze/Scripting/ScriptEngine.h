@@ -23,6 +23,10 @@ namespace Blaze
 		static void OnUpdate(float dt, const std::vector<GameObject*>& objects);
 		static void OnCollisionEvents(const std::vector<CollisionEvent>& events);
 		static void OnPlayModeStop();
+		// Snapshot / restore play-space locals (used so the editor scene can stay frozen).
+		static void CapturePlayTransforms(const std::vector<GameObject*>& objects);
+		static void ApplyStoredPlayTransforms();
+		static void NotifyWidgetClicked(const std::string& widgetPath, const std::string& buttonName);
 
 		static void RemoveObject(GameObject* object);
 		static void QueueDestroy(GameObject* object);

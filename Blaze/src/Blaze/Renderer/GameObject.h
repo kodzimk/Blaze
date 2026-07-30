@@ -16,7 +16,9 @@ namespace Blaze
 		Camera,
 		Circle,
 		Box,
-		Sound
+		Sound,
+		Tilemap,
+		Text
 	};
 
 	enum class CollisionType
@@ -30,6 +32,20 @@ namespace Blaze
 	{
 		Circle = 0,
 		Block
+	};
+
+	//  layer indices (0-7). Mask bits use (1u << layer).
+	enum CollisionLayer : int
+	{
+		CollisionLayer_Default = 0,
+		CollisionLayer_Player = 1,
+		CollisionLayer_Enemy = 2,
+		CollisionLayer_Projectile = 3,
+		CollisionLayer_Trigger = 4,
+		CollisionLayer_Ground = 5,
+		CollisionLayer_Pickup = 6,
+		CollisionLayer_Custom7 = 7,
+		CollisionLayer_Count = 8
 	};
 
 	class BLAZE_API GameObject
@@ -53,6 +69,8 @@ namespace Blaze
 		void SetColor(float r, float g, float b, float a = 1.0f);
 		void SetTexture(std::string path);
 		void SetName(const std::string& name) { m_Name = name; }
+		void SetVisible(bool visible) { m_Visible = visible; }
+		inline bool IsVisible() const { return m_Visible; }
 
 		bool SetParent(GameObject* parent, bool keepWorld = true);
 		void ClearParent(bool keepWorld = true);
@@ -84,6 +102,10 @@ namespace Blaze
 		void SetRigidbodyMass(float mass);
 		void SetRigidbodyGravityScale(float scale);
 		void SetRigidbodyKinematic(bool kinematic);
+		void SetIsTrigger(bool trigger);
+		void SetCollisionLayer(int layer);
+		void SetCollisionMask(uint32_t mask);
+		void SetCollidesWithLayer(int layer, bool enabled);
 
 		void AddAudio();
 		void RemoveAudio();
@@ -107,9 +129,30 @@ namespace Blaze
 		void StopFlipbook();
 		void PauseFlipbook();
 
+		void InitTilemapDefaults();
+		void SetTilemapSize(int columns, int rows);
+		void SetTileCellSize(float size);
+		void SetTilesetGrid(int columns, int rows);
+		void SetTile(int x, int y, int tileId);
+		int GetTile(int x, int y) const;
+		void FillTiles(int tileId);
+		void ClearTiles();
+		void SetTilesFromList(const std::vector<int>& tiles);
+		const std::vector<int>& GetTiles() const { return m_Tiles; }
+		void RefreshTilemapBounds();
+
 		inline ObjectType GetType() const { return m_Type; }
 		inline bool IsCamera() const { return m_Type == ObjectType::Camera; }
 		inline bool IsSound() const { return m_Type == ObjectType::Sound; }
+		inline bool IsTilemap() const { return m_Type == ObjectType::Tilemap; }
+		inline bool IsText() const { return m_Type == ObjectType::Text; }
+
+		void SetText(const std::string& text);
+		void SetFontSize(float size);
+		void SetFontPath(const std::string& path);
+		inline const std::string& GetText() const { return m_Text; }
+		inline float GetFontSize() const { return m_FontSize; }
+		inline const std::string& GetFontPath() const { return m_FontPath; }
 		inline bool DrivesView() const { return m_DrivesView; }
 		inline float GetZoom() const { return m_Zoom; }
 		inline std::string GetName() const { return m_Name; }
@@ -118,7 +161,6 @@ namespace Blaze
 		inline unsigned int GetTextureID() const { return m_Texture.GetTextID(); }
 		inline bool HasTexture() const { return m_Texture.IsValid(); }
 
-		// World-space (physics, gizmos, scripts). Local is what parenting stores/saves.
 		glm::vec3 GetPosition() const { return GetWorldPosition(); }
 		float GetRotation() const { return GetWorldRotation(); }
 		glm::vec2 GetScale() const { return GetWorldScale(); }
@@ -140,6 +182,10 @@ namespace Blaze
 		inline float GetRigidbodyMass() const { return m_RigidbodyMass; }
 		inline float GetRigidbodyGravityScale() const { return m_RigidbodyGravityScale; }
 		inline bool IsRigidbodyKinematic() const { return m_RigidbodyKinematic; }
+		inline bool IsTrigger() const { return m_IsTrigger; }
+		inline int GetCollisionLayer() const { return m_CollisionLayer; }
+		inline uint32_t GetCollisionMask() const { return m_CollisionMask; }
+		bool CollidesWithLayer(int layer) const;
 
 		inline bool HasAudio() const { return m_HasAudio; }
 		inline const std::string& GetAudioPath() const { return m_AudioPath; }
@@ -159,6 +205,16 @@ namespace Blaze
 		inline int GetFlipbookFrame() const { return m_FlipFrame; }
 		int GetFlipbookTotalFrames() const;
 
+		inline int GetTilemapColumns() const { return m_TilemapColumns; }
+		inline int GetTilemapRows() const { return m_TilemapRows; }
+		inline float GetTileCellSize() const { return m_TileCellSize; }
+		inline int GetTilesetColumns() const { return m_TilesetColumns; }
+		inline int GetTilesetRows() const { return m_TilesetRows; }
+		int GetTilesetTileCount() const;
+
+		bool WorldToTile(const CameraProp& prop, const glm::vec2& worldPoint, int& outX, int& outY) const;
+		glm::vec2 TileCenterWorld(const CameraProp& prop, int tileX, int tileY) const;
+
 		void GetWorldAABB(const CameraProp& prop, glm::vec2& outMin, glm::vec2& outMax) const;
 		bool IsHovered(const CameraProp& prop, const glm::vec2& worldPoint) const;
 	private:
@@ -170,6 +226,10 @@ namespace Blaze
 		void ClampFlipbookFrame();
 		glm::vec2 GetFlipbookUVScale() const;
 		glm::vec2 GetFlipbookUVOffset() const;
+		glm::vec2 GetTilesetUVScale() const;
+		glm::vec2 GetTilesetUVOffset(int tileId) const;
+		void DrawTilemap(const CameraProp& prop, Shader& shader);
+		void RefreshTextBounds();
 	private:
 		VertexArray m_VertexArray;
 		VertexBuffer m_VertexBuffer;
@@ -189,6 +249,7 @@ namespace Blaze
 		std::string m_Name;
 		std::vector<std::string> m_Tags;
 		ObjectType m_Type = ObjectType::Sprite;
+		bool m_Visible = true;
 		bool m_DrivesView = false;
 		float m_Zoom = 1.0f;
 
@@ -200,6 +261,9 @@ namespace Blaze
 		float m_RigidbodyMass = 1.0f;
 		float m_RigidbodyGravityScale = 1.0f;
 		bool m_RigidbodyKinematic = false;
+		bool m_IsTrigger = false;
+		int m_CollisionLayer = 0;
+		uint32_t m_CollisionMask = 0xFFFFFFFFu;
 
 		bool m_HasAudio = false;
 		std::string m_AudioPath;
@@ -218,5 +282,16 @@ namespace Blaze
 		bool m_FlipLoop = true;
 		int m_FlipFrame = 0;
 		float m_FlipTime = 0.0f;
+
+		int m_TilemapColumns = 0;
+		int m_TilemapRows = 0;
+		float m_TileCellSize = 32.0f;
+		int m_TilesetColumns = 1;
+		int m_TilesetRows = 1;
+		std::vector<int> m_Tiles; // -1 = empty
+
+		std::string m_Text = "Text";
+		float m_FontSize = 48.0f;
+		std::string m_FontPath;
 	};
 }

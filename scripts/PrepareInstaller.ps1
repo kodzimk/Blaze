@@ -111,11 +111,6 @@ if (Test-Path $sandboxIcons) {
     Copy-Item (Join-Path $sandboxIcons "*") $destContentIcons -Recurse -Force
 }
 
-$docs = Join-Path $Root "DOCUMENTATION.md"
-if (Test-Path $docs) {
-    Copy-Item $docs (Join-Path $Payload "DOCUMENTATION.md")
-}
-
 $license = Join-Path $Root "LICENSE"
 if (Test-Path $license) {
     Copy-Item $license (Join-Path $Payload "LICENSE")

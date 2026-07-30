@@ -4,8 +4,10 @@
 #include "Blaze/Renderer/GameObject.h"
 #include "Blaze/Renderer/Gizmo.h"
 #include "Blaze/Core/Project.h"
+#include "Blaze/Editor/UndoStack.h"
 #include "Blaze/Logging/Log.h"
 #include <cstring>
+#include <memory>
 #include <unordered_set>
 #include <unordered_map>
 #include <algorithm>
@@ -429,8 +431,11 @@ namespace Blaze
 		if (!object)
 			return;
 
-		if (object->GetParent())
+		if (GameObject* oldParent = object->GetParent())
+		{
 			object->ClearParent(true);
+			UndoStack::Get().Push(std::make_unique<ParentCommand>(object, oldParent, nullptr, true));
+		}
 
 		RemoveObjectFromHierarchy(object);
 		if (folderId < 0)
@@ -553,6 +558,10 @@ namespace Blaze
 				label += " (Box)";
 			else if (object->GetType() == ObjectType::Sound)
 				label += " (Sound)";
+			else if (object->IsTilemap())
+				label += " (Tilemap)";
+			else if (object->IsText())
+				label += " (Text)";
 
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4.0f, ImGui::GetStyle().ItemSpacing.y));
 
@@ -606,9 +615,14 @@ namespace Blaze
 					GameObject* child = *(GameObject**)payload->Data;
 					if (child && child != object)
 					{
+						GameObject* oldParent = child->GetParent();
 						RemoveObjectFromHierarchy(child);
 						if (child->SetParent(object, true))
+						{
+							UndoStack::Get().Push(std::make_unique<ParentCommand>(
+								child, oldParent, object, true));
 							BZ_INFO("Parented '{0}' under '{1}'", child->GetName(), object->GetName());
+						}
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -646,6 +660,7 @@ namespace Blaze
 				object->ClearParent(true);
 				RemoveObjectFromHierarchy(object);
 				m_RootObjects.push_back(object);
+				UndoStack::Get().Push(std::make_unique<ParentCommand>(object, parent, nullptr, true));
 				BZ_INFO("Unparented '{0}' from '{1}'", object->GetName(), parent ? parent->GetName() : "");
 			}
 			if (ImGui::MenuItem("Delete"))

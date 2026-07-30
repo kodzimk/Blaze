@@ -37,6 +37,12 @@
     <Filter Include="src\Blaze\Audio">
       <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Editor">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\UI">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Blaze\System">
       <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
@@ -164,6 +170,18 @@
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Editor\UndoStack.h">
+      <Filter>src\Blaze\Editor</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\UI\UISystem.h">
+      <Filter>src\Blaze\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\UI\WidgetAsset.h">
+      <Filter>src\Blaze\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\WidgetEditorWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h">
       <Filter>src\Blaze\Physics</Filter>
@@ -1534,6 +1552,18 @@
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp">
       <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Editor\UndoStack.cpp">
+      <Filter>src\Blaze\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\UI\UISystem.cpp">
+      <Filter>src\Blaze\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\UI\WidgetAsset.cpp">
+      <Filter>src\Blaze\UI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\WidgetEditorWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Physics\PhysicsWorld2D.cpp">
       <Filter>src\Blaze\Physics</Filter>

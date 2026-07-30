@@ -78,6 +78,7 @@ namespace Blaze
 	static const glm::vec4 s_ColorCenter(0.95f, 0.85f, 0.2f, 1.0f);
 	static const glm::vec4 s_ColorRing(0.25f, 0.6f, 1.0f, 1.0f);
 	static const glm::vec4 s_ColorCollision(0.95f, 0.85f, 0.15f, 0.95f);
+	static const glm::vec4 s_ColorTrigger(0.2f, 0.9f, 0.95f, 0.9f);
 	static const glm::vec4 s_ColorCameraRange(0.2f, 0.75f, 1.0f, 0.95f);
 
 	// Load the reference speaker PNG (black on white) and turn it into
@@ -726,6 +727,76 @@ namespace Blaze
 		DrawQuad(pos, glm::vec2(s_CenterHalf * sx, s_CenterHalf * sy), s_ColorCenter);
 	}
 
+	void Gizmo2D::DrawTilemapGrid(const Camera& camera, const GameObject& tilemap, int hoverX, int hoverY)
+	{
+		if (!tilemap.IsTilemap())
+			return;
+
+		const int cols = tilemap.GetTilemapColumns();
+		const int rows = tilemap.GetTilemapRows();
+		if (cols <= 0 || rows <= 0)
+			return;
+
+		CameraProp prop = camera.GetCameraProp();
+		const float sx = prop.projection[0][0];
+		const float sy = prop.projection[1][1];
+		const float cell = glm::max(tilemap.GetTileCellSize(), 1.0f);
+		const float mapW = (float)cols * cell;
+		const float mapH = (float)rows * cell;
+		const glm::vec2 worldScale = tilemap.GetWorldScale();
+		const float worldRot = tilemap.GetRotation();
+		const glm::vec3 worldPos = tilemap.GetWorldPosition();
+
+		auto toWorld = [&](float localX, float localY) -> glm::vec2
+		{
+			glm::vec2 v(localX * worldScale.x, localY * worldScale.y);
+			const float c = glm::cos(glm::radians(worldRot));
+			const float s = glm::sin(glm::radians(worldRot));
+			glm::vec2 r(c * v.x - s * v.y, s * v.x + c * v.y);
+			return glm::vec2(worldPos.x + r.x * sx, worldPos.y + r.y * sy);
+		};
+
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+
+		const glm::vec4 gridColor(0.35f, 0.75f, 1.0f, 0.55f);
+		const glm::vec4 hoverColor(1.0f, 0.85f, 0.2f, 0.45f);
+		const float lineHalf = 1.0f;
+
+		for (int x = 0; x <= cols; ++x)
+		{
+			const float lx = (float)x * cell - mapW * 0.5f;
+			glm::vec2 a = toWorld(lx, -mapH * 0.5f);
+			glm::vec2 b = toWorld(lx, mapH * 0.5f);
+			glm::vec2 mid = (a + b) * 0.5f;
+			glm::vec2 diff = b - a;
+			const float len = glm::length(diff) * 0.5f + lineHalf * sx;
+			const float angle = glm::degrees(glm::atan(diff.y, diff.x));
+			DrawQuad(mid, glm::vec2(len, lineHalf * sy), gridColor, angle);
+		}
+		for (int y = 0; y <= rows; ++y)
+		{
+			const float ly = (float)y * cell - mapH * 0.5f;
+			glm::vec2 a = toWorld(-mapW * 0.5f, ly);
+			glm::vec2 b = toWorld(mapW * 0.5f, ly);
+			glm::vec2 mid = (a + b) * 0.5f;
+			glm::vec2 diff = b - a;
+			const float len = glm::length(diff) * 0.5f + lineHalf * sx;
+			const float angle = glm::degrees(glm::atan(diff.y, diff.x));
+			DrawQuad(mid, glm::vec2(len, lineHalf * sy), gridColor, angle);
+		}
+
+		if (hoverX >= 0 && hoverY >= 0 && hoverX < cols && hoverY < rows)
+		{
+			const float lx = ((float)hoverX + 0.5f) * cell - mapW * 0.5f;
+			const float ly = ((float)hoverY + 0.5f) * cell - mapH * 0.5f;
+			glm::vec2 center = toWorld(lx, ly);
+			const float halfCellX = cell * 0.5f * glm::abs(worldScale.x) * sx;
+			const float halfCellY = cell * 0.5f * glm::abs(worldScale.y) * sy;
+			DrawQuad(center, glm::vec2(halfCellX, halfCellY), hoverColor, worldRot);
+		}
+	}
+
 	void Gizmo2D::DrawCollision(const Camera& camera, const GameObject& object)
 	{
 		if (!object.HasCollision())
@@ -746,11 +817,12 @@ namespace Blaze
 			shape = ColliderShape::Block;
 
 		glm::vec2 thickness(2.5f * sx, 2.5f * sy);
+		const glm::vec4& color = object.IsTrigger() ? s_ColorTrigger : s_ColorCollision;
 
 		if (shape == ColliderShape::Circle)
 		{
 			float radius = object.GetCollisionRadius();
-			DrawRing(center, glm::vec2(radius * sx, radius * sy), s_ColorCollision);
+			DrawRing(center, glm::vec2(radius * sx, radius * sy), color);
 		}
 		else
 		{
@@ -758,10 +830,10 @@ namespace Blaze
 			half.x *= sx;
 			half.y *= sy;
 
-			DrawQuad(glm::vec2(center.x, center.y + half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCollision);
-			DrawQuad(glm::vec2(center.x, center.y - half.y), glm::vec2(half.x + thickness.x, thickness.y), s_ColorCollision);
-			DrawQuad(glm::vec2(center.x - half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCollision);
-			DrawQuad(glm::vec2(center.x + half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), s_ColorCollision);
+			DrawQuad(glm::vec2(center.x, center.y + half.y), glm::vec2(half.x + thickness.x, thickness.y), color);
+			DrawQuad(glm::vec2(center.x, center.y - half.y), glm::vec2(half.x + thickness.x, thickness.y), color);
+			DrawQuad(glm::vec2(center.x - half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), color);
+			DrawQuad(glm::vec2(center.x + half.x, center.y), glm::vec2(thickness.x, half.y + thickness.y), color);
 		}
 	}
 

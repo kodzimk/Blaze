@@ -2,6 +2,7 @@
 #include "Blaze/Renderer/Renderer.h"
 #include "Blaze/Renderer/GameObject.h"
 #include "Blaze/ImGui/ObjectWindow.h"
+#include "Blaze/UI/UISystem.h"
 #include "Blaze/Logging/Log.h"
 
 #include <filesystem>
@@ -413,6 +414,7 @@ namespace Blaze
 			return false;
 		}
 
+		// Ship full content tree (maps, scripts, textures, audio, .widget UI assets, etc.)
 		const fs::path contentSrc = fs::path(s_Directory) / s_ContentFolder;
 		if (fs::exists(contentSrc, ec))
 		{
@@ -422,8 +424,47 @@ namespace Blaze
 				return false;
 			}
 		}
+		else
+		{
+			BZ_INFO("Build warning: content folder missing at {0}", contentSrc.string());
+		}
 
+		// Ensure starting map is present even if stored outside content/
 		std::string starting = s_StartingMap.empty() ? GetDefaultMapPath() : MakeProjectRelative(s_StartingMap);
+		{
+			fs::path startAbs = fs::path(s_Directory) / starting;
+			if (!fs::exists(startAbs, ec) && !s_StartingMap.empty())
+				startAbs = s_StartingMap;
+			if (fs::exists(startAbs, ec))
+			{
+				const fs::path destMap = outDir / MakeProjectRelative(startAbs.string());
+				fs::create_directories(destMap.parent_path(), ec);
+				CopyPathRecursive(startAbs, destMap);
+			}
+		}
+
+		int widgetCount = 0;
+		int scriptCount = 0;
+		int mapCount = 0;
+		const fs::path contentOut = outDir / s_ContentFolder;
+		if (fs::exists(contentOut, ec))
+		{
+			for (auto it = fs::recursive_directory_iterator(contentOut, ec); it != fs::recursive_directory_iterator(); ++it)
+			{
+				if (ec || !it->is_regular_file())
+					continue;
+				std::string ext = it->path().extension().string();
+				for (char& c : ext)
+					c = (char)std::tolower((unsigned char)c);
+				if (ext == ".widget")
+					++widgetCount;
+				else if (ext == ".lua")
+					++scriptCount;
+				else if (ext == ".map")
+					++mapCount;
+			}
+		}
+
 		std::ofstream gameProject(outDir / "game.blaze", std::ios::trunc);
 		if (!gameProject.is_open())
 		{
@@ -439,6 +480,8 @@ namespace Blaze
 
 		BZ_INFO("Game built to: {0}", outDir.string());
 		BZ_INFO("Executable: {0}", outExe.string());
+		BZ_INFO("Packaged: {0} maps, {1} scripts, {2} widgets (+ textures/audio in content/)",
+			mapCount, scriptCount, widgetCount);
 		return true;
 	}
 
@@ -655,6 +698,7 @@ namespace Blaze
 			glm::vec2 scale = object->GetLocalScale();
 			out << "scale " << scale.x << " " << scale.y << "\n";
 			out << "layer " << object->GetLayer() << "\n";
+			out << "visible " << (object->IsVisible() ? 1 : 0) << "\n";
 			{
 				glm::vec4 color = object->GetColor();
 				out << "color " << color.r << " " << color.g << " " << color.b << " " << color.a << "\n";
@@ -685,6 +729,27 @@ namespace Blaze
 					<< " " << object->GetFlipbookFrame() << "\n";
 			}
 
+			if (object->IsTilemap())
+			{
+				out << "tilemap " << object->GetTilemapColumns()
+					<< " " << object->GetTilemapRows()
+					<< " " << object->GetTileCellSize() << "\n";
+				out << "tilesetgrid " << object->GetTilesetColumns()
+					<< " " << object->GetTilesetRows() << "\n";
+				out << "tiles";
+				for (int tile : object->GetTiles())
+					out << " " << tile;
+				out << "\n";
+			}
+
+			if (object->IsText())
+			{
+				out << "text " << object->GetText() << "\n";
+				out << "fontsize " << object->GetFontSize() << "\n";
+				if (!object->GetFontPath().empty())
+					out << "fontpath " << StoreTexturePath(object->GetFontPath()) << "\n";
+			}
+
 			if (object->HasCollision())
 			{
 				out << "collision " << (int)object->GetCollisionType() << "\n";
@@ -695,6 +760,9 @@ namespace Blaze
 				out << "rbmass " << object->GetRigidbodyMass() << "\n";
 				out << "rbgravity " << object->GetRigidbodyGravityScale() << "\n";
 				out << "rbkinematic " << (object->IsRigidbodyKinematic() ? 1 : 0) << "\n";
+				out << "trigger " << (object->IsTrigger() ? 1 : 0) << "\n";
+				out << "collisionlayer " << object->GetCollisionLayer() << "\n";
+				out << "collisionmask " << object->GetCollisionMask() << "\n";
 			}
 
 			if (object->HasAudio())
@@ -857,6 +925,12 @@ namespace Blaze
 				stream >> layer;
 				current->SetLayer(layer);
 			}
+			else if (key == "visible")
+			{
+				int visible = 1;
+				stream >> visible;
+				current->SetVisible(visible != 0);
+			}
 			else if (key == "color")
 			{
 				glm::vec4 color(1.0f);
@@ -901,6 +975,32 @@ namespace Blaze
 						current->SetTexture(rel);
 				}
 			}
+			else if (key == "fontsize")
+			{
+				float size = 48.0f;
+				stream >> size;
+				current->SetFontSize(size);
+			}
+			else if (key == "fontpath")
+			{
+				std::string rel;
+				stream >> rel;
+				std::error_code ec;
+				if (!s_Directory.empty())
+				{
+					fs::path full = fs::path(s_Directory) / rel;
+					if (fs::exists(full, ec))
+						current->SetFontPath(full.generic_string());
+					else
+						current->SetFontPath(rel);
+				}
+				else
+					current->SetFontPath(rel);
+			}
+			else if (key == "text" && line.size() > 5)
+			{
+				current->SetText(line.substr(5));
+			}
 			else if (key == "flipbook")
 			{
 				int cols = 1, rows = 1, frameCount = 0, playing = 0, loop = 1, frame = 0;
@@ -913,6 +1013,31 @@ namespace Blaze
 				current->SetFlipbookLoop(loop != 0);
 				current->SetFlipbookFrame(frame);
 				current->SetFlipbookPlaying(playing != 0);
+			}
+			else if (key == "tilemap")
+			{
+				int cols = 16, rows = 12;
+				float cell = 32.0f;
+				stream >> cols >> rows >> cell;
+				current->SetType(ObjectType::Tilemap);
+				current->SetTilemapSize(cols, rows);
+				current->SetTileCellSize(cell);
+			}
+			else if (key == "tilesetgrid")
+			{
+				int cols = 1, rows = 1;
+				stream >> cols >> rows;
+				current->SetTilesetGrid(cols, rows);
+			}
+			else if (key == "tiles")
+			{
+				std::vector<int> tiles;
+				int value = 0;
+				while (stream >> value)
+					tiles.push_back(value);
+				if (current->GetType() != ObjectType::Tilemap)
+					current->SetType(ObjectType::Tilemap);
+				current->SetTilesFromList(tiles);
 			}
 			else if (key == "collision")
 			{
@@ -955,6 +1080,24 @@ namespace Blaze
 				int kinematic = 0;
 				stream >> kinematic;
 				current->SetRigidbodyKinematic(kinematic != 0);
+			}
+			else if (key == "trigger")
+			{
+				int trigger = 0;
+				stream >> trigger;
+				current->SetIsTrigger(trigger != 0);
+			}
+			else if (key == "collisionlayer")
+			{
+				int layer = 0;
+				stream >> layer;
+				current->SetCollisionLayer(layer);
+			}
+			else if (key == "collisionmask")
+			{
+				uint32_t mask = 0xFFFFFFFFu;
+				stream >> mask;
+				current->SetCollisionMask(mask);
 			}
 			else if (key == "audio")
 			{
@@ -1089,6 +1232,9 @@ namespace Blaze
 	{
 		if (mapPath.empty())
 			return false;
+
+		// Drop previous map's UI so widgets don't linger across OpenMap / map changes.
+		UISystem::HideAll();
 
 		std::error_code ec;
 		fs::path resolved = mapPath;

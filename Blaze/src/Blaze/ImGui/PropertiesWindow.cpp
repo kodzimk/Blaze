@@ -9,6 +9,7 @@
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Gizmo.h"
 #include"Blaze/Scripting/OnScreenDebug.h"
+#include"Blaze/UI/UISystem.h"
 #include <cstring>
 
 namespace Blaze
@@ -34,6 +35,8 @@ namespace Blaze
 	static const GameObjectType s_AvailableTypes[] =
 	{
 		{ "Sprite", "sprite", "Textured 2D quad" },
+		{ "Text", "text", "World-space text label" },
+		{ "Tilemap", "tilemap", "Tileset grid map" },
 		{ "Circle", "circle", "Circle collider object" },
 		{ "Box",    "box",    "Box collider object" },
 		{ "Camera", "camera", "Scene / game camera" },
@@ -193,6 +196,10 @@ namespace Blaze
 	unsigned int GameWindow::s_TextureId = 0;
 	int GameWindow::s_FrameWidth = 1280;
 	int GameWindow::s_FrameHeight = 720;
+	float GameWindow::s_ImageMinX = 0.0f;
+	float GameWindow::s_ImageMinY = 0.0f;
+	float GameWindow::s_ImageMaxX = 0.0f;
+	float GameWindow::s_ImageMaxY = 0.0f;
 
 	GameWindow::GameWindow()
 	{
@@ -275,16 +282,71 @@ namespace Blaze
 									   cursor.y + (avail.y - size.y) * 0.5f));
 
 			ImGui::Image((ImTextureID)(intptr_t)s_TextureId, size, ImVec2(0, 1), ImVec2(1, 0));
+			{
+				const ImVec2 mn = ImGui::GetItemRectMin();
+				const ImVec2 mx = ImGui::GetItemRectMax();
+				s_ImageMinX = mn.x;
+				s_ImageMinY = mn.y;
+				s_ImageMaxX = mx.x;
+				s_ImageMaxY = mx.y;
+			}
+
+			// UI input must run here: image rect is current and mouse is in ImGui space.
+			{
+				float gx = 0.0f, gy = 0.0f;
+				const bool over = TryGetMouseGamePixel(gx, gy);
+				const bool mouseDown = ImGui::IsMouseDown(ImGuiMouseButton_Left);
+				const bool pressed = over && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+				const bool released = over && ImGui::IsMouseReleased(ImGuiMouseButton_Left);
+
+				if (!UISystem::IsReady())
+					UISystem::Init();
+				UISystem::UpdateInput(
+					s_FrameWidth, s_FrameHeight,
+					over ? gx : -1.0f, over ? gy : -1.0f,
+					over && mouseDown, pressed, released);
+			}
+
 			OnScreenDebug::DrawOverItem();
 		}
 		else
 		{
 			ImGui::TextDisabled("Waiting for the first frame...");
+			s_ImageMinX = s_ImageMinY = s_ImageMaxX = s_ImageMaxY = 0.0f;
 		}
 
 		ImGui::End();
 
 		if (!open)
 			StartWindow::SetPlaying(false);
+	}
+
+	bool GameWindow::IsMouseOverGameView()
+	{
+		if (s_ImageMaxX <= s_ImageMinX || s_ImageMaxY <= s_ImageMinY)
+			return false;
+		const ImVec2 mouse = ImGui::GetIO().MousePos;
+		return mouse.x >= s_ImageMinX && mouse.x <= s_ImageMaxX
+			&& mouse.y >= s_ImageMinY && mouse.y <= s_ImageMaxY;
+	}
+
+	bool GameWindow::WindowToGamePixel(float windowX, float windowY, float& outGameX, float& outGameY)
+	{
+		const float dw = s_ImageMaxX - s_ImageMinX;
+		const float dh = s_ImageMaxY - s_ImageMinY;
+		if (dw <= 1.0f || dh <= 1.0f)
+			return false;
+		// UISystem uses top-left pixel space (ortho 0,W,H,0). ImGui image Y also grows downward.
+		outGameX = (windowX - s_ImageMinX) / dw * (float)s_FrameWidth;
+		outGameY = (windowY - s_ImageMinY) / dh * (float)s_FrameHeight;
+		return true;
+	}
+
+	bool GameWindow::TryGetMouseGamePixel(float& outGameX, float& outGameY)
+	{
+		if (!IsMouseOverGameView())
+			return false;
+		const ImVec2 mouse = ImGui::GetIO().MousePos;
+		return WindowToGamePixel(mouse.x, mouse.y, outGameX, outGameY);
 	}
 }

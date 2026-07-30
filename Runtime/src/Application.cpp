@@ -19,6 +19,8 @@ public:
 
 	~GameLayer() override
 	{
+		Blaze::UISystem::HideAll();
+		Blaze::UISystem::Shutdown();
 		Blaze::AudioEngine::Shutdown();
 		Blaze::ScriptEngine::Shutdown();
 		delete physics;
@@ -66,6 +68,9 @@ public:
 
 		Blaze::Application::Get().GetWindow().SetTitle(Blaze::Project::GetGameName());
 
+		if (!Blaze::UISystem::IsReady())
+			Blaze::UISystem::Init();
+
 		Blaze::ScriptEngine::SetRenderer(render);
 		Blaze::ScriptEngine::SetPhysicsWorld(physics);
 		if (!Blaze::ScriptEngine::OnPlayModeStart(render->GetObjects()))
@@ -85,6 +90,7 @@ public:
 		Blaze::AudioEngine::OnPlayModeStop();
 		Blaze::ScriptEngine::OnPlayModeStop();
 		physics->Reset();
+		// LoadMap also HideAll() widgets from the previous map.
 
 		if (!Blaze::Project::LoadMap(path, *render, vertices, indices, nullptr))
 		{
@@ -119,6 +125,21 @@ public:
 		}
 	}
 
+	void UpdateWidgetInput(int width, int height)
+	{
+		if (!Blaze::UISystem::IsReady() || width <= 0 || height <= 0)
+			return;
+
+		const float mx = Blaze::Input::GetMouseX();
+		const float my = Blaze::Input::GetMouseY();
+		const bool mouseDown = Blaze::Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_LEFT);
+		const bool mousePressed = mouseDown && !m_WasMouseDown;
+		const bool mouseReleased = !mouseDown && m_WasMouseDown;
+		m_WasMouseDown = mouseDown;
+
+		Blaze::UISystem::UpdateInput(width, height, mx, my, mouseDown, mousePressed, mouseReleased);
+	}
+
 	void OnUpdate() override
 	{
 		if (!m_Running)
@@ -129,6 +150,12 @@ public:
 		m_LastTime = now;
 		if (dt > 0.1f)
 			dt = 0.1f;
+
+		auto& window = Blaze::Application::Get().GetWindow();
+		const int width = (int)window.GetWidth();
+		const int height = (int)window.GetHeight();
+
+		UpdateWidgetInput(width, height);
 
 		Blaze::ScriptEngine::OnUpdate(dt, render->GetObjects());
 		FlushScriptDestroys();
@@ -158,6 +185,10 @@ public:
 
 		render->Render(*camera);
 		render->EndScene();
+
+		if (!Blaze::UISystem::IsReady())
+			Blaze::UISystem::Init();
+		Blaze::UISystem::Draw(width, height);
 	}
 
 	void OnEvent(Blaze::Event& event) override
@@ -193,6 +224,7 @@ private:
 	Blaze::PhysicsWorld2D* physics = nullptr;
 	std::chrono::steady_clock::time_point m_LastTime;
 	bool m_Running = false;
+	bool m_WasMouseDown = false;
 
 	const char* vertexShaderSource =
 		"#version 330 core\n"

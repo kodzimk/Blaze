@@ -190,6 +190,10 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h" />
+    <ClInclude Include="src\Blaze\Editor\UndoStack.h" />
+    <ClInclude Include="src\Blaze\UI\UISystem.h" />
+    <ClInclude Include="src\Blaze\UI\WidgetAsset.h" />
+    <ClInclude Include="src\Blaze\ImGui\WidgetEditorWindow.h" />
     <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h" />
     <ClInclude Include="src\Blaze\Audio\AudioEngine.h" />
     <ClInclude Include="src\Blaze\Scripting\ScriptEngine.h" />
@@ -648,6 +652,10 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp" />
+    <ClCompile Include="src\Blaze\Editor\UndoStack.cpp" />
+    <ClCompile Include="src\Blaze\UI\UISystem.cpp" />
+    <ClCompile Include="src\Blaze\UI\WidgetAsset.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\WidgetEditorWindow.cpp" />
     <ClCompile Include="src\Blaze\Physics\PhysicsWorld2D.cpp" />
     <ClCompile Include="src\Blaze\Audio\AudioEngine.cpp" />
     <ClCompile Include="src\Blaze\Scripting\ScriptEngine.cpp">

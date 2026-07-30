@@ -13,6 +13,7 @@ namespace Blaze
 		Type type = Type::Begin;
 		GameObject* a = nullptr;
 		GameObject* b = nullptr;
+		bool isTrigger = false; // true if either collider is a trigger (overlap only)
 	};
 
 	class BLAZE_API PhysicsWorld2D
@@ -53,6 +54,9 @@ namespace Blaze
 			float invMass = 0.0f;
 			float gravityScale = 1.0f;
 			bool isStatic = true;
+			bool isTrigger = false;
+			int layer = 0;
+			uint32_t mask = 0xFFFFFFFFu;
 			ShapeKind shape = ShapeKind::Box;
 			float radius = 50.0f;
 			glm::vec2 halfSize = glm::vec2(50.0f);
@@ -71,6 +75,7 @@ namespace Blaze
 			int b = 0;
 			glm::vec2 normal = glm::vec2(0.0f, 1.0f);
 			float penetration = 0.0f;
+			bool isTrigger = false;
 		};
 
 		using PairKey = std::pair<GameObject*, GameObject*>;

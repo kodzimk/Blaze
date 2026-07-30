@@ -9,6 +9,7 @@
 #include "Blaze/Event/KeyCodes.h"
 #include "Blaze/Event/MouseButtonCodes.h"
 #include "Blaze/Logging/Log.h"
+#include "Blaze/UI/UISystem.h"
 
 // Soft safeties: full SOL_ALL_SAFETIES_ON can abort() the process on script errors.
 #define SOL_SAFE_FUNCTIONS 1
@@ -27,6 +28,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <tuple>
 
 namespace Blaze
 {
@@ -38,6 +40,9 @@ namespace Blaze
 		sol::protected_function onUpdate;
 		sol::protected_function onCollisionBegin;
 		sol::protected_function onCollisionEnd;
+		sol::protected_function onTriggerBegin;
+		sol::protected_function onTriggerEnd;
+		sol::protected_function onWidgetClicked;
 		bool started = false;
 	};
 
@@ -136,7 +141,353 @@ namespace Blaze
 			if (IsValid())
 				raw->AddTag(tag);
 		}
+
+		void SetVisible(bool visible)
+		{
+			if (IsValid())
+				raw->SetVisible(visible);
+		}
+
+		bool IsVisible() const
+		{
+			return IsValid() && raw->IsVisible();
+		}
 	};
+
+	struct ScriptWidgetElement
+	{
+		std::shared_ptr<WidgetAsset> asset;
+		std::string name;
+
+		WidgetNode* Node() const
+		{
+			if (!asset)
+				return nullptr;
+			return WidgetAsset::FindByName(asset->GetRoot(), name);
+		}
+
+		bool IsValid() const { return Node() != nullptr; }
+
+		std::string GetName() const { return name; }
+
+		std::string GetType() const
+		{
+			WidgetNode* node = Node();
+			return node ? WidgetNode::TypeName(node->type) : std::string();
+		}
+
+		void SetText(const std::string& text)
+		{
+			if (WidgetNode* node = Node())
+				node->text = text;
+		}
+
+		std::string GetText() const
+		{
+			WidgetNode* node = Node();
+			return node ? node->text : std::string();
+		}
+
+		void SetVisible(bool visible)
+		{
+			if (WidgetNode* node = Node())
+				node->visible = visible;
+		}
+
+		bool IsVisible() const
+		{
+			WidgetNode* node = Node();
+			return node && node->visible;
+		}
+
+		void SetSize(float w, float h)
+		{
+			if (WidgetNode* node = Node())
+				node->size = glm::vec2(w, h);
+		}
+
+		void SetPosition(float x, float y)
+		{
+			if (WidgetNode* node = Node())
+				node->position = glm::vec2(x, y);
+		}
+
+		void SetAnchor(float minX, float minY, float maxX, float maxY)
+		{
+			if (WidgetNode* node = Node())
+			{
+				node->anchorMin = glm::vec2(minX, minY);
+				node->anchorMax = glm::vec2(maxX, maxY);
+			}
+		}
+
+		void SetColor(float r, float g, float b, sol::optional<float> a)
+		{
+			if (WidgetNode* node = Node())
+				node->color = glm::vec4(r, g, b, a.value_or(1.0f));
+		}
+
+		void SetFontSize(float size)
+		{
+			if (WidgetNode* node = Node())
+				node->fontSize = size;
+		}
+
+		void SetFontPath(const std::string& path)
+		{
+			if (WidgetNode* node = Node())
+				node->fontPath = path;
+		}
+
+		std::string GetFontPath() const
+		{
+			WidgetNode* node = Node();
+			return node ? node->fontPath : std::string();
+		}
+
+		void SetTexture(const std::string& path)
+		{
+			if (WidgetNode* node = Node())
+				node->texturePath = path;
+		}
+
+		std::string GetTexture() const
+		{
+			WidgetNode* node = Node();
+			return node ? node->texturePath : std::string();
+		}
+
+		void SetImage(const std::string& path) { SetTexture(path); }
+		std::string GetImage() const { return GetTexture(); }
+	};
+
+	struct ScriptWidget
+	{
+		std::shared_ptr<WidgetAsset> asset;
+		std::string id;
+
+		bool IsValid() const { return asset != nullptr; }
+
+		std::string GetId() const { return id; }
+		std::string GetName() const
+		{
+			return IsValid() ? asset->GetRoot().name : std::string();
+		}
+
+		WidgetNode* FindNode(const std::string& name) const
+		{
+			if (!IsValid())
+				return nullptr;
+			return WidgetAsset::FindByName(asset->GetRoot(), name);
+		}
+
+		WidgetNode* FindParent(const std::string& parentName) const
+		{
+			if (!IsValid())
+				return nullptr;
+			if (parentName.empty())
+				return &asset->GetRoot();
+			return WidgetAsset::FindByName(asset->GetRoot(), parentName);
+		}
+
+		ScriptWidgetElement Find(const std::string& name) const
+		{
+			if (!FindNode(name))
+				return {};
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement FindText(const std::string& name) const
+		{
+			WidgetNode* node = FindNode(name);
+			if (!node || node->type != WidgetType::Text)
+				return {};
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement FindButton(const std::string& name) const
+		{
+			WidgetNode* node = FindNode(name);
+			if (!node || node->type != WidgetType::Button)
+				return {};
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement FindImage(const std::string& name) const
+		{
+			WidgetNode* node = FindNode(name);
+			if (!node || node->type != WidgetType::Image)
+				return {};
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement AddText(const std::string& name, const std::string& text,
+			sol::optional<float> anchorX, sol::optional<float> anchorY,
+			sol::optional<std::string> parentName)
+		{
+			WidgetNode* parent = FindParent(parentName.value_or(std::string()));
+			if (!parent || FindNode(name))
+				return {};
+
+			WidgetNode node;
+			node.type = WidgetType::Text;
+			node.name = name;
+			node.InitDefaults();
+			node.text = text;
+			const float ax = anchorX.value_or(0.5f);
+			const float ay = anchorY.value_or(0.5f);
+			node.anchorMin = node.anchorMax = glm::vec2(ax, ay);
+			parent->children.push_back(std::move(node));
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement AddButton(const std::string& name, const std::string& text,
+			sol::optional<float> anchorX, sol::optional<float> anchorY,
+			sol::optional<std::string> parentName)
+		{
+			WidgetNode* parent = FindParent(parentName.value_or(std::string()));
+			if (!parent || FindNode(name))
+				return {};
+
+			WidgetNode node;
+			node.type = WidgetType::Button;
+			node.name = name;
+			node.InitDefaults();
+			node.text = text;
+			const float ax = anchorX.value_or(0.5f);
+			const float ay = anchorY.value_or(0.5f);
+			node.anchorMin = node.anchorMax = glm::vec2(ax, ay);
+			parent->children.push_back(std::move(node));
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		ScriptWidgetElement AddImage(const std::string& name, const std::string& texturePath,
+			sol::optional<float> anchorX, sol::optional<float> anchorY,
+			sol::optional<std::string> parentName)
+		{
+			WidgetNode* parent = FindParent(parentName.value_or(std::string()));
+			if (!parent || FindNode(name))
+				return {};
+
+			WidgetNode node;
+			node.type = WidgetType::Image;
+			node.name = name;
+			node.InitDefaults();
+			node.texturePath = texturePath;
+			const float ax = anchorX.value_or(0.5f);
+			const float ay = anchorY.value_or(0.5f);
+			node.anchorMin = node.anchorMax = glm::vec2(ax, ay);
+			parent->children.push_back(std::move(node));
+			return ScriptWidgetElement{ asset, name };
+		}
+
+		bool SetText(const std::string& nodeName, const std::string& text)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->text = text;
+			return true;
+		}
+
+		std::string GetText(const std::string& nodeName) const
+		{
+			WidgetNode* node = FindNode(nodeName);
+			return node ? node->text : std::string();
+		}
+
+		bool SetVisible(const std::string& nodeName, bool visible)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->visible = visible;
+			return true;
+		}
+
+		bool SetSize(const std::string& nodeName, float w, float h)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->size = glm::vec2(w, h);
+			return true;
+		}
+
+		bool SetPosition(const std::string& nodeName, float x, float y)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->position = glm::vec2(x, y);
+			return true;
+		}
+
+		bool SetAnchor(const std::string& nodeName, float minX, float minY, float maxX, float maxY)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->anchorMin = glm::vec2(minX, minY);
+			node->anchorMax = glm::vec2(maxX, maxY);
+			return true;
+		}
+
+		bool SetColor(const std::string& nodeName, float r, float g, float b, sol::optional<float> a)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->color = glm::vec4(r, g, b, a.value_or(1.0f));
+			return true;
+		}
+
+		bool SetFontSize(const std::string& nodeName, float size)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->fontSize = size;
+			return true;
+		}
+
+		bool SetTexture(const std::string& nodeName, const std::string& path)
+		{
+			WidgetNode* node = FindNode(nodeName);
+			if (!node)
+				return false;
+			node->texturePath = path;
+			return true;
+		}
+
+		std::string GetTexture(const std::string& nodeName) const
+		{
+			WidgetNode* node = FindNode(nodeName);
+			return node ? node->texturePath : std::string();
+		}
+
+		bool SetImage(const std::string& nodeName, const std::string& path)
+		{
+			return SetTexture(nodeName, path);
+		}
+
+		std::string GetImage(const std::string& nodeName) const
+		{
+			return GetTexture(nodeName);
+		}
+	};
+
+	static int s_RuntimeWidgetSerial = 0;
+
+	static std::string NormalizeWidgetPath(std::string path)
+	{
+		for (char& c : path)
+		{
+			if (c == '\\')
+				c = '/';
+		}
+		return path;
+	}
 
 	static Renderer* s_Renderer = nullptr;
 	static PhysicsWorld2D* s_Physics = nullptr;
@@ -236,10 +587,11 @@ namespace Blaze
 	{
 		if (!object)
 			return;
+
 		PlayTransform t;
-		t.position = object->GetPosition();
-		t.rotation = object->GetRotation();
-		t.scale = object->GetScale();
+		t.position = object->GetLocalPosition();
+		t.rotation = object->GetLocalRotation();
+		t.scale = object->GetLocalScale();
 		s_PlayTransforms[object] = t;
 	}
 
@@ -251,10 +603,9 @@ namespace Blaze
 			if (!object)
 				continue;
 			PlayTransform& t = entry.second;
-			glm::vec3 pos = t.position;
-			object->SetPosition(pos);
-			object->SetRotation(t.rotation);
-			object->SetScale(t.scale);
+			object->SetLocalPosition(t.position);
+			object->SetLocalRotation(t.rotation);
+			object->SetLocalScale(t.scale);
 		}
 	}
 
@@ -266,6 +617,20 @@ namespace Blaze
 			if (object)
 				StorePlayTransform(object);
 		}
+	}
+
+	void ScriptEngine::CapturePlayTransforms(const std::vector<GameObject*>& objects)
+	{
+		for (GameObject* object : objects)
+		{
+			if (object)
+				StorePlayTransform(object);
+		}
+	}
+
+	void ScriptEngine::ApplyStoredPlayTransforms()
+	{
+		ApplyPlayTransforms();
 	}
 
 	static bool IsKeyDownCode(int code)
@@ -284,7 +649,6 @@ namespace Blaze
 
 	static void SampleInputEdges()
 	{
-		// Snapshot current key/mouse state after scripts so next frame edges work.
 		static const int s_TrackKeys[] = {
 			BZ_KEY_A, BZ_KEY_B, BZ_KEY_C, BZ_KEY_D, BZ_KEY_E, BZ_KEY_F, BZ_KEY_G, BZ_KEY_H,
 			BZ_KEY_I, BZ_KEY_J, BZ_KEY_K, BZ_KEY_L, BZ_KEY_M, BZ_KEY_N, BZ_KEY_O, BZ_KEY_P,
@@ -379,7 +743,74 @@ namespace Blaze
 			"HasTag", &ScriptObject::HasTag,
 			"SetTag", &ScriptObject::SetTag,
 			"AddTag", &ScriptObject::AddTag,
+			"SetVisible", &ScriptObject::SetVisible,
+			"IsVisible", &ScriptObject::IsVisible,
 			"IsValid", &ScriptObject::IsValid);
+
+		lua.new_usertype<ScriptWidgetElement>("WidgetElement",
+			sol::no_constructor,
+			"IsValid", &ScriptWidgetElement::IsValid,
+			"GetName", &ScriptWidgetElement::GetName,
+			"GetType", &ScriptWidgetElement::GetType,
+			"SetText", &ScriptWidgetElement::SetText,
+			"GetText", &ScriptWidgetElement::GetText,
+			"SetVisible", &ScriptWidgetElement::SetVisible,
+			"IsVisible", &ScriptWidgetElement::IsVisible,
+			"SetSize", &ScriptWidgetElement::SetSize,
+			"SetPosition", &ScriptWidgetElement::SetPosition,
+			"SetAnchor", &ScriptWidgetElement::SetAnchor,
+			"SetColor", &ScriptWidgetElement::SetColor,
+			"SetFontSize", &ScriptWidgetElement::SetFontSize,
+			"SetFontPath", &ScriptWidgetElement::SetFontPath,
+			"GetFontPath", &ScriptWidgetElement::GetFontPath,
+			"SetTexture", &ScriptWidgetElement::SetTexture,
+			"GetTexture", &ScriptWidgetElement::GetTexture,
+			"SetImage", &ScriptWidgetElement::SetImage,
+			"GetImage", &ScriptWidgetElement::GetImage);
+
+		lua.new_usertype<ScriptWidget>("Widget",
+			sol::no_constructor,
+			"IsValid", &ScriptWidget::IsValid,
+			"GetId", &ScriptWidget::GetId,
+			"GetName", &ScriptWidget::GetName,
+			"Find", &ScriptWidget::Find,
+			"FindText", &ScriptWidget::FindText,
+			"FindButton", &ScriptWidget::FindButton,
+			"FindImage", &ScriptWidget::FindImage,
+			"AddText", &ScriptWidget::AddText,
+			"AddButton", &ScriptWidget::AddButton,
+			"AddImage", &ScriptWidget::AddImage,
+			"SetText", &ScriptWidget::SetText,
+			"GetText", &ScriptWidget::GetText,
+			"SetVisible", &ScriptWidget::SetVisible,
+			"SetSize", &ScriptWidget::SetSize,
+			"SetPosition", &ScriptWidget::SetPosition,
+			"SetAnchor", &ScriptWidget::SetAnchor,
+			"SetColor", &ScriptWidget::SetColor,
+			"SetFontSize", &ScriptWidget::SetFontSize,
+			"SetTexture", &ScriptWidget::SetTexture,
+			"GetTexture", &ScriptWidget::GetTexture,
+			"SetImage", &ScriptWidget::SetImage,
+			"GetImage", &ScriptWidget::GetImage);
+
+		lua.set_function("CreateWidget", [](sol::optional<std::string> nameOpt) -> ScriptWidget
+		{
+			const std::string name = nameOpt.value_or("Widget");
+			auto asset = std::make_shared<WidgetAsset>(WidgetAsset::CreateEmpty(name));
+			const std::string id = "runtime:" + name + "_" + std::to_string(++s_RuntimeWidgetSerial);
+			asset->SetPath(id);
+			return ScriptWidget{ asset, id };
+		});
+
+		lua.set_function("LoadWidget", [](const std::string& path) -> ScriptWidget
+		{
+			auto asset = std::make_shared<WidgetAsset>();
+			if (!asset->LoadFromFile(path))
+				return ScriptWidget{};
+			const std::string id = NormalizeWidgetPath(path);
+			asset->SetPath(id);
+			return ScriptWidget{ asset, id };
+		});
 
 		lua.set_function("print", [](sol::variadic_args args)
 		{
@@ -545,7 +976,6 @@ namespace Blaze
 		{
 			return IsKeyDownCode(ResolveKeyCode(key));
 		};
-		// True only on the frame the key goes down (tap), not while held.
 		input["IsKeyPressed"] = [](const std::string& key)
 		{
 			return IsKeyPressedEdge(ResolveKeyCode(key));
@@ -566,6 +996,137 @@ namespace Blaze
 		lua["MOUSE_LEFT"] = BZ_MOUSE_BUTTON_LEFT;
 		lua["MOUSE_RIGHT"] = BZ_MOUSE_BUTTON_RIGHT;
 		lua["MOUSE_MIDDLE"] = BZ_MOUSE_BUTTON_MIDDLE;
+
+		lua.set_function("ShowWidget", sol::overload(
+			[](const std::string& path) -> ScriptWidget
+			{
+				if (!UISystem::ShowWidget(path))
+					return ScriptWidget{};
+				const std::string id = NormalizeWidgetPath(path);
+				auto asset = UISystem::GetShownAsset(id);
+				if (!asset)
+					return ScriptWidget{};
+				return ScriptWidget{ asset, id };
+			},
+			[](const ScriptWidget& widget) -> ScriptWidget
+			{
+				if (!widget.IsValid())
+					return ScriptWidget{};
+				if (!UISystem::ShowWidget(widget.asset, widget.id))
+					return ScriptWidget{};
+				return widget;
+			}));
+		lua.set_function("HideWidget", sol::overload(
+			[](const std::string& path)
+			{
+				UISystem::HideWidget(path);
+			},
+			[](const ScriptWidget& widget)
+			{
+				if (widget.IsValid())
+					UISystem::HideWidget(widget.id);
+			}));
+		lua.set_function("HideAllWidgets", []()
+		{
+			UISystem::HideAll();
+		});
+		lua.set_function("SetWidgetText", sol::overload(
+			[](const std::string& widgetPath, const std::string& nodeName, const std::string& text)
+			{
+				return UISystem::SetWidgetText(widgetPath, nodeName, text);
+			},
+			[](ScriptWidget widget, const std::string& nodeName, const std::string& text)
+			{
+				return widget.SetText(nodeName, text);
+			}));
+		lua.set_function("GetWidgetText", sol::overload(
+			[](const std::string& widgetPath, const std::string& nodeName)
+			{
+				return UISystem::GetWidgetText(widgetPath, nodeName);
+			},
+			[](ScriptWidget widget, const std::string& nodeName)
+			{
+				return widget.GetText(nodeName);
+			}));
+
+		lua.set_function("SetWidgetImage", sol::overload(
+			[](ScriptWidget widget, const std::string& nodeName, const std::string& path)
+			{
+				return widget.SetImage(nodeName, path);
+			},
+			[](const std::string& widgetId, const std::string& nodeName, const std::string& path)
+			{
+				auto asset = UISystem::GetShownAsset(widgetId);
+				if (!asset)
+					return false;
+				WidgetNode* node = WidgetAsset::FindByName(asset->GetRoot(), nodeName);
+				if (!node)
+					return false;
+				node->texturePath = path;
+				return true;
+			}));
+
+		lua.set_function("SetText", [](const std::string& text)
+		{
+			if (s_CurrentObject && s_CurrentObject->IsText())
+				s_CurrentObject->SetText(text);
+		});
+		lua.set_function("GetText", []() -> std::string
+		{
+			if (s_CurrentObject && s_CurrentObject->IsText())
+				return s_CurrentObject->GetText();
+			return {};
+		});
+		lua.set_function("SetFontSize", [](float size)
+		{
+			if (s_CurrentObject && s_CurrentObject->IsText())
+				s_CurrentObject->SetFontSize(size);
+		});
+		lua.set_function("SetFontPath", sol::overload(
+			[](const std::string& path)
+			{
+				if (s_CurrentObject && s_CurrentObject->IsText())
+					s_CurrentObject->SetFontPath(path);
+			},
+			[](const ScriptObject& object, const std::string& path)
+			{
+				if (object.IsValid() && object.raw->IsText())
+					object.raw->SetFontPath(path);
+			}));
+		lua.set_function("GetFontPath", sol::overload(
+			[]() -> std::string
+			{
+				if (s_CurrentObject && s_CurrentObject->IsText())
+					return s_CurrentObject->GetFontPath();
+				return {};
+			},
+			[](const ScriptObject& object) -> std::string
+			{
+				if (object.IsValid() && object.raw->IsText())
+					return object.raw->GetFontPath();
+				return {};
+			}));
+
+		lua.set_function("SetVisible", sol::overload(
+			[](bool visible)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetVisible(visible);
+			},
+			[](const ScriptObject& object, bool visible)
+			{
+				if (object.IsValid())
+					object.raw->SetVisible(visible);
+			}));
+		lua.set_function("IsVisible", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsVisible();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsVisible();
+			}));
 
 		lua.set_function("SetLocation", sol::overload(
 			[](float x, float y)
@@ -601,7 +1162,6 @@ namespace Blaze
 			StorePlayTransform(s_CurrentObject);
 		});
 
-		// Alias for SetLocation
 		lua.set_function("SetPosition", sol::overload(
 			[](float x, float y)
 			{
@@ -988,6 +1548,92 @@ namespace Blaze
 					&& object.raw->GetCollisionType() == CollisionType::PhysicsRigidbody2D;
 			}));
 
+		lua.set_function("SetTrigger", sol::overload(
+			[](bool trigger)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetIsTrigger(trigger);
+			},
+			[](const ScriptObject& object, bool trigger)
+			{
+				if (object.IsValid())
+					object.raw->SetIsTrigger(trigger);
+			}));
+
+		lua.set_function("IsTrigger", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsTrigger();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsTrigger();
+			}));
+
+		lua.set_function("SetCollisionLayer", sol::overload(
+			[](int layer)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCollisionLayer(layer);
+			},
+			[](const ScriptObject& object, int layer)
+			{
+				if (object.IsValid())
+					object.raw->SetCollisionLayer(layer);
+			}));
+
+		lua.set_function("GetCollisionLayer", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetCollisionLayer() : 0;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetCollisionLayer() : 0;
+			}));
+
+		lua.set_function("SetCollisionMask", sol::overload(
+			[](uint32_t mask)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCollisionMask(mask);
+			},
+			[](const ScriptObject& object, uint32_t mask)
+			{
+				if (object.IsValid())
+					object.raw->SetCollisionMask(mask);
+			}));
+
+		lua.set_function("GetCollisionMask", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetCollisionMask() : 0u;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetCollisionMask() : 0u;
+			}));
+
+		lua.set_function("SetCollidesWithLayer", sol::overload(
+			[](int layer, bool enabled)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCollidesWithLayer(layer, enabled);
+			},
+			[](const ScriptObject& object, int layer, bool enabled)
+			{
+				if (object.IsValid())
+					object.raw->SetCollidesWithLayer(layer, enabled);
+			}));
+
+		lua["LAYER_DEFAULT"] = CollisionLayer_Default;
+		lua["LAYER_PLAYER"] = CollisionLayer_Player;
+		lua["LAYER_ENEMY"] = CollisionLayer_Enemy;
+		lua["LAYER_PROJECTILE"] = CollisionLayer_Projectile;
+		lua["LAYER_TRIGGER"] = CollisionLayer_Trigger;
+		lua["LAYER_GROUND"] = CollisionLayer_Ground;
+		lua["LAYER_PICKUP"] = CollisionLayer_Pickup;
+
 		lua.set_function("PlayAudio", sol::overload(
 			[]()
 			{
@@ -1238,6 +1884,102 @@ namespace Blaze
 				return object.IsValid() && object.raw->IsFlipbookPlaying();
 			}));
 
+		lua.set_function("SetTilemapSize", sol::overload(
+			[](int columns, int rows)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetTilemapSize(columns, rows);
+			},
+			[](const ScriptObject& object, int columns, int rows)
+			{
+				if (object.IsValid())
+					object.raw->SetTilemapSize(columns, rows);
+			}));
+
+		lua.set_function("SetTileCellSize", sol::overload(
+			[](float size)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetTileCellSize(size);
+			},
+			[](const ScriptObject& object, float size)
+			{
+				if (object.IsValid())
+					object.raw->SetTileCellSize(size);
+			}));
+
+		lua.set_function("SetTileset", sol::overload(
+			[](int columns, int rows)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetTilesetGrid(columns, rows);
+			},
+			[](const ScriptObject& object, int columns, int rows)
+			{
+				if (object.IsValid())
+					object.raw->SetTilesetGrid(columns, rows);
+			}));
+
+		lua.set_function("SetTile", sol::overload(
+			[](int x, int y, int tileId)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetTile(x, y, tileId);
+			},
+			[](const ScriptObject& object, int x, int y, int tileId)
+			{
+				if (object.IsValid())
+					object.raw->SetTile(x, y, tileId);
+			}));
+
+		lua.set_function("GetTile", sol::overload(
+			[](int x, int y)
+			{
+				return s_CurrentObject ? s_CurrentObject->GetTile(x, y) : -1;
+			},
+			[](const ScriptObject& object, int x, int y)
+			{
+				return object.IsValid() ? object.raw->GetTile(x, y) : -1;
+			}));
+
+		lua.set_function("FillTiles", sol::overload(
+			[](int tileId)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->FillTiles(tileId);
+			},
+			[](const ScriptObject& object, int tileId)
+			{
+				if (object.IsValid())
+					object.raw->FillTiles(tileId);
+			}));
+
+		lua.set_function("ClearTiles", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->ClearTiles();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->ClearTiles();
+			}));
+
+		lua.set_function("GetTilemapSize", sol::overload(
+			[]()
+			{
+				if (!s_CurrentObject)
+					return std::make_tuple(0, 0);
+				return std::make_tuple(s_CurrentObject->GetTilemapColumns(), s_CurrentObject->GetTilemapRows());
+			},
+			[](const ScriptObject& object)
+			{
+				if (!object.IsValid())
+					return std::make_tuple(0, 0);
+				return std::make_tuple(object.raw->GetTilemapColumns(), object.raw->GetTilemapRows());
+			}));
+
 		lua.set_function("SetParent", sol::overload(
 			[](const ScriptObject& parent)
 			{
@@ -1464,6 +2206,27 @@ namespace Blaze
 		else if (endObj.is<sol::function>())
 			instance.onCollisionEnd = endObj.as<sol::function>();
 
+		sol::object triggerBeginObj = instance.env["OnTriggerBegin"];
+		if (!triggerBeginObj.valid() || triggerBeginObj.get_type() == sol::type::lua_nil)
+			triggerBeginObj = instance.env["OnTriggerEnter"];
+		sol::object triggerEndObj = instance.env["OnTriggerEnd"];
+		if (!triggerEndObj.valid() || triggerEndObj.get_type() == sol::type::lua_nil)
+			triggerEndObj = instance.env["OnTriggerExit"];
+		if (triggerBeginObj.is<sol::protected_function>())
+			instance.onTriggerBegin = triggerBeginObj.as<sol::protected_function>();
+		else if (triggerBeginObj.is<sol::function>())
+			instance.onTriggerBegin = triggerBeginObj.as<sol::function>();
+		if (triggerEndObj.is<sol::protected_function>())
+			instance.onTriggerEnd = triggerEndObj.as<sol::protected_function>();
+		else if (triggerEndObj.is<sol::function>())
+			instance.onTriggerEnd = triggerEndObj.as<sol::function>();
+
+		sol::object widgetClickedObj = instance.env["OnWidgetClicked"];
+		if (widgetClickedObj.is<sol::protected_function>())
+			instance.onWidgetClicked = widgetClickedObj.as<sol::protected_function>();
+		else if (widgetClickedObj.is<sol::function>())
+			instance.onWidgetClicked = widgetClickedObj.as<sol::function>();
+
 		if (callStart && instance.onStart.valid())
 		{
 			GameObject* prev = s_CurrentObject;
@@ -1529,6 +2292,21 @@ namespace Blaze
 		{
 			object->SetName(name.empty() ? "Empty" : name);
 			object->SetType(ObjectType::Empty);
+		}
+		else if (type == "tilemap")
+		{
+			object->SetName(name.empty() ? "Tilemap" : name);
+			object->SetType(ObjectType::Tilemap);
+			object->InitTilemapDefaults();
+			object->SetTexture("content/texture/container.jpg");
+			object->SetTilesetGrid(1, 1);
+		}
+		else if (type == "text")
+		{
+			object->SetName(name.empty() ? "Text" : name);
+			object->SetType(ObjectType::Text);
+			object->SetText("Text");
+			object->SetFontSize(48.0f);
 		}
 		else
 		{
@@ -1645,6 +2423,27 @@ namespace Blaze
 			instance.onCollisionEnd = endObj.as<sol::protected_function>();
 		else if (endObj.is<sol::function>())
 			instance.onCollisionEnd = endObj.as<sol::function>();
+
+		sol::object triggerBeginObj = instance.env["OnTriggerBegin"];
+		if (!triggerBeginObj.valid() || triggerBeginObj.get_type() == sol::type::lua_nil)
+			triggerBeginObj = instance.env["OnTriggerEnter"];
+		sol::object triggerEndObj = instance.env["OnTriggerEnd"];
+		if (!triggerEndObj.valid() || triggerEndObj.get_type() == sol::type::lua_nil)
+			triggerEndObj = instance.env["OnTriggerExit"];
+		if (triggerBeginObj.is<sol::protected_function>())
+			instance.onTriggerBegin = triggerBeginObj.as<sol::protected_function>();
+		else if (triggerBeginObj.is<sol::function>())
+			instance.onTriggerBegin = triggerBeginObj.as<sol::function>();
+		if (triggerEndObj.is<sol::protected_function>())
+			instance.onTriggerEnd = triggerEndObj.as<sol::protected_function>();
+		else if (triggerEndObj.is<sol::function>())
+			instance.onTriggerEnd = triggerEndObj.as<sol::function>();
+
+		sol::object widgetClickedObj = instance.env["OnWidgetClicked"];
+		if (widgetClickedObj.is<sol::protected_function>())
+			instance.onWidgetClicked = widgetClickedObj.as<sol::protected_function>();
+		else if (widgetClickedObj.is<sol::function>())
+			instance.onWidgetClicked = widgetClickedObj.as<sol::function>();
 
 		return true;
 	}
@@ -1769,6 +2568,27 @@ namespace Blaze
 				instance.onCollisionEnd = endObj.as<sol::protected_function>();
 			else if (endObj.is<sol::function>())
 				instance.onCollisionEnd = endObj.as<sol::function>();
+
+			sol::object triggerBeginObj = instance.env["OnTriggerBegin"];
+			if (!triggerBeginObj.valid() || triggerBeginObj.get_type() == sol::type::lua_nil)
+				triggerBeginObj = instance.env["OnTriggerEnter"];
+			sol::object triggerEndObj = instance.env["OnTriggerEnd"];
+			if (!triggerEndObj.valid() || triggerEndObj.get_type() == sol::type::lua_nil)
+				triggerEndObj = instance.env["OnTriggerExit"];
+			if (triggerBeginObj.is<sol::protected_function>())
+				instance.onTriggerBegin = triggerBeginObj.as<sol::protected_function>();
+			else if (triggerBeginObj.is<sol::function>())
+				instance.onTriggerBegin = triggerBeginObj.as<sol::function>();
+			if (triggerEndObj.is<sol::protected_function>())
+				instance.onTriggerEnd = triggerEndObj.as<sol::protected_function>();
+			else if (triggerEndObj.is<sol::function>())
+				instance.onTriggerEnd = triggerEndObj.as<sol::function>();
+
+			sol::object widgetClickedObj = instance.env["OnWidgetClicked"];
+			if (widgetClickedObj.is<sol::protected_function>())
+				instance.onWidgetClicked = widgetClickedObj.as<sol::protected_function>();
+			else if (widgetClickedObj.is<sol::function>())
+				instance.onWidgetClicked = widgetClickedObj.as<sol::function>();
 
 			s_Instances[object] = std::move(instance);
 		}
@@ -1919,19 +2739,25 @@ namespace Blaze
 					continue;
 
 				const bool begin = (ev.type == CollisionEvent::Type::Begin);
-				const char* phase = begin ? "OnCollisionBegin" : "OnCollisionEnd";
+				const char* phase = ev.isTrigger
+					? (begin ? "OnTriggerBegin" : "OnTriggerEnd")
+					: (begin ? "OnCollisionBegin" : "OnCollisionEnd");
 
 				auto itA = s_Instances.find(ev.a);
 				if (itA != s_Instances.end())
 				{
-					sol::protected_function& fn = begin ? itA->second.onCollisionBegin : itA->second.onCollisionEnd;
+					sol::protected_function& fn = ev.isTrigger
+						? (begin ? itA->second.onTriggerBegin : itA->second.onTriggerEnd)
+						: (begin ? itA->second.onCollisionBegin : itA->second.onCollisionEnd);
 					CallCollisionCallback(itA->second, fn, ev.b, phase);
 				}
 
 				auto itB = s_Instances.find(ev.b);
 				if (itB != s_Instances.end())
 				{
-					sol::protected_function& fn = begin ? itB->second.onCollisionBegin : itB->second.onCollisionEnd;
+					sol::protected_function& fn = ev.isTrigger
+						? (begin ? itB->second.onTriggerBegin : itB->second.onTriggerEnd)
+						: (begin ? itB->second.onCollisionBegin : itB->second.onCollisionEnd);
 					CallCollisionCallback(itB->second, fn, ev.a, phase);
 				}
 			}
@@ -1941,6 +2767,46 @@ namespace Blaze
 			ReportLuaError("OnCollision (exception)", s_CurrentObject, "", e.what());
 		}
 		s_CurrentObject = nullptr;
+	}
+
+	void ScriptEngine::NotifyWidgetClicked(const std::string& widgetPath, const std::string& buttonName)
+	{
+		if (!s_Ready)
+			return;
+
+		auto invoke = [&](ScriptInstance& instance)
+		{
+			if (!instance.onWidgetClicked.valid())
+				return;
+			GameObject* prev = s_CurrentObject;
+			s_CurrentObject = instance.object;
+			if (instance.object)
+				instance.env["self"] = ScriptObject(instance.object);
+			else
+				instance.env["self"] = sol::lua_nil;
+			sol::protected_function_result result = instance.onWidgetClicked(widgetPath, buttonName);
+			if (!result.valid())
+			{
+				sol::error err = result;
+				ReportLuaError("OnWidgetClicked", instance.object,
+					instance.object ? instance.object->GetScriptPath() : Project::GetMapScript(),
+					err.what());
+			}
+			s_CurrentObject = prev;
+		};
+
+		try
+		{
+			if (s_HasMapInstance)
+				invoke(s_MapInstance);
+			for (auto& entry : s_Instances)
+				invoke(entry.second);
+		}
+		catch (const std::exception& e)
+		{
+			ReportLuaError("OnWidgetClicked (exception)", s_CurrentObject, "", e.what());
+			s_CurrentObject = nullptr;
+		}
 	}
 
 	bool ScriptEngine::HasScriptErrors()
