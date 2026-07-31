@@ -5,7 +5,9 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
+#include <algorithm>
 #include <unordered_map>
+#include <vector>
 
 namespace Blaze
 {
@@ -15,9 +17,16 @@ namespace Blaze
 		bool initialized = false;
 	};
 
+	struct OneShotSlot
+	{
+		ma_sound sound{};
+		bool initialized = false;
+	};
+
 	static ma_engine s_Engine{};
 	static bool s_Ready = false;
 	static std::unordered_map<GameObject*, SoundSlot> s_Sounds;
+	static std::vector<OneShotSlot> s_OneShots;
 
 	bool AudioEngine::Init()
 	{
@@ -60,6 +69,15 @@ namespace Blaze
 		}
 	}
 
+	static void DestroyOneShot(OneShotSlot& slot)
+	{
+		if (slot.initialized)
+		{
+			ma_sound_uninit(&slot.sound);
+			slot.initialized = false;
+		}
+	}
+
 	void AudioEngine::RemoveObject(GameObject* object)
 	{
 		if (!object)
@@ -81,11 +99,38 @@ namespace Blaze
 		ma_sound_stop(&it->second.sound);
 	}
 
+	void AudioEngine::StopOneShots()
+	{
+		for (OneShotSlot& slot : s_OneShots)
+			DestroyOneShot(slot);
+		s_OneShots.clear();
+	}
+
 	void AudioEngine::StopAll()
 	{
 		for (auto& entry : s_Sounds)
 			DestroySlot(entry.second);
 		s_Sounds.clear();
+		StopOneShots();
+	}
+
+	void AudioEngine::Update()
+	{
+		if (s_OneShots.empty())
+			return;
+
+		for (auto it = s_OneShots.begin(); it != s_OneShots.end(); )
+		{
+			if (!it->initialized || ma_sound_is_playing(&it->sound) != MA_TRUE)
+			{
+				DestroyOneShot(*it);
+				it = s_OneShots.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
 	}
 
 	bool AudioEngine::IsPlaying(GameObject* object)
@@ -151,6 +196,41 @@ namespace Blaze
 		ma_sound_set_volume(&slot.sound, object->GetAudioVolume());
 		ma_sound_set_looping(&slot.sound, object->GetAudioLoop() ? MA_TRUE : MA_FALSE);
 		ma_sound_start(&slot.sound);
+	}
+
+	bool AudioEngine::PlayOneShot(const std::string& path, float volume)
+	{
+		if (path.empty())
+			return false;
+		if (!Init())
+			return false;
+
+		Update(); // reclaim finished slots first
+
+		s_OneShots.emplace_back();
+		OneShotSlot& slot = s_OneShots.back();
+		ma_uint32 flags = MA_SOUND_FLAG_DECODE | MA_SOUND_FLAG_ASYNC;
+		ma_result result = ma_sound_init_from_file(
+			&s_Engine,
+			path.c_str(),
+			flags,
+			nullptr,
+			nullptr,
+			&slot.sound);
+
+		if (result != MA_SUCCESS)
+		{
+			s_OneShots.pop_back();
+			BZ_INFO("Failed to play one-shot '{0}' (code {1})", path, (int)result);
+			return false;
+		}
+
+		slot.initialized = true;
+		const float vol = (volume < 0.0f) ? 0.0f : ((volume > 4.0f) ? 4.0f : volume);
+		ma_sound_set_volume(&slot.sound, vol);
+		ma_sound_set_looping(&slot.sound, MA_FALSE);
+		ma_sound_start(&slot.sound);
+		return true;
 	}
 
 	void AudioEngine::OnPlayModeStart(const std::vector<GameObject*>& objects)

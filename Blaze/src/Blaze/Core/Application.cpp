@@ -6,6 +6,7 @@
 #include"Blaze/Event/MouseButtonCodes.h"
 #include"Blaze/Logging/Log.h"
 #include"Blaze/Renderer/Renderer.h"
+#include"Blaze/ImGui/PropertiesWindow.h"
 #include"GLFW/glfw3.h"
 
 namespace Blaze {	
@@ -58,10 +59,14 @@ namespace Blaze {
 			m_window->Clear(0.1f, 0.1f, 0.1f,255.0f);
 			if (m_context)
 			{
-				if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
-					glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-				else
-					glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				// While playing, GameWindow owns cursor show/hide over the Game view.
+				if (!StartWindow::IsPlaying())
+				{
+					if (Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT))
+						glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+					else
+						glfwSetInputMode((GLFWwindow*)m_window->GetNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				}
 			}
 
 			if (!m_Minimized)

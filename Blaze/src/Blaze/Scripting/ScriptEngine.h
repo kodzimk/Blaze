@@ -39,12 +39,21 @@ namespace Blaze
 
 		static GameObject* FindByTag(const std::string& tag);
 		static std::vector<GameObject*> FindAllByTag(const std::string& tag);
+		static GameObject* FindByName(const std::string& name);
+		static std::vector<GameObject*> FindAllByName(const std::string& name);
+
+		static void EnableMouse(bool enabled);
+		static bool IsMouseEnabled();
+		static void SetCursorVisible(bool visible);
+		static bool IsCursorVisible();
+		static bool WantsCursorVisible();
+
+		static void UpdateCameraFollow(float dt);
 
 		static std::string GetCurrentMapName();
 		static bool RequestOpenMap(const std::string& mapNameOrPath);
 		static bool ConsumePendingOpenMap(std::string& outPath);
 
-		// Lua error popup (also printed to the console when Start is pressed)
 		static void DrawErrorWindow();
 		static bool HasScriptErrors();
 		static void ClearScriptErrors();

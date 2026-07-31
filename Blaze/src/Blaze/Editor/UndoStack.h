@@ -80,6 +80,9 @@ namespace Blaze
 		bool flipPlaying = false;
 		bool flipLoop = true;
 		int flipFrame = 0;
+		std::vector<FlipbookClip> flipClips;
+		int flipActiveClip = -1;
+		std::string flipbookAssetPath;
 
 		int tilemapCols = 0;
 		int tilemapRows = 0;
@@ -87,6 +90,10 @@ namespace Blaze
 		int tilesetCols = 1;
 		int tilesetRows = 1;
 		std::vector<int> tiles;
+		bool tileCollisionEnabled = true;
+		std::vector<uint8_t> tilesetSolid;
+		std::vector<TilemapLayer> tileLayers;
+		int activeTileLayer = 0;
 
 		std::string text = "Text";
 		float fontSize = 48.0f;

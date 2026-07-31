@@ -78,6 +78,30 @@ namespace Blaze
 		io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 		ImGui::StyleColorsDark();
+
+		{
+			const char* fontCandidates[] = {
+				"C:/Windows/Fonts/consola.ttf",
+				"C:/Windows/Fonts/cascadiamono.ttf",
+				"C:/Windows/Fonts/cour.ttf",
+				"C:/Windows/Fonts/arial.ttf",
+				"C:/Windows/Fonts/segoeui.ttf",
+			};
+			ImFontConfig cfg;
+			cfg.OversampleH = 2;
+			cfg.OversampleV = 1;
+			cfg.PixelSnapH = true;
+			ImFont* loaded = nullptr;
+			for (const char* path : fontCandidates)
+			{
+				loaded = io->Fonts->AddFontFromFileTTF(path, 16.0f, &cfg, io->Fonts->GetGlyphRangesCyrillic());
+				if (loaded)
+					break;
+			}
+			if (!loaded)
+				io->Fonts->AddFontDefault();
+		}
+
 		ImGui_ImplGlfw_InitForOpenGL(window, true);
 		ImGui_ImplOpenGL3_Init("#version 450");
 
@@ -220,6 +244,7 @@ namespace Blaze
 		m_objectWindow->OnUpdate();
 		m_gameWindow->OnUpdate();
 		ScriptEngine::DrawErrorWindow();
+		GameWindow::ApplyPlayCursor();
 		EndFrame();
 	}
 }

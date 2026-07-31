@@ -189,7 +189,11 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\Logging\Log.h" />
     <ClInclude Include="src\Blaze\Renderer\Camera.h" />
     <ClInclude Include="src\Blaze\Renderer\GameObject.h" />
+    <ClInclude Include="src\Blaze\Renderer\FlipbookAsset.h" />
+    <ClInclude Include="src\Blaze\Assets\TiledImporter.h" />
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h" />
+    <ClInclude Include="src\Blaze\Renderer\DebugDraw2D.h" />
+    <ClInclude Include="src\Blaze\Renderer\ParticleSystem2D.h" />
     <ClInclude Include="src\Blaze\Editor\UndoStack.h" />
     <ClInclude Include="src\Blaze\UI\UISystem.h" />
     <ClInclude Include="src\Blaze\UI\WidgetAsset.h" />
@@ -197,7 +201,9 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h" />
     <ClInclude Include="src\Blaze\Audio\AudioEngine.h" />
     <ClInclude Include="src\Blaze\Scripting\ScriptEngine.h" />
+    <ClInclude Include="src\Blaze\Scripting\SaveObject.h" />
     <ClInclude Include="src\Blaze\Scripting\OnScreenDebug.h" />
+    <ClInclude Include="src\Blaze\Scripting\ScriptTimers.h" />
     <ClInclude Include="src\Blaze\Renderer\Renderer.h" />
     <ClInclude Include="src\Blaze\Renderer\Shader.h" />
     <ClInclude Include="src\Blaze\Renderer\Texture.h" />
@@ -651,7 +657,11 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\Logging\Log.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Camera.cpp" />
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\FlipbookAsset.cpp" />
+    <ClCompile Include="src\Blaze\Assets\TiledImporter.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\DebugDraw2D.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp" />
     <ClCompile Include="src\Blaze\Editor\UndoStack.cpp" />
     <ClCompile Include="src\Blaze\UI\UISystem.cpp" />
     <ClCompile Include="src\Blaze\UI\WidgetAsset.cpp" />
@@ -661,7 +671,9 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\Scripting\ScriptEngine.cpp">
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\SaveObject.cpp" />
     <ClCompile Include="src\Blaze\Scripting\OnScreenDebug.cpp" />
+    <ClCompile Include="src\Blaze\Scripting\ScriptTimers.cpp" />
     <ClCompile Include="vendor\lua\lapi.c">
       <CompileAs>CompileAsC</CompileAs>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>

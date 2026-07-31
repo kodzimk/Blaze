@@ -1,5 +1,6 @@
 #pragma once
 #include"bzpch.h"
+#include"Blaze/Scripting/SaveObject.h"
 
 struct GLFWwindow;
 struct ImVec2;
@@ -32,19 +33,25 @@ namespace Blaze
 		bool IsAudioFile(std::string extension) const;
 		bool IsFontFile(std::string extension) const;
 		bool IsScriptFile(std::string extension) const;
+		bool IsSaveScriptFile(const std::string& path) const;
 		bool IsMapFile(std::string extension) const;
 		bool IsWidgetFile(std::string extension) const;
+		bool IsFlipbookFile(std::string extension) const;
 		Texture* GetThumbnail(const std::string& path);
 		void ImportTexture();
 		void ImportAudio();
 		void ImportFont();
+		void ImportTiledMap();
 		void CreateScript();
+		void CreateScriptOfKind(ScriptKind kind);
 		void CreateMap();
 		void CreateWidget();
+		void CreateFlipbook();
 		void CreateFolder();
 		void StartRename(const std::string& path);
 		void CommitRename();
 		void DrawContextMenu();
+		void DrawCreateScriptPopup();
 		bool MoveAssetToFolder(const std::string& assetPath, const std::string& folderPath);
 		bool AcceptAssetDrop(const std::string& folderPath);
 		void InvalidateThumbnail(const std::string& path);
@@ -59,6 +66,7 @@ namespace Blaze
 		std::string m_RenamingPath;
 		char m_RenameBuffer[256] = {};
 		bool m_FocusRename = false;
+		bool m_OpenScriptTypePopup = false;
 
 		static std::string s_DraggingPath;
 		static std::string s_PendingDropPath;

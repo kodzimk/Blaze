@@ -116,6 +116,11 @@ if (Test-Path $license) {
     Copy-Item $license (Join-Path $Payload "LICENSE")
 }
 
+$docs = Join-Path $Root "DOCUMENTATION.md"
+if (Test-Path $docs) {
+    Copy-Item $docs (Join-Path $Payload "DOCUMENTATION.md")
+}
+
 $readmeLines = @(
     "Blaze Engine - offline package",
     "==============================",

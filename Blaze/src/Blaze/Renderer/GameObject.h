@@ -2,6 +2,7 @@
 #include"bzpch.h"
 #include"Blaze/Renderer/VertexArray.h"
 #include"Blaze/Renderer/Texture.h"
+#include"Blaze/Renderer/FlipbookAsset.h"
 #include"glm.hpp"
 
 namespace Blaze
@@ -26,6 +27,15 @@ namespace Blaze
 		Circle = 0,
 		Block,
 		PhysicsRigidbody2D
+	};
+
+	struct TilemapLayer
+	{
+		std::string name = "Layer";
+		bool visible = true;
+		bool collision = true;
+		float opacity = 1.0f;
+		std::vector<int> tiles; // -1 = empty
 	};
 
 	enum class ColliderShape
@@ -126,8 +136,25 @@ namespace Blaze
 		void SetFlipbookLoop(bool loop);
 		void SetFlipbookFrame(int frame);
 		void PlayFlipbook();
+		bool PlayFlipbook(const std::string& clipName);
 		void StopFlipbook();
 		void PauseFlipbook();
+
+		int AddFlipbookClip(const std::string& name, int startFrame, int endFrame, float fps = -1.0f, bool loop = true);
+		bool SetFlipbookClip(const std::string& name, int startFrame, int endFrame, float fps = -1.0f, bool loop = true);
+		bool RemoveFlipbookClip(const std::string& name);
+		bool RemoveFlipbookClipAt(int index);
+		void ClearFlipbookClips();
+		void SetFlipbookClips(const std::vector<FlipbookClip>& clips);
+		bool SetActiveFlipbookClip(const std::string& name);
+		void ClearActiveFlipbookClip();
+		int FindFlipbookClip(const std::string& name) const;
+
+		void SetFlipbookAssetPath(const std::string& path, bool loadAsset = true);
+		bool ApplyFlipbookAsset(const FlipbookAsset& asset);
+		bool LoadFlipbookAsset();
+		bool SaveFlipbookAsset() const;
+		bool SaveFlipbookAssetAs(const std::string& path);
 
 		void InitTilemapDefaults();
 		void SetTilemapSize(int columns, int rows);
@@ -135,11 +162,41 @@ namespace Blaze
 		void SetTilesetGrid(int columns, int rows);
 		void SetTile(int x, int y, int tileId);
 		int GetTile(int x, int y) const;
+		void SetTileOnLayer(int layerIndex, int x, int y, int tileId);
+		int GetTileOnLayer(int layerIndex, int x, int y) const;
 		void FillTiles(int tileId);
 		void ClearTiles();
 		void SetTilesFromList(const std::vector<int>& tiles);
-		const std::vector<int>& GetTiles() const { return m_Tiles; }
+		const std::vector<int>& GetTiles() const;
 		void RefreshTilemapBounds();
+
+		int GetTileLayerCount() const { return (int)m_TileLayers.size(); }
+		int GetActiveTileLayer() const { return m_ActiveTileLayer; }
+		void SetActiveTileLayer(int index);
+		int AddTileLayer(const std::string& name = "Layer");
+		bool RemoveTileLayer(int index);
+		void ClearTileLayers();
+		void SetTileLayers(const std::vector<TilemapLayer>& layers, int activeIndex = 0);
+		const std::vector<TilemapLayer>& GetTileLayers() const { return m_TileLayers; }
+		const TilemapLayer* GetTileLayer(int index) const;
+		TilemapLayer* GetTileLayerMutable(int index);
+		void SetTileLayerName(int index, const std::string& name);
+		void SetTileLayerVisible(int index, bool visible);
+		void SetTileLayerCollision(int index, bool collision);
+		void SetTileLayerOpacity(int index, float opacity);
+		void SetTileLayerTiles(int index, const std::vector<int>& tiles);
+		const std::vector<int>& GetTileLayerTiles(int index) const;
+
+		void SetTileCollisionEnabled(bool enabled) { m_TileCollisionEnabled = enabled; }
+		bool IsTileCollisionEnabled() const { return m_TileCollisionEnabled; }
+		void SetTilesetSolid(int tileId, bool solid);
+		bool IsTilesetSolid(int tileId) const;
+		void SetAllTilesetSolid(bool solid);
+		void SetTilesetSolidFromList(const std::vector<uint8_t>& solids);
+		const std::vector<uint8_t>& GetTilesetSolid() const { return m_TilesetSolid; }
+		bool IsSolidAt(int x, int y) const;
+		bool IsTileIdSolid(int tileId) const;
+		glm::vec2 TileCenterLocal(int tileX, int tileY) const;
 
 		inline ObjectType GetType() const { return m_Type; }
 		inline bool IsCamera() const { return m_Type == ObjectType::Camera; }
@@ -204,6 +261,17 @@ namespace Blaze
 		inline bool GetFlipbookLoop() const { return m_FlipLoop; }
 		inline int GetFlipbookFrame() const { return m_FlipFrame; }
 		int GetFlipbookTotalFrames() const;
+		const std::vector<FlipbookClip>& GetFlipbookClips() const { return m_FlipClips; }
+		int GetFlipbookClipCount() const { return (int)m_FlipClips.size(); }
+		const FlipbookClip* GetFlipbookClip(int index) const;
+		const FlipbookClip* GetFlipbookClip(const std::string& name) const;
+		int GetActiveFlipbookClipIndex() const { return m_FlipActiveClip; }
+		std::string GetActiveFlipbookClipName() const;
+		void GetFlipbookPlaybackRange(int& outStart, int& outEnd) const;
+		float GetFlipbookPlaybackFps() const;
+		bool GetFlipbookPlaybackLoop() const;
+		const std::string& GetFlipbookAssetPath() const { return m_FlipbookAssetPath; }
+		bool HasFlipbookAsset() const { return !m_FlipbookAssetPath.empty(); }
 
 		inline int GetTilemapColumns() const { return m_TilemapColumns; }
 		inline int GetTilemapRows() const { return m_TilemapRows; }
@@ -224,13 +292,19 @@ namespace Blaze
 		bool WouldCreateParentCycle(GameObject* parent) const;
 		void RemoveFromParentChildren();
 		void ClampFlipbookFrame();
+		void NormalizeFlipbookClip(FlipbookClip& clip) const;
+		std::string MakeUniqueFlipbookClipName(const std::string& desired) const;
 		glm::vec2 GetFlipbookUVScale() const;
 		glm::vec2 GetFlipbookUVOffset() const;
 		glm::vec2 GetTilesetUVScale() const;
 		glm::vec2 GetTilesetUVOffset(int tileId) const;
 		void DrawTilemap(const CameraProp& prop, Shader& shader);
 		void RefreshTextBounds();
-	private:
+		void EnsureTileLayers();
+		std::vector<int>& ActiveTiles();
+		const std::vector<int>& ActiveTiles() const;
+		bool IsPaintedTileSolid(int tileId) const;
+
 		VertexArray m_VertexArray;
 		VertexBuffer m_VertexBuffer;
 		unsigned int m_EBO;
@@ -282,13 +356,19 @@ namespace Blaze
 		bool m_FlipLoop = true;
 		int m_FlipFrame = 0;
 		float m_FlipTime = 0.0f;
+		std::vector<FlipbookClip> m_FlipClips;
+		int m_FlipActiveClip = -1; // -1 = full sheet / global settings
+		std::string m_FlipbookAssetPath;
 
 		int m_TilemapColumns = 0;
 		int m_TilemapRows = 0;
 		float m_TileCellSize = 32.0f;
 		int m_TilesetColumns = 1;
 		int m_TilesetRows = 1;
-		std::vector<int> m_Tiles; // -1 = empty
+		std::vector<TilemapLayer> m_TileLayers;
+		int m_ActiveTileLayer = 0;
+		bool m_TileCollisionEnabled = true;
+		std::vector<uint8_t> m_TilesetSolid; // per tileset tile id; empty/all-zero => all painted tiles solid
 
 		std::string m_Text = "Text";
 		float m_FontSize = 48.0f;

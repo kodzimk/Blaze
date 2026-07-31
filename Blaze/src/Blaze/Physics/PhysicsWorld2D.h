@@ -16,6 +16,24 @@ namespace Blaze
 		bool isTrigger = false; // true if either collider is a trigger (overlap only)
 	};
 
+	struct BLAZE_API RaycastHit
+	{
+		bool hit = false;
+		GameObject* object = nullptr;
+		glm::vec2 point = glm::vec2(0.0f);   // pixel / world units
+		glm::vec2 normal = glm::vec2(0.0f, 1.0f);
+		float fraction = 1.0f;               // 0..1 along start→end
+		float distance = 0.0f;               // pixels
+	};
+
+	// One contact relative to a queried body (normal points into that body / away from the other).
+	struct BLAZE_API BodyContactInfo
+	{
+		GameObject* other = nullptr;
+		glm::vec2 normal = glm::vec2(0.0f, 1.0f);
+		bool isTrigger = false;
+	};
+
 	class BLAZE_API PhysicsWorld2D
 	{
 	public:
@@ -41,6 +59,38 @@ namespace Blaze
 		void ApplyImpulse(GameObject* object, const glm::vec2& impulsePixels);
 
 		std::vector<CollisionEvent> ConsumeCollisionEvents();
+
+		// Character helpers (use contacts from the last Step). maxSlopeDegrees = steepest walkable floor.
+		bool IsGrounded(GameObject* object, float maxSlopeDegrees = 50.0f) const;
+		bool IsTouchingCeiling(GameObject* object, float maxSlopeDegrees = 50.0f) const;
+		bool IsTouchingWall(GameObject* object) const;
+		bool IsTouchingWallLeft(GameObject* object) const;
+		bool IsTouchingWallRight(GameObject* object) const;
+		glm::vec2 GetGroundNormal(GameObject* object, float maxSlopeDegrees = 50.0f) const;
+		int GetContactCount(GameObject* object, bool includeTriggers = false) const;
+		const std::vector<BodyContactInfo>& GetContacts(GameObject* object) const;
+		// Extra feet probe: short downward ray from collider bottom (pixels).
+		bool CheckGround(GameObject* object, const std::vector<GameObject*>& objects,
+			float probeDistancePx = 6.0f, float maxSlopeDegrees = 50.0f,
+			uint32_t layerMask = 0xFFFFFFFFu) const;
+
+		// Queries use pixel/world units (same as SetLocation). layerMask bits = (1u << layer).
+		bool Raycast(const glm::vec2& startPx, const glm::vec2& endPx,
+			const std::vector<GameObject*>& objects, RaycastHit& out,
+			uint32_t layerMask = 0xFFFFFFFFu, GameObject* ignore = nullptr,
+			bool includeTriggers = false);
+		std::vector<RaycastHit> RaycastAll(const glm::vec2& startPx, const glm::vec2& endPx,
+			const std::vector<GameObject*>& objects,
+			uint32_t layerMask = 0xFFFFFFFFu, GameObject* ignore = nullptr,
+			bool includeTriggers = false);
+		bool OverlapPoint(const glm::vec2& pointPx, const std::vector<GameObject*>& objects,
+			std::vector<GameObject*>& outObjects,
+			uint32_t layerMask = 0xFFFFFFFFu, GameObject* ignore = nullptr,
+			bool includeTriggers = true);
+		bool OverlapCircle(const glm::vec2& centerPx, float radiusPx,
+			const std::vector<GameObject*>& objects, std::vector<GameObject*>& outObjects,
+			uint32_t layerMask = 0xFFFFFFFFu, GameObject* ignore = nullptr,
+			bool includeTriggers = true);
 
 	private:
 		enum class ShapeKind { Circle, Box };
@@ -95,18 +145,29 @@ namespace Blaze
 		void ResolveContacts(const std::vector<Contact>& contacts);
 		void StorePlayState();
 		void UpdateCollisionEvents(const std::vector<Contact>& contacts);
+		void CacheContacts(const std::vector<Contact>& contacts);
 		static PairKey MakePair(GameObject* a, GameObject* b);
+		glm::vec2 UpDirection() const;
+		static bool IsFloorNormal(const glm::vec2& n, const glm::vec2& up, float maxSlopeDegrees);
+		static bool IsCeilingNormal(const glm::vec2& n, const glm::vec2& up, float maxSlopeDegrees);
 
 		static bool CircleCircle(const Body& a, const Body& b, Contact& out);
 		static bool BoxBox(const Body& a, const Body& b, Contact& out);
 		static bool CircleBox(const Body& circle, const Body& box, Contact& out);
 		static void GetPixelScale(float& sx, float& sy);
+
+		static bool RaycastBody(const Body& body, const glm::vec2& origin, const glm::vec2& dir,
+			float length, float& outT, glm::vec2& outNormal);
+		static bool PointInBody(const Body& body, const glm::vec2& point);
+		static bool CircleOverlapsBody(const Body& body, const glm::vec2& center, float radius);
 	private:
 		glm::vec2 m_Gravity = glm::vec2(0.0f, -1800.0f);
 		std::vector<Body> m_Bodies;
 		std::unordered_map<GameObject*, PlayState> m_PlayState;
 		std::unordered_set<PairKey, PairHash> m_ActivePairs;
 		std::vector<CollisionEvent> m_Events;
+		std::unordered_map<GameObject*, std::vector<BodyContactInfo>> m_ContactsByObject;
+		std::vector<BodyContactInfo> m_EmptyContacts;
 
 		float m_Restitution = 0.05f;
 		float m_Friction = 0.25f;

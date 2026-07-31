@@ -8,6 +8,9 @@
 #include "Blaze/ImGui/ScriptEditorWindow.h"
 #include "Blaze/ImGui/WidgetEditorWindow.h"
 #include "Blaze/UI/WidgetAsset.h"
+#include "Blaze/Renderer/FlipbookAsset.h"
+#include "Blaze/Scripting/SaveObject.h"
+#include "Blaze/Assets/TiledImporter.h"
 #include <filesystem>
 #include <cctype>
 #include <cstring>
@@ -33,6 +36,7 @@ namespace Blaze
 	static const char* s_FontPayload = "BLAZE_FONT";
 	static const char* s_ScriptPayload = "BLAZE_SCRIPT";
 	static const char* s_MapPayload = "BLAZE_MAP";
+	static const char* s_FlipbookPayload = "BLAZE_FLIPBOOK";
 
 	ContentBrowser::ContentBrowser()
 		: onFocus(false), m_RootDir("content"), m_CurrentDir("content")
@@ -82,6 +86,28 @@ namespace Blaze
 		return extension == ".lua";
 	}
 
+	bool ContentBrowser::IsSaveScriptFile(const std::string& path) const
+	{
+		std::ifstream in(path);
+		if (!in.is_open())
+			return false;
+
+		std::string line;
+		int linesChecked = 0;
+		while (linesChecked < 24 && std::getline(in, line))
+		{
+			++linesChecked;
+			if (line.find("Blaze Save Script") != std::string::npos ||
+				line.find("Save Script (SaveObject)") != std::string::npos)
+				return true;
+			if (line.find("SaveObject") != std::string::npos &&
+				line.find("=") != std::string::npos &&
+				line.find("function") == std::string::npos)
+				return true;
+		}
+		return false;
+	}
+
 	bool ContentBrowser::IsMapFile(std::string extension) const
 	{
 		for (auto& c : extension)
@@ -94,6 +120,13 @@ namespace Blaze
 		for (auto& c : extension)
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".widget";
+	}
+
+	bool ContentBrowser::IsFlipbookFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".flipbook";
 	}
 
 	Texture* ContentBrowser::GetThumbnail(const std::string& path)
@@ -270,38 +303,110 @@ namespace Blaze
 		BZ_INFO("Imported font: {0}", destination.string());
 	}
 
+	void ContentBrowser::ImportTiledMap()
+	{
+		char filePath[MAX_PATH] = {};
+
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = filePath;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.lpstrFilter =
+			"Tiled Maps (*.tmj;*.json;*.tmx)\0*.tmj;*.json;*.tmx\0"
+			"Tiled JSON (*.tmj;*.json)\0*.tmj;*.json\0"
+			"Tiled TMX (*.tmx)\0*.tmx\0"
+			"All Files (*.*)\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+		if (!GetOpenFileNameA(&ofn))
+			return;
+
+		fs::path source(filePath);
+		if (!TiledImporter::IsTiledMapFile(source.string()))
+		{
+			BZ_INFO("Import cancelled: not a Tiled map '{0}'", source.extension().string());
+			return;
+		}
+
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path mapPath = fs::path(m_CurrentDir) / (source.stem().string() + ".map");
+		int suffix = 1;
+		while (fs::exists(mapPath))
+		{
+			mapPath = fs::path(m_CurrentDir) / (source.stem().string() + "_" + std::to_string(suffix) + ".map");
+			++suffix;
+		}
+
+		fs::path textureDir = fs::path(m_CurrentDir);
+		if (Project::HasProject())
+		{
+			fs::path contentTex = fs::path(Project::GetContentDirectory()) / "texture";
+			std::error_code ec;
+			fs::create_directories(contentTex, ec);
+			if (fs::exists(contentTex))
+				textureDir = contentTex;
+		}
+
+		std::string error;
+		if (!TiledImporter::ImportToMapFile(source.string(), mapPath.string(), textureDir.generic_string(), &error))
+		{
+			BZ_INFO("Tiled import failed: {0}", error);
+			return;
+		}
+
+		const std::string scriptRel = Project::CreateMapScriptForMap(mapPath.string());
+		if (!scriptRel.empty())
+		{
+			std::ifstream in(mapPath);
+			std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+			in.close();
+			if (content.find("mapscript ") == std::string::npos)
+			{
+				std::ofstream out(mapPath, std::ios::trunc);
+				if (out.is_open())
+				{
+					const std::string header = "BlazeMap 1\n";
+					if (content.rfind(header, 0) == 0)
+						out << header << "mapscript " << scriptRel << "\n" << content.substr(header.size());
+					else
+						out << "BlazeMap 1\nmapscript " << scriptRel << "\n" << content;
+				}
+			}
+		}
+
+		BZ_INFO("Imported Tiled map: {0}", mapPath.string());
+		s_PendingOpenMap = mapPath.string();
+	}
+
 	void ContentBrowser::CreateScript()
+	{
+		m_OpenScriptTypePopup = true;
+	}
+
+	void ContentBrowser::CreateScriptOfKind(ScriptKind kind)
 	{
 		if (!fs::exists(m_CurrentDir))
 			fs::create_directories(m_CurrentDir);
 
-		fs::path scriptPath = fs::path(m_CurrentDir) / "NewScript.lua";
+		const char* base = (kind == ScriptKind::SaveObject) ? "NewSave" : "NewScript";
+		fs::path scriptPath = fs::path(m_CurrentDir) / (std::string(base) + ".lua");
 		int suffix = 1;
 		while (fs::exists(scriptPath))
 		{
-			scriptPath = fs::path(m_CurrentDir) / ("NewScript (" + std::to_string(suffix) + ").lua");
+			scriptPath = fs::path(m_CurrentDir) / (std::string(base) + " (" + std::to_string(suffix) + ").lua");
 			++suffix;
 		}
 
-		std::ofstream out(scriptPath);
-		if (!out.is_open())
+		if (!ScriptTemplates::WriteScriptFile(scriptPath.string(), kind))
 		{
 			BZ_INFO("Failed to create script: {0}", scriptPath.string());
 			return;
 		}
 
-		out << "-- Blaze Lua script\n\n";
-		out << "function OnStart()\n";
-		out << "\tprint(\"Script started on\", selfName)\n";
-		out << "end\n\n";
-		out << "function OnUpdate(dt)\n";
-		out << "\tif Input.IsKeyDown(\"A\") then\n";
-		out << "\t\tprint(\"A held\")\n";
-		out << "\tend\n";
-		out << "end\n";
-		out.close();
-
-		BZ_INFO("Created script: {0}", scriptPath.string());
+		BZ_INFO("Created {0}: {1}", ScriptTemplates::KindDisplayName(kind), scriptPath.string());
 		StartRename(scriptPath.string());
 	}
 
@@ -328,6 +433,31 @@ namespace Blaze
 
 		BZ_INFO("Created widget: {0}", widgetPath.string());
 		StartRename(widgetPath.string());
+	}
+
+	void ContentBrowser::CreateFlipbook()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path flipPath = fs::path(m_CurrentDir) / "NewFlipbook.flipbook";
+		int suffix = 1;
+		while (fs::exists(flipPath))
+		{
+			flipPath = fs::path(m_CurrentDir) / ("NewFlipbook (" + std::to_string(suffix) + ").flipbook");
+			++suffix;
+		}
+
+		FlipbookAsset asset = FlipbookAsset::CreateDefault(flipPath.stem().string());
+		asset.SetPath(flipPath.string());
+		if (!asset.SaveToFile(flipPath.string()))
+		{
+			BZ_INFO("Failed to create flipbook: {0}", flipPath.string());
+			return;
+		}
+
+		BZ_INFO("Created flipbook asset: {0}", flipPath.string());
+		StartRename(flipPath.string());
 	}
 
 	void ContentBrowser::CreateMap()
@@ -477,14 +607,51 @@ namespace Blaze
 				ImportAudio();
 			if (ImGui::MenuItem("Import Font"))
 				ImportFont();
+			if (ImGui::MenuItem("Import Tiled Map"))
+				ImportTiledMap();
 			if (ImGui::MenuItem("Create Script"))
 				CreateScript();
+			if (ImGui::MenuItem("Create Flipbook"))
+				CreateFlipbook();
 			if (ImGui::MenuItem("Create Widget"))
 				CreateWidget();
 			if (ImGui::MenuItem("Create Map"))
 				CreateMap();
 			if (ImGui::MenuItem("New Folder"))
 				CreateFolder();
+			ImGui::EndPopup();
+		}
+	}
+
+	void ContentBrowser::DrawCreateScriptPopup()
+	{
+		if (m_OpenScriptTypePopup)
+		{
+			ImGui::OpenPopup("Create Script Type");
+			m_OpenScriptTypePopup = false;
+		}
+
+		if (ImGui::BeginPopupModal("Create Script Type", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::TextUnformatted("Choose script type");
+			ImGui::Separator();
+			ImGui::TextWrapped("Component Script — attach to a GameObject (OnStart / OnUpdate).");
+			ImGui::TextWrapped("Save Script — SaveObject data class (not a GameObject).");
+			ImGui::Spacing();
+
+			if (ImGui::Button("Component Script", ImVec2(180.0f, 0.0f)))
+			{
+				CreateScriptOfKind(ScriptKind::Component);
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Save Script", ImVec2(180.0f, 0.0f)))
+			{
+				CreateScriptOfKind(ScriptKind::SaveObject);
+				ImGui::CloseCurrentPopup();
+			}
+			if (ImGui::Button("Cancel", ImVec2(370.0f, 0.0f)))
+				ImGui::CloseCurrentPopup();
 			ImGui::EndPopup();
 		}
 	}
@@ -567,6 +734,12 @@ namespace Blaze
 			if (MoveAssetToFolder(sourcePath, folderPath))
 				moved = true;
 		}
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(s_FlipbookPayload))
+		{
+			std::string sourcePath((const char*)payload->Data);
+			if (MoveAssetToFolder(sourcePath, folderPath))
+				moved = true;
+		}
 		return moved;
 	}
 
@@ -586,6 +759,7 @@ namespace Blaze
 		{
 			ImGui::TextWrapped("Asset folder '%s' not found. Run the app from the folder that contains it.", m_RootDir.c_str());
 			DrawContextMenu();
+			DrawCreateScriptPopup();
 			ImGui::End();
 			return;
 		}
@@ -749,20 +923,29 @@ namespace Blaze
 			}
 			else if (IsScriptFile(path.extension().string()))
 			{
-				unsigned int scriptTex = Gizmo2D::GetScriptIconTextureID();
+				const bool isSaveScript = IsSaveScriptFile(fullPath);
+				unsigned int scriptTex = isSaveScript
+					? Gizmo2D::GetSaveScriptIconTextureID()
+					: Gizmo2D::GetScriptIconTextureID();
 				if (scriptTex != 0)
 				{
+					ImGui::PushID(isSaveScript ? "save_script" : "comp_script");
 					ImGui::ImageButton("##script", (ImTextureID)(intptr_t)scriptTex,
 						ImVec2(thumbSize, thumbSize), ImVec2(0, 0), ImVec2(1, 1),
 						ImVec4(0.14f, 0.14f, 0.14f, 1.0f), ImVec4(1, 1, 1, 1));
+					ImGui::PopID();
 				}
 				else
 				{
-					ImGui::Button("[LUA]", ImVec2(thumbSize, thumbSize));
+					ImGui::Button(isSaveScript ? "[SAV]" : "[LUA]", ImVec2(thumbSize, thumbSize));
 				}
 
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-					ScriptEditorWindow::OpenFile(fullPath);
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("%s", isSaveScript ? "Save Script (SaveObject)" : "Component Script");
+					if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+						ScriptEditorWindow::OpenFile(fullPath);
+				}
 
 				if (ImGui::BeginDragDropSource())
 				{
@@ -798,6 +981,27 @@ namespace Blaze
 				{
 					if (ImGui::MenuItem("Edit Widget"))
 						WidgetEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsFlipbookFile(path.extension().string()))
+			{
+				ImGui::Button("[FB]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_FlipbookPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("FlipbookItemContext"))
+				{
 					if (ImGui::MenuItem("Rename"))
 						StartRename(fullPath);
 					ImGui::EndPopup();
@@ -859,6 +1063,7 @@ namespace Blaze
 
 		ImGui::Columns(1);
 		DrawContextMenu();
+		DrawCreateScriptPopup();
 		ImGui::End();
 
 		if (!s_DraggingPath.empty() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))

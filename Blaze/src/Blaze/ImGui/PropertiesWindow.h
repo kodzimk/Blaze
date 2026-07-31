@@ -36,6 +36,8 @@ namespace Blaze
 		virtual ~GameWindow();
 
 		void OnUpdate();
+		// Call after all ImGui windows so nothing overrides the cursor this frame.
+		static void ApplyPlayCursor();
 
 		static void BeginCapture();
 		static void EndCapture(int windowWidth, int windowHeight);
@@ -55,6 +57,7 @@ namespace Blaze
 		static float s_ImageMinY;
 		static float s_ImageMaxX;
 		static float s_ImageMaxY;
+		static bool s_HideCursor;
 	};
 
 	class BLAZE_API PropertiesWindow

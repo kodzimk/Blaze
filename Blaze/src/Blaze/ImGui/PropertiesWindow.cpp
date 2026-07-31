@@ -7,9 +7,12 @@
 
 #include"bzpch.h"
 #include"Blaze/Logging/Log.h"
+#include"Blaze/Core/Application.h"
 #include"Blaze/Renderer/Gizmo.h"
 #include"Blaze/Scripting/OnScreenDebug.h"
+#include"Blaze/Scripting/ScriptEngine.h"
 #include"Blaze/UI/UISystem.h"
+#include "GLFW/glfw3.h"
 #include <cstring>
 
 namespace Blaze
@@ -200,6 +203,7 @@ namespace Blaze
 	float GameWindow::s_ImageMinY = 0.0f;
 	float GameWindow::s_ImageMaxX = 0.0f;
 	float GameWindow::s_ImageMaxY = 0.0f;
+	bool GameWindow::s_HideCursor = false;
 
 	GameWindow::GameWindow()
 	{
@@ -253,19 +257,29 @@ namespace Blaze
 	void GameWindow::OnUpdate()
 	{
 		if (!StartWindow::IsPlaying())
+		{
+			if (s_HideCursor)
+			{
+				s_HideCursor = false;
+				GLFWwindow* glfwWindow = (GLFWwindow*)Application::Get().GetWindow().GetNativeWindow();
+				glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			}
 			return;
+		}
 
 		ImGui::SetNextWindowSize(ImVec2(960.0f, 570.0f), ImGuiCond_FirstUseEver);
 
 		bool open = true;
 		if (!ImGui::Begin("Game", &open, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking))
 		{
+			s_HideCursor = false;
 			ImGui::End();
 			if (!open)
 				StartWindow::SetPlaying(false);
 			return;
 		}
 
+		bool overImage = false;
 		if (s_TextureId != 0)
 		{
 			ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -290,6 +304,8 @@ namespace Blaze
 				s_ImageMaxX = mx.x;
 				s_ImageMaxY = mx.y;
 			}
+			overImage = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)
+				|| IsMouseOverGameView();
 
 			// UI input must run here: image rect is current and mouse is in ImGui space.
 			{
@@ -315,10 +331,33 @@ namespace Blaze
 			s_ImageMinX = s_ImageMinY = s_ImageMaxX = s_ImageMaxY = 0.0f;
 		}
 
+		const bool overWindow = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows
+			| ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
+		const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+		// Hide while the pointer is in the Game view, or while the Game window is focused after a click.
+		s_HideCursor = overImage || (focused && overWindow);
+
 		ImGui::End();
 
 		if (!open)
 			StartWindow::SetPlaying(false);
+	}
+
+	void GameWindow::ApplyPlayCursor()
+	{
+		GLFWwindow* glfwWindow = (GLFWwindow*)Application::Get().GetWindow().GetNativeWindow();
+		if (!glfwWindow)
+			return;
+
+		if (StartWindow::IsPlaying() && s_HideCursor && !ScriptEngine::WantsCursorVisible())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+			glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+		}
+		else if (StartWindow::IsPlaying())
+		{
+			glfwSetInputMode(glfwWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}
 	}
 
 	bool GameWindow::IsMouseOverGameView()

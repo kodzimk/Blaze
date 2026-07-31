@@ -43,6 +43,9 @@
     <Filter Include="src\Blaze\UI">
       <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Assets">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EF01-345678901234}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Blaze\System">
       <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
@@ -168,7 +171,19 @@
     <ClInclude Include="src\Blaze\Renderer\GameObject.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\FlipbookAsset.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Assets\TiledImporter.h">
+      <Filter>src\Blaze\Assets</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\DebugDraw2D.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\ParticleSystem2D.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Editor\UndoStack.h">
@@ -192,7 +207,13 @@
     <ClInclude Include="src\Blaze\Scripting\ScriptEngine.h">
       <Filter>src\Blaze\Scripting</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Scripting\SaveObject.h">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Scripting\OnScreenDebug.h">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Scripting\ScriptTimers.h">
       <Filter>src\Blaze\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Renderer.h">
@@ -1550,7 +1571,19 @@
     <ClCompile Include="src\Blaze\Renderer\GameObject.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\FlipbookAsset.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Assets\TiledImporter.cpp">
+      <Filter>src\Blaze\Assets</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\DebugDraw2D.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Editor\UndoStack.cpp">
@@ -1574,7 +1607,13 @@
     <ClCompile Include="src\Blaze\Scripting\ScriptEngine.cpp">
       <Filter>src\Blaze\Scripting</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\SaveObject.cpp">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Scripting\OnScreenDebug.cpp">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\ScriptTimers.cpp">
       <Filter>src\Blaze\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="vendor\lua\lapi.c">

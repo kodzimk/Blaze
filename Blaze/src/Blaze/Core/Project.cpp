@@ -718,7 +718,8 @@ namespace Blaze
 			if (object->GetFlipbookColumns() != 1 || object->GetFlipbookRows() != 1 ||
 				object->GetFlipbookFrameCount() != 0 || object->IsFlipbookPlaying() ||
 				object->GetFlipbookFrame() != 0 || !object->GetFlipbookLoop() ||
-				object->GetFlipbookFps() < 11.999f || object->GetFlipbookFps() > 12.001f)
+				object->GetFlipbookFps() < 11.999f || object->GetFlipbookFps() > 12.001f ||
+				object->GetFlipbookClipCount() > 0 || object->GetActiveFlipbookClipIndex() >= 0)
 			{
 				out << "flipbook " << object->GetFlipbookColumns()
 					<< " " << object->GetFlipbookRows()
@@ -729,6 +730,26 @@ namespace Blaze
 					<< " " << object->GetFlipbookFrame() << "\n";
 			}
 
+			for (const FlipbookClip& clip : object->GetFlipbookClips())
+			{
+				// Prefer asset file as source of truth when assigned
+				if (object->HasFlipbookAsset())
+					break;
+				out << "flipclip " << clip.name
+					<< " " << clip.startFrame
+					<< " " << clip.endFrame
+					<< " " << clip.fps
+					<< " " << (clip.loop ? 1 : 0) << "\n";
+			}
+			if (object->HasFlipbookAsset())
+				out << "flipbookasset " << StoreTexturePath(object->GetFlipbookAssetPath()) << "\n";
+			if (object->GetActiveFlipbookClipIndex() >= 0)
+			{
+				const std::string active = object->GetActiveFlipbookClipName();
+				if (!active.empty())
+					out << "flipclipactive " << active << "\n";
+			}
+
 			if (object->IsTilemap())
 			{
 				out << "tilemap " << object->GetTilemapColumns()
@@ -736,10 +757,27 @@ namespace Blaze
 					<< " " << object->GetTileCellSize() << "\n";
 				out << "tilesetgrid " << object->GetTilesetColumns()
 					<< " " << object->GetTilesetRows() << "\n";
-				out << "tiles";
-				for (int tile : object->GetTiles())
-					out << " " << tile;
+				out << "tilecollision " << (object->IsTileCollisionEnabled() ? 1 : 0) << "\n";
+				out << "tilesetsolid";
+				for (uint8_t flag : object->GetTilesetSolid())
+					out << " " << (int)flag;
 				out << "\n";
+				out << "tilelayers " << object->GetTileLayerCount() << "\n";
+				for (int li = 0; li < object->GetTileLayerCount(); ++li)
+				{
+					const TilemapLayer* layer = object->GetTileLayer(li);
+					if (!layer)
+						continue;
+					out << "tilelayer " << (layer->visible ? 1 : 0)
+						<< " " << (layer->collision ? 1 : 0)
+						<< " " << layer->opacity
+						<< " " << layer->name << "\n";
+					out << "tiles";
+					for (int tile : layer->tiles)
+						out << " " << tile;
+					out << "\n";
+				}
+				out << "tilelayeractive " << object->GetActiveTileLayer() << "\n";
 			}
 
 			if (object->IsText())
@@ -1014,12 +1052,43 @@ namespace Blaze
 				current->SetFlipbookFrame(frame);
 				current->SetFlipbookPlaying(playing != 0);
 			}
+			else if (key == "flipclip")
+			{
+				std::string name;
+				int start = 0, end = 0, loop = 1;
+				float fps = -1.0f;
+				stream >> name >> start >> end >> fps >> loop;
+				if (!name.empty())
+					current->AddFlipbookClip(name, start, end, fps, loop != 0);
+			}
+			else if (key == "flipclipactive")
+			{
+				std::string name;
+				stream >> name;
+				if (!name.empty())
+					current->SetActiveFlipbookClip(name);
+			}
+			else if (key == "flipbookasset")
+			{
+				std::string rel;
+				stream >> rel;
+				if (!rel.empty())
+				{
+					fs::path resolved = Project::GetDirectory().empty()
+						? fs::path(rel)
+						: fs::path(Project::GetDirectory()) / rel;
+					if (!fs::exists(resolved))
+						resolved = rel;
+					current->SetFlipbookAssetPath(resolved.generic_string());
+				}
+			}
 			else if (key == "tilemap")
 			{
 				int cols = 16, rows = 12;
 				float cell = 32.0f;
 				stream >> cols >> rows >> cell;
 				current->SetType(ObjectType::Tilemap);
+				current->ClearTileLayers();
 				current->SetTilemapSize(cols, rows);
 				current->SetTileCellSize(cell);
 			}
@@ -1029,6 +1098,58 @@ namespace Blaze
 				stream >> cols >> rows;
 				current->SetTilesetGrid(cols, rows);
 			}
+			else if (key == "tilecollision")
+			{
+				int enabled = 1;
+				stream >> enabled;
+				current->SetTileCollisionEnabled(enabled != 0);
+			}
+			else if (key == "tilesetsolid")
+			{
+				std::vector<uint8_t> solids;
+				int value = 0;
+				while (stream >> value)
+					solids.push_back(value ? 1 : 0);
+				if (current->GetType() != ObjectType::Tilemap)
+					current->SetType(ObjectType::Tilemap);
+				current->SetTilesetSolidFromList(solids);
+			}
+			else if (key == "tilelayers")
+			{
+				int count = 1;
+				stream >> count;
+				if (current->GetType() != ObjectType::Tilemap)
+					current->SetType(ObjectType::Tilemap);
+				current->ClearTileLayers();
+				(void)count;
+			}
+			else if (key == "tilelayer")
+			{
+				int visible = 1;
+				int collision = 1;
+				float opacity = 1.0f;
+				stream >> visible >> collision >> opacity;
+				std::string name;
+				std::getline(stream, name);
+				while (!name.empty() && (name.front() == ' ' || name.front() == '\t'))
+					name.erase(name.begin());
+				while (!name.empty() && (name.back() == '\r' || name.back() == ' ' || name.back() == '\t'))
+					name.pop_back();
+				if (name.empty())
+					name = "Layer";
+				if (current->GetType() != ObjectType::Tilemap)
+					current->SetType(ObjectType::Tilemap);
+				const int index = current->AddTileLayer(name);
+				current->SetTileLayerVisible(index, visible != 0);
+				current->SetTileLayerCollision(index, collision != 0);
+				current->SetTileLayerOpacity(index, opacity);
+			}
+			else if (key == "tilelayeractive")
+			{
+				int active = 0;
+				stream >> active;
+				current->SetActiveTileLayer(active);
+			}
 			else if (key == "tiles")
 			{
 				std::vector<int> tiles;
@@ -1037,6 +1158,8 @@ namespace Blaze
 					tiles.push_back(value);
 				if (current->GetType() != ObjectType::Tilemap)
 					current->SetType(ObjectType::Tilemap);
+				if (current->GetTileLayerCount() <= 0)
+					current->AddTileLayer("Layer 0");
 				current->SetTilesFromList(tiles);
 			}
 			else if (key == "collision")

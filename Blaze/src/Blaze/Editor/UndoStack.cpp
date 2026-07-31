@@ -141,6 +141,9 @@ namespace Blaze
 		snap.flipPlaying = object.IsFlipbookPlaying();
 		snap.flipLoop = object.GetFlipbookLoop();
 		snap.flipFrame = object.GetFlipbookFrame();
+		snap.flipClips = object.GetFlipbookClips();
+		snap.flipActiveClip = object.GetActiveFlipbookClipIndex();
+		snap.flipbookAssetPath = object.GetFlipbookAssetPath();
 
 		snap.tilemapCols = object.GetTilemapColumns();
 		snap.tilemapRows = object.GetTilemapRows();
@@ -148,6 +151,10 @@ namespace Blaze
 		snap.tilesetCols = object.GetTilesetColumns();
 		snap.tilesetRows = object.GetTilesetRows();
 		snap.tiles = object.GetTiles();
+		snap.tileCollisionEnabled = object.IsTileCollisionEnabled();
+		snap.tilesetSolid = object.GetTilesetSolid();
+		snap.tileLayers = object.GetTileLayers();
+		snap.activeTileLayer = object.GetActiveTileLayer();
 
 		snap.text = object.GetText();
 		snap.fontSize = object.GetFontSize();
@@ -222,6 +229,12 @@ namespace Blaze
 		object->SetFlipbookFrameCount(flipFrameCount);
 		object->SetFlipbookFps(flipFps);
 		object->SetFlipbookLoop(flipLoop);
+		object->SetFlipbookClips(flipClips);
+		object->SetFlipbookAssetPath(flipbookAssetPath, false);
+		if (flipActiveClip >= 0 && flipActiveClip < (int)flipClips.size())
+			object->SetActiveFlipbookClip(flipClips[flipActiveClip].name);
+		else
+			object->ClearActiveFlipbookClip();
 		object->SetFlipbookFrame(flipFrame);
 		object->SetFlipbookPlaying(flipPlaying);
 
@@ -230,7 +243,12 @@ namespace Blaze
 			object->SetTilemapSize(tilemapCols, tilemapRows);
 			object->SetTileCellSize(tileCellSize);
 			object->SetTilesetGrid(tilesetCols, tilesetRows);
-			object->SetTilesFromList(tiles);
+			if (!tileLayers.empty())
+				object->SetTileLayers(tileLayers, activeTileLayer);
+			else
+				object->SetTilesFromList(tiles);
+			object->SetTileCollisionEnabled(tileCollisionEnabled);
+			object->SetTilesetSolidFromList(tilesetSolid);
 		}
 
 		if (object->IsText())

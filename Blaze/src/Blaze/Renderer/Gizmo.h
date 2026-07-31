@@ -39,12 +39,19 @@ namespace Blaze
 		void DrawSoundIcon(const Camera& camera, const GameObject& soundObject);
 		void DrawCollision(const Camera& camera, const GameObject& object);
 		void DrawTilemapGrid(const Camera& camera, const GameObject& tilemap, int hoverX = -1, int hoverY = -1);
+		void DrawDebugLine(const Camera& camera, const glm::vec2& a, const glm::vec2& b,
+			const glm::vec4& color, float thicknessPx = 2.0f);
+		void DrawDebugPoint(const Camera& camera, const glm::vec2& p,
+			const glm::vec4& color, float radiusPx = 5.0f);
+		void DrawParticle(const Camera& camera, const glm::vec2& center, float size,
+			const glm::vec4& color, float rotationDegrees = 0.0f);
 		GizmoAxis HitTest(const CameraProp& prop, const GameObject& object, const glm::vec2& worldPoint) const;
 
 		// Shared editor icons for ImGui (palette / hierarchy). 0 if not ready.
 		static unsigned int GetSoundIconTextureID();
 		static unsigned int GetCameraIconTextureID();
 		static unsigned int GetScriptIconTextureID();
+		static unsigned int GetSaveScriptIconTextureID();
 		static unsigned int GetMapIconTextureID();
 		static unsigned int GetFolderIconTextureID();
 		static int GetSoundIconSize();
@@ -85,6 +92,7 @@ namespace Blaze
 		static unsigned int s_SharedSoundIconTex;
 		static unsigned int s_SharedCameraIconTex;
 		static unsigned int s_SharedScriptIconTex;
+		static unsigned int s_SharedSaveScriptIconTex;
 		static unsigned int s_SharedMapIconTex;
 		static unsigned int s_SharedFolderIconTex;
 		static const int s_SoundIconSize = 64;

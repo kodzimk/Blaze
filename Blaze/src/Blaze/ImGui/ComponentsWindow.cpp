@@ -9,6 +9,8 @@
 #include "Blaze/Core/Project.h"
 #include "Blaze/Editor/UndoStack.h"
 #include "Blaze/Logging/Log.h"
+#include "Blaze/Renderer/FlipbookAsset.h"
+#include "Blaze/Scripting/SaveObject.h"
 #include <filesystem>
 #include <cctype>
 #include <cstdio>
@@ -390,6 +392,61 @@ namespace Blaze
 				m_Selected->SetTilesetGrid(m_Selected->GetTilesetColumns(), setRows);
 
 			ImGui::Separator();
+			ImGui::TextUnformatted("Layers");
+			if (ImGui::Button("Add Layer"))
+			{
+				const int n = m_Selected->GetTileLayerCount();
+				m_Selected->AddTileLayer("Layer " + std::to_string(n));
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Remove Layer") && m_Selected->GetTileLayerCount() > 1)
+				m_Selected->RemoveTileLayer(m_Selected->GetActiveTileLayer());
+
+			for (int li = 0; li < m_Selected->GetTileLayerCount(); ++li)
+			{
+				const TilemapLayer* layer = m_Selected->GetTileLayer(li);
+				if (!layer)
+					continue;
+				ImGui::PushID(li);
+				bool selected = (li == m_Selected->GetActiveTileLayer());
+				if (ImGui::Selectable(("##sel" + std::to_string(li)).c_str(), selected, 0, ImVec2(18.0f, 0.0f)))
+					m_Selected->SetActiveTileLayer(li);
+				ImGui::SameLine();
+				char nameBuf[64] = {};
+				strncpy_s(nameBuf, layer->name.c_str(), _TRUNCATE);
+				ImGui::SetNextItemWidth(120.0f);
+				if (ImGui::InputText("##name", nameBuf, sizeof(nameBuf)))
+					m_Selected->SetTileLayerName(li, nameBuf);
+				ImGui::SameLine();
+				bool visible = layer->visible;
+				if (ImGui::Checkbox("Vis", &visible))
+					m_Selected->SetTileLayerVisible(li, visible);
+				ImGui::SameLine();
+				bool collision = layer->collision;
+				if (ImGui::Checkbox("Col", &collision))
+					m_Selected->SetTileLayerCollision(li, collision);
+				ImGui::SameLine();
+				float opacity = layer->opacity;
+				ImGui::SetNextItemWidth(60.0f);
+				if (ImGui::SliderFloat("##op", &opacity, 0.0f, 1.0f, "%.2f"))
+					m_Selected->SetTileLayerOpacity(li, opacity);
+				ImGui::PopID();
+			}
+			ImGui::TextDisabled("Active layer is used by the paint brush.");
+
+			ImGui::Separator();
+			bool tileCol = m_Selected->IsTileCollisionEnabled();
+			if (ImGui::Checkbox("Tile Collision", &tileCol))
+				m_Selected->SetTileCollisionEnabled(tileCol);
+			ImGui::TextDisabled("Solid painted tiles become static boxes in play.");
+			if (ImGui::Button("Mark All Solid"))
+				m_Selected->SetAllTilesetSolid(true);
+			ImGui::SameLine();
+			if (ImGui::Button("Clear Solids"))
+				m_Selected->SetAllTilesetSolid(false);
+			ImGui::TextDisabled("Tileset: LMB paint brush, RMB toggle solid.");
+
+			ImGui::Separator();
 			ImGui::TextUnformatted("Paint brush");
 			bool paintMode = s_TilePaintMode;
 			if (ImGui::Checkbox("Lock paint (B)", &paintMode))
@@ -460,11 +517,24 @@ namespace Blaze
 					const int rowFromTop = id / cols;
 					ImVec2 uv0((float)col / (float)cols, (float)rowFromTop / (float)rows);
 					ImVec2 uv1(((float)col + 1.0f) / (float)cols, ((float)rowFromTop + 1.0f) / (float)rows);
+					const bool isSolid = m_Selected->IsTilesetSolid(id);
 					ImVec4 tint = (s_PaintTile == id) ? ImVec4(0.6f, 0.85f, 1.0f, 1.0f) : ImVec4(1, 1, 1, 1);
+					if (isSolid)
+						tint = ImVec4(tint.x * 0.85f, 1.0f, tint.z * 0.7f, 1.0f);
 					if (ImGui::ImageButton("##tile", (ImTextureID)(intptr_t)m_Selected->GetTextureID(),
 						ImVec2(brushThumb, brushThumb), uv0, uv1, ImVec4(0, 0, 0, 0), tint))
 					{
 						s_PaintTile = id;
+					}
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+						m_Selected->SetTilesetSolid(id, !m_Selected->IsTilesetSolid(id));
+					if (ImGui::IsItemHovered())
+						ImGui::SetTooltip("Tile %d%s", id, isSolid ? " (solid)" : "");
+					if (isSolid)
+					{
+						ImVec2 mn = ImGui::GetItemRectMin();
+						ImVec2 mx = ImGui::GetItemRectMax();
+						ImGui::GetWindowDrawList()->AddRect(mn, mx, IM_COL32(80, 220, 120, 255), 0.0f, 0, 2.0f);
 					}
 					ImGui::PopID();
 					ImGui::NextColumn();
@@ -755,15 +825,19 @@ namespace Blaze
 			if (ImGui::InputInt("Frame Count", &frameCount))
 				m_Selected->SetFlipbookFrameCount(frameCount);
 			ImGui::TextDisabled("0 = use Columns x Rows");
-			if (ImGui::InputFloat("FPS", &fps, 1.0f, 5.0f, "%.1f"))
+			if (ImGui::InputFloat("Default FPS", &fps, 1.0f, 5.0f, "%.1f"))
 				m_Selected->SetFlipbookFps(fps);
-			if (ImGui::SliderInt("Frame", &frame, 0, glm::max(m_Selected->GetFlipbookTotalFrames() - 1, 0)))
+			ImGui::SameLine();
+			ImGui::TextDisabled("(clips can override)");
+			if (ImGui::Checkbox("Default Loop", &loop))
+				m_Selected->SetFlipbookLoop(loop);
+
+			int playStart = 0, playEnd = 0;
+			m_Selected->GetFlipbookPlaybackRange(playStart, playEnd);
+			if (ImGui::SliderInt("Frame", &frame, playStart, playEnd))
 				m_Selected->SetFlipbookFrame(frame);
 			if (ImGui::Checkbox("Playing", &playing))
 				m_Selected->SetFlipbookPlaying(playing);
-			ImGui::SameLine();
-			if (ImGui::Checkbox("Loop", &loop))
-				m_Selected->SetFlipbookLoop(loop);
 
 			if (ImGui::Button("Play"))
 				m_Selected->PlayFlipbook();
@@ -773,6 +847,262 @@ namespace Blaze
 			ImGui::SameLine();
 			if (ImGui::Button("Stop"))
 				m_Selected->StopFlipbook();
+
+			ImGui::Separator();
+			ImGui::Text("Flipbook Asset");
+			ImGui::TextDisabled("Saveable animation set (.flipbook) — not a GameObject");
+			{
+				const std::string& assetPath = m_Selected->GetFlipbookAssetPath();
+				if (assetPath.empty())
+					ImGui::TextDisabled("No flipbook asset assigned");
+				else
+					ImGui::TextWrapped("%s", fs::path(assetPath).filename().string().c_str());
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BLAZE_FLIPBOOK"))
+					{
+						std::string path((const char*)payload->Data);
+						m_Selected->SetFlipbookAssetPath(path);
+						BZ_INFO("Assigned flipbook asset: {0}", path);
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				if (ImGui::Button("Select Flipbook..."))
+					ImGui::OpenPopup("FlipbookAssetPicker");
+				ImGui::SameLine();
+				if (ImGui::Button("Create Flipbook Asset"))
+				{
+					fs::path dir = "content/animations";
+					std::error_code ec;
+					fs::create_directories(dir, ec);
+					std::string baseName = m_Selected->GetName();
+					for (char& c : baseName)
+					{
+						if (c == ' ' || c == '\\' || c == '/' || c == ':' || c == '*' ||
+							c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
+							c = '_';
+					}
+					if (baseName.empty())
+						baseName = "NewFlipbook";
+					fs::path path = dir / (baseName + ".flipbook");
+					int suffix = 1;
+					while (fs::exists(path, ec))
+					{
+						path = dir / (baseName + "_" + std::to_string(suffix) + ".flipbook");
+						++suffix;
+					}
+
+					FlipbookAsset asset = FlipbookAsset::CreateDefault(baseName);
+					asset.SetColumns(m_Selected->GetFlipbookColumns());
+					asset.SetRows(m_Selected->GetFlipbookRows());
+					asset.SetFrameCount(m_Selected->GetFlipbookFrameCount());
+					asset.SetFps(m_Selected->GetFlipbookFps());
+					if (!m_Selected->GetFlipbookClips().empty())
+						asset.SetClips(m_Selected->GetFlipbookClips());
+					asset.SetPath(path.string());
+					if (asset.SaveToFile(path.string()))
+					{
+						m_Selected->SetFlipbookAssetPath(path.generic_string());
+						BZ_INFO("Created flipbook asset: {0}", path.string());
+					}
+				}
+				if (m_Selected->HasFlipbookAsset())
+				{
+					ImGui::SameLine();
+					if (ImGui::Button("Save Asset"))
+						m_Selected->SaveFlipbookAsset();
+					ImGui::SameLine();
+					if (ImGui::Button("Clear Asset"))
+						m_Selected->SetFlipbookAssetPath("", false);
+				}
+
+				if (ImGui::BeginPopup("FlipbookAssetPicker"))
+				{
+					ImGui::TextUnformatted("Flipbook assets");
+					ImGui::Separator();
+					std::vector<std::string> assets;
+					{
+						std::error_code ec;
+						if (fs::exists("content", ec))
+						{
+							for (auto it = fs::recursive_directory_iterator("content", ec);
+								it != fs::recursive_directory_iterator(); ++it)
+							{
+								if (ec) break;
+								if (!it->is_regular_file()) continue;
+								std::string ext = it->path().extension().string();
+								for (auto& c : ext) c = (char)std::tolower((unsigned char)c);
+								if (ext == ".flipbook")
+									assets.push_back(it->path().string());
+							}
+						}
+					}
+					if (assets.empty())
+						ImGui::TextDisabled("No .flipbook files in content/");
+					else
+					{
+						ImGui::BeginChild("FlipbookPickerList", ImVec2(280.0f, 200.0f), true);
+						for (const std::string& path : assets)
+						{
+							ImGui::PushID(path.c_str());
+							if (ImGui::Selectable(fs::path(path).filename().string().c_str(), path == assetPath))
+							{
+								m_Selected->SetFlipbookAssetPath(path);
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::PopID();
+						}
+						ImGui::EndChild();
+					}
+					ImGui::EndPopup();
+				}
+			}
+
+			ImGui::Separator();
+			ImGui::Text("Animations (Clips)");
+			ImGui::TextDisabled("Named ranges — saved on .flipbook asset when assigned");
+
+			auto PersistFlipbookIfNeeded = [&]()
+			{
+				if (m_Selected->HasFlipbookAsset())
+					m_Selected->SaveFlipbookAsset();
+			};
+
+			const std::vector<FlipbookClip>& clips = m_Selected->GetFlipbookClips();
+			static int s_SelectedClip = -1;
+			static char s_NewClipName[64] = "Idle";
+			static uintptr_t s_LastFlipObject = 0;
+			const uintptr_t selectedId = (uintptr_t)m_Selected;
+			if (selectedId != s_LastFlipObject)
+			{
+				s_LastFlipObject = selectedId;
+				s_SelectedClip = m_Selected->GetActiveFlipbookClipIndex();
+				if (s_SelectedClip < 0 && !clips.empty())
+					s_SelectedClip = 0;
+			}
+			if (s_SelectedClip >= (int)clips.size())
+				s_SelectedClip = clips.empty() ? -1 : (int)clips.size() - 1;
+
+			ImGui::SetNextItemWidth(160.0f);
+			ImGui::InputText("##NewClipName", s_NewClipName, sizeof(s_NewClipName));
+			ImGui::SameLine();
+			if (ImGui::Button("Add Animation"))
+			{
+				std::string name = s_NewClipName;
+				if (name.empty())
+					name = "Clip";
+				const int total = m_Selected->GetFlipbookTotalFrames();
+				const int end = glm::max(total - 1, 0);
+				s_SelectedClip = m_Selected->AddFlipbookClip(name, 0, end, -1.0f, true);
+				m_Selected->SetActiveFlipbookClip(m_Selected->GetFlipbookClips()[s_SelectedClip].name);
+				PersistFlipbookIfNeeded();
+			}
+
+			if (clips.empty())
+			{
+				ImGui::TextDisabled("No clips — plays full sheet / Frame Count");
+			}
+			else
+			{
+				if (ImGui::BeginListBox("##FlipClips", ImVec2(-1.0f, 100.0f)))
+				{
+					for (int i = 0; i < (int)clips.size(); ++i)
+					{
+						const bool isActive = (i == m_Selected->GetActiveFlipbookClipIndex());
+						char label[128];
+						std::snprintf(label, sizeof(label), "%s%s  [%d-%d]",
+							clips[i].name.c_str(),
+							isActive ? " *" : "",
+							clips[i].startFrame,
+							clips[i].endFrame);
+						if (ImGui::Selectable(label, s_SelectedClip == i))
+						{
+							s_SelectedClip = i;
+							m_Selected->SetActiveFlipbookClip(clips[i].name);
+						}
+						if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+							m_Selected->PlayFlipbook(clips[i].name);
+					}
+					ImGui::EndListBox();
+				}
+
+				if (s_SelectedClip >= 0 && s_SelectedClip < (int)clips.size())
+				{
+					FlipbookClip edit = clips[s_SelectedClip];
+					char renameBuf[64];
+					std::snprintf(renameBuf, sizeof(renameBuf), "%s", edit.name.c_str());
+					bool dirty = false;
+					if (ImGui::InputText("Clip Name", renameBuf, sizeof(renameBuf),
+						ImGuiInputTextFlags_EnterReturnsTrue))
+					{
+						std::string newName = renameBuf;
+						if (!newName.empty() && newName != edit.name && m_Selected->FindFlipbookClip(newName) < 0)
+						{
+							edit.name = newName;
+							dirty = true;
+						}
+					}
+					const int lastFrame = glm::max(m_Selected->GetFlipbookTotalFrames() - 1, 0);
+					if (ImGui::InputInt("Start Frame", &edit.startFrame))
+					{
+						edit.startFrame = glm::clamp(edit.startFrame, 0, lastFrame);
+						if (edit.endFrame < edit.startFrame)
+							edit.endFrame = edit.startFrame;
+						dirty = true;
+					}
+					if (ImGui::InputInt("End Frame", &edit.endFrame))
+					{
+						edit.endFrame = glm::clamp(edit.endFrame, edit.startFrame, lastFrame);
+						dirty = true;
+					}
+					float clipFps = edit.fps;
+					bool useDefaultFps = clipFps <= 0.0f;
+					if (ImGui::Checkbox("Use Default FPS", &useDefaultFps))
+					{
+						edit.fps = useDefaultFps ? -1.0f : m_Selected->GetFlipbookFps();
+						dirty = true;
+					}
+					if (!useDefaultFps)
+					{
+						clipFps = edit.fps > 0.0f ? edit.fps : m_Selected->GetFlipbookFps();
+						if (ImGui::InputFloat("Clip FPS", &clipFps, 1.0f, 5.0f, "%.1f"))
+						{
+							edit.fps = glm::max(clipFps, 0.01f);
+							dirty = true;
+						}
+					}
+					if (ImGui::Checkbox("Clip Loop", &edit.loop))
+						dirty = true;
+
+					if (dirty)
+					{
+						std::vector<FlipbookClip> updated = clips;
+						updated[s_SelectedClip] = edit;
+						const std::string activeBefore = m_Selected->GetActiveFlipbookClipName();
+						m_Selected->SetFlipbookClips(updated);
+						if (activeBefore == clips[s_SelectedClip].name || activeBefore.empty())
+							m_Selected->SetActiveFlipbookClip(edit.name);
+						else
+							m_Selected->SetActiveFlipbookClip(activeBefore);
+						PersistFlipbookIfNeeded();
+					}
+
+					if (ImGui::Button("Play Clip"))
+						m_Selected->PlayFlipbook(edit.name);
+					ImGui::SameLine();
+					if (ImGui::Button("Delete Clip"))
+					{
+						m_Selected->RemoveFlipbookClipAt(s_SelectedClip);
+						s_SelectedClip = -1;
+						PersistFlipbookIfNeeded();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Clear Active"))
+						m_Selected->ClearActiveFlipbookClip();
+				}
+			}
 		}
 
 		if (m_Selected->HasAudio())
@@ -883,59 +1213,73 @@ namespace Blaze
 					ImGui::OpenPopup("ContentBrowserScriptPicker");
 				ImGui::SameLine();
 				if (ImGui::Button("Create Script"))
-				{
-					fs::path scriptsDir = "content/scripts";
-					std::error_code ec;
-					fs::create_directories(scriptsDir, ec);
-
-					std::string baseName = m_Selected->GetName();
-					for (char& c : baseName)
-					{
-						if (c == ' ' || c == '\\' || c == '/' || c == ':' || c == '*' ||
-							c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
-							c = '_';
-					}
-					if (baseName.empty())
-						baseName = "NewScript";
-
-					fs::path path = scriptsDir / (baseName + ".lua");
-					int suffix = 1;
-					while (fs::exists(path, ec))
-					{
-						path = scriptsDir / (baseName + "_" + std::to_string(suffix) + ".lua");
-						++suffix;
-					}
-
-					std::ofstream out(path);
-					if (out.is_open())
-					{
-						out << "-- Blaze Lua script for " << m_Selected->GetName() << "\n\n";
-						out << "function OnStart()\n";
-						out << "\tprint(\"Script started on\", selfName)\n";
-						out << "end\n\n";
-						out << "function OnUpdate(dt)\n";
-						out << "\tif Input.IsKeyDown(\"A\") then\n";
-						out << "\t\tprint(\"A held\")\n";
-						out << "\tend\n";
-						out << "end\n";
-						out.close();
-
-						std::string created = path.generic_string();
-						m_Selected->SetScriptPath(created);
-						BZ_INFO("Created and assigned script: {0}", created);
-						ScriptEditorWindow::OpenFile(created);
-					}
-					else
-					{
-						BZ_INFO("Failed to create script: {0}", path.string());
-					}
-				}
+					ImGui::OpenPopup("CreateComponentScriptType");
 
 				if (!scriptPath.empty())
 				{
 					ImGui::SameLine();
 					if (ImGui::Button("Edit Script"))
 						ScriptEditorWindow::OpenFile(scriptPath);
+				}
+
+				if (ImGui::BeginPopupModal("CreateComponentScriptType", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+				{
+					ImGui::TextUnformatted("Choose script type");
+					ImGui::Separator();
+					ImGui::TextWrapped("Component Script — attaches to this GameObject.");
+					ImGui::TextWrapped("Save Script — SaveObject data class (not attached).");
+					ImGui::Spacing();
+
+					auto MakeScriptPath = [&](const char* baseName) -> fs::path
+					{
+						fs::path scriptsDir = "content/scripts";
+						std::error_code ec;
+						fs::create_directories(scriptsDir, ec);
+						std::string name = baseName;
+						for (char& c : name)
+						{
+							if (c == ' ' || c == '\\' || c == '/' || c == ':' || c == '*' ||
+								c == '?' || c == '"' || c == '<' || c == '>' || c == '|')
+								c = '_';
+						}
+						if (name.empty())
+							name = "NewScript";
+						fs::path path = scriptsDir / (name + ".lua");
+						int suffix = 1;
+						while (fs::exists(path, ec))
+						{
+							path = scriptsDir / (name + "_" + std::to_string(suffix) + ".lua");
+							++suffix;
+						}
+						return path;
+					};
+
+					if (ImGui::Button("Component Script", ImVec2(180.0f, 0.0f)))
+					{
+						fs::path path = MakeScriptPath(m_Selected->GetName().c_str());
+						if (ScriptTemplates::WriteScriptFile(path.string(), ScriptKind::Component, m_Selected->GetName()))
+						{
+							std::string created = path.generic_string();
+							m_Selected->SetScriptPath(created);
+							BZ_INFO("Created and assigned Component Script: {0}", created);
+							ScriptEditorWindow::OpenFile(created);
+						}
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Save Script", ImVec2(180.0f, 0.0f)))
+					{
+						fs::path path = MakeScriptPath((m_Selected->GetName() + "Save").c_str());
+						if (ScriptTemplates::WriteScriptFile(path.string(), ScriptKind::SaveObject, m_Selected->GetName()))
+						{
+							BZ_INFO("Created Save Script: {0}", path.string());
+							ScriptEditorWindow::OpenFile(path.generic_string());
+						}
+						ImGui::CloseCurrentPopup();
+					}
+					if (ImGui::Button("Cancel", ImVec2(370.0f, 0.0f)))
+						ImGui::CloseCurrentPopup();
+					ImGui::EndPopup();
 				}
 
 				if (ImGui::BeginPopup("ContentBrowserScriptPicker"))

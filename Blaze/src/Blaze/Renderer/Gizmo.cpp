@@ -20,6 +20,7 @@ namespace Blaze
 	unsigned int Gizmo2D::s_SharedSoundIconTex = 0;
 	unsigned int Gizmo2D::s_SharedCameraIconTex = 0;
 	unsigned int Gizmo2D::s_SharedScriptIconTex = 0;
+	unsigned int Gizmo2D::s_SharedSaveScriptIconTex = 0;
 	unsigned int Gizmo2D::s_SharedMapIconTex = 0;
 	unsigned int Gizmo2D::s_SharedFolderIconTex = 0;
 
@@ -351,6 +352,32 @@ namespace Blaze
 		}
 	}
 
+	static void ClearIconCircle(std::vector<unsigned char>& px, int size, float cx, float cy, float radius)
+	{
+		int x0 = (int)std::floor(cx - radius - 1.0f);
+		int x1 = (int)std::ceil(cx + radius + 1.0f);
+		int y0 = (int)std::floor(cy - radius - 1.0f);
+		int y1 = (int)std::ceil(cy + radius + 1.0f);
+		for (int y = y0; y <= y1; ++y)
+		{
+			for (int x = x0; x <= x1; ++x)
+			{
+				float dx = (float)x + 0.5f - cx;
+				float dy = (float)y + 0.5f - cy;
+				if (dx * dx + dy * dy <= radius * radius)
+				{
+					if (x < 0 || y < 0 || x >= size || y >= size)
+						continue;
+					const size_t i = ((size_t)y * size + x) * 4;
+					px[i + 0] = 0;
+					px[i + 1] = 0;
+					px[i + 2] = 0;
+					px[i + 3] = 0;
+				}
+			}
+		}
+	}
+
 	// Classic folder tab silhouette (white on transparent).
 	static unsigned int CreateFolderIconTexture(int size)
 	{
@@ -385,6 +412,31 @@ namespace Blaze
 		ClearIconRect(px, size, s * 0.32f, s * 0.50f, s * 0.62f, s * 0.50f + lineH);
 		ClearIconRect(px, size, s * 0.32f, s * 0.60f, s * 0.70f, s * 0.60f + lineH);
 		ClearIconRect(px, size, s * 0.32f, s * 0.70f, s * 0.55f, s * 0.70f + lineH);
+
+		return UploadIconTexture(px, size, size);
+	}
+
+	// Floppy / save-disk icon — distinct from component script document.
+	static unsigned int CreateSaveScriptIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+
+		// Disk body
+		FillIconRoundedRect(px, size, s * 0.16f, s * 0.14f, s * 0.84f, s * 0.88f, s * 0.05f);
+
+		// Top-right write-protect notch cutout
+		ClearIconRect(px, size, s * 0.68f, s * 0.14f, s * 0.84f, s * 0.28f);
+
+		// Label area (cutout rectangle near top)
+		ClearIconRect(px, size, s * 0.28f, s * 0.22f, s * 0.62f, s * 0.40f);
+
+		// Hub ring + center hole
+		ClearIconCircle(px, size, s * 0.50f, s * 0.62f, s * 0.14f);
+		FillIconRing(px, size, s * 0.50f, s * 0.62f, s * 0.14f, s * 0.06f);
+
+		// Bottom metal shutter
+		ClearIconRect(px, size, s * 0.30f, s * 0.74f, s * 0.70f, s * 0.84f);
 
 		return UploadIconTexture(px, size, size);
 	}
@@ -644,6 +696,13 @@ namespace Blaze
 		if (s_SharedScriptIconTex == 0)
 			s_SharedScriptIconTex = CreateScriptIconTexture(s_ScriptIconSize);
 		return s_SharedScriptIconTex;
+	}
+
+	unsigned int Gizmo2D::GetSaveScriptIconTextureID()
+	{
+		if (s_SharedSaveScriptIconTex == 0)
+			s_SharedSaveScriptIconTex = CreateSaveScriptIconTexture(s_ScriptIconSize);
+		return s_SharedSaveScriptIconTex;
 	}
 
 	unsigned int Gizmo2D::GetMapIconTextureID()
@@ -958,6 +1017,50 @@ namespace Blaze
 			return GizmoAxis::Y;
 
 		return GizmoAxis::None;
+	}
+
+	void Gizmo2D::DrawDebugLine(const Camera& camera, const glm::vec2& a, const glm::vec2& b,
+		const glm::vec4& color, float thicknessPx)
+	{
+		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
+		if (glm::abs(sx) < 1e-8f) sx = 1.0f;
+		if (glm::abs(sy) < 1e-8f) sy = 1.0f;
+
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+
+		glm::vec2 delta = b - a;
+		float len = glm::length(delta);
+		if (len < 1e-4f)
+			return;
+		glm::vec2 mid = (a + b) * 0.5f;
+		float angle = glm::degrees(glm::atan(delta.y, delta.x));
+		glm::vec2 half(len * 0.5f, thicknessPx * 0.5f * glm::abs(sx));
+		DrawQuad(mid, half, color, angle);
+	}
+
+	void Gizmo2D::DrawDebugPoint(const Camera& camera, const glm::vec2& p,
+		const glm::vec4& color, float radiusPx)
+	{
+		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+		DrawRing(p, glm::vec2(radiusPx * sx, radiusPx * sy), color);
+		DrawQuad(p, glm::vec2(radiusPx * 0.35f * sx, radiusPx * 0.35f * sy), color);
+	}
+
+	void Gizmo2D::DrawParticle(const Camera& camera, const glm::vec2& center, float size,
+		const glm::vec4& color, float rotationDegrees)
+	{
+		CameraProp prop = camera.GetCameraProp();
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+		const float half = glm::max(size * 0.5f, 0.25f);
+		DrawQuad(center, glm::vec2(half, half), color, rotationDegrees);
 	}
 
 	void Gizmo2D::DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color, float rotationDegrees)

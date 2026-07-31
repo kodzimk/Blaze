@@ -39,7 +39,34 @@ namespace Blaze
 			{ "AddImage", "AddImage", "ui:AddImage(name, texturePath [, ax, ay [, parent]])" },
 			{ "OnTriggerEnter", "OnTriggerEnter", "alias of OnTriggerBegin" },
 			{ "OnTriggerExit", "OnTriggerExit", "alias of OnTriggerEnd" },
+			{ "Delay", "Delay", "Delay(seconds, function() ... end) - UE Delay" },
+			{ "SetTimer", "SetTimer", "id = SetTimer(fn, rate [, looping]) or SetTimer(rate, fn [, looping])" },
+			{ "ClearTimer", "ClearTimer", "ClearTimer(id)" },
+			{ "IsTimerActive", "IsTimerActive", "IsTimerActive(id)" },
+			{ "ClearAllTimers", "ClearAllTimers", "ClearAllTimers()" },
+			{ "Tween", "Tween", "Tween(from, to, duration, onUpdate [, onComplete [, ease]])" },
+			{ "TweenVec2", "TweenVec2", "TweenVec2(x0,y0,x1,y1, duration, onUpdate [, onComplete [, ease]])" },
+			{ "EmitParticles", "EmitParticles", "EmitParticles(x, y, count [, speed, life, size])" },
+			{ "Particles", "Particles", "Particles.Burst(x,y,count) / Particles.Emit(...) / Particles.Clear()" },
 			{ "Destroy", "Destroy", "Destroy(gameObject) or Destroy()" },
+			{ "FindByName", "FindByName", "obj = FindByName(\"Camera\")" },
+			{ "FindAllByName", "FindAllByName", "list = FindAllByName(\"Coin\")" },
+			{ "SetTexture", "SetTexture", "SetTexture(\"content/tex.png\") or obj:SetTexture(path)" },
+			{ "GetTexture", "GetTexture", "path = GetTexture()" },
+			{ "SetZoom", "SetZoom", "SetZoom(1.5) - camera zoom" },
+			{ "GetZoom", "GetZoom", "z = GetZoom()" },
+			{ "SetDrivesView", "SetDrivesView", "SetDrivesView(true) - active game camera" },
+			{ "DrivesView", "DrivesView", "DrivesView()" },
+			{ "IsCamera", "IsCamera", "IsCamera()" },
+			{ "GetChildren", "GetChildren", "kids = GetChildren()" },
+			{ "GetChild", "GetChild", "child = GetChild(1) - 1-based" },
+			{ "GetChildCount", "GetChildCount", "n = GetChildCount()" },
+			{ "SetCameraFollow", "SetCameraFollow", "SetCameraFollow() / SetCameraFollow(0.12) / SetCameraFollow(target, smooth, ox, oy)" },
+			{ "ClearCameraFollow", "ClearCameraFollow", "ClearCameraFollow() - stop camera follow" },
+			{ "EnableMouse", "EnableMouse", "EnableMouse(true) - show cursor in Game view" },
+			{ "ShowCursor", "ShowCursor", "ShowCursor(true/false)" },
+			{ "SetCursorVisible", "SetCursorVisible", "SetCursorVisible(true/false)" },
+			{ "IsMouseEnabled", "IsMouseEnabled", "IsMouseEnabled()" },
 			{ "Spawn", "Spawn", "Spawn() / Spawn(\"text\") / Spawn(\"box\") / Spawn({type=,tag=,x=,y=})" },
 			{ "SetText", "SetText", "SetText(\"Hello\") - Text GameObject" },
 			{ "GetText", "GetText", "text = GetText() - Text GameObject" },
@@ -64,6 +91,10 @@ namespace Blaze
 			{ "GetLocation", "GetLocation", "x, y = GetLocation()" },
 			{ "SetRotation", "SetRotation", "SetRotation(degrees)" },
 			{ "GetRotation", "GetRotation", "degrees = GetRotation()" },
+			{ "GetRightVector", "GetRightVector", "rx, ry = GetRightVector() - local +X" },
+			{ "GetUpVector", "GetUpVector", "ux, uy = GetUpVector() - local +Y" },
+			{ "GetLeftVector", "GetLeftVector", "lx, ly = GetLeftVector()" },
+			{ "GetDownVector", "GetDownVector", "dx, dy = GetDownVector()" },
 			{ "Rotate", "Rotate", "Rotate(degrees)" },
 			{ "SetColor", "SetColor", "SetColor(r,g,b [,a]) or SetColor({r=,g=,b=,a=})" },
 			{ "GetColor", "GetColor", "r,g,b,a = GetColor()" },
@@ -75,6 +106,11 @@ namespace Blaze
 			{ "AddVelocity", "AddVelocity", "AddVelocity(x, y)" },
 			{ "ApplyForce", "ApplyForce", "ApplyForce(fx, fy) - continuous force" },
 			{ "ApplyImpulse", "ApplyImpulse", "ApplyImpulse(ix, iy) - instant kick" },
+			{ "Raycast", "Raycast", "hit = Raycast(x1,y1,x2,y2 [, drawDebug]) — hit.Hit, hit.Object, hit.Name, hit.Location" },
+			{ "RaycastAll", "RaycastAll", "hits = RaycastAll(...) — array of hit structs" },
+			{ "OverlapPoint", "OverlapPoint", "objs = OverlapPoint(x, y [, mask])" },
+			{ "OverlapCircle", "OverlapCircle", "objs = OverlapCircle(x, y, radius [, mask])" },
+			{ "MASK_ALL", "MASK_ALL", "MASK_ALL - hit all collision layers" },
 			{ "SetGravity", "SetGravity", "SetGravity(x, y) world gravity" },
 			{ "GetGravity", "GetGravity", "gx, gy = GetGravity()" },
 			{ "SetGravityScale", "SetGravityScale", "SetGravityScale(1.0)" },
@@ -84,6 +120,14 @@ namespace Blaze
 			{ "SetMass", "SetMass", "SetMass(mass)" },
 			{ "GetMass", "GetMass", "mass = GetMass()" },
 			{ "HasPhysics", "HasPhysics", "HasPhysics() - rigidbody collision?" },
+			{ "IsGrounded", "IsGrounded", "IsGrounded([maxSlopeDeg]) - standing on floor?" },
+			{ "CheckGround", "CheckGround", "CheckGround([probePx [, maxSlope]]) - grounded + feet ray" },
+			{ "IsTouchingCeiling", "IsTouchingCeiling", "IsTouchingCeiling([maxSlopeDeg])" },
+			{ "IsTouchingWall", "IsTouchingWall", "IsTouchingWall()" },
+			{ "IsTouchingWallLeft", "IsTouchingWallLeft", "IsTouchingWallLeft()" },
+			{ "IsTouchingWallRight", "IsTouchingWallRight", "IsTouchingWallRight()" },
+			{ "GetGroundNormal", "GetGroundNormal", "nx, ny = GetGroundNormal([maxSlopeDeg])" },
+			{ "GetContactCount", "GetContactCount", "n = GetContactCount([includeTriggers])" },
 			{ "SetTrigger", "SetTrigger", "SetTrigger(true) - overlap only" },
 			{ "ShowWidget", "ShowWidget", "ShowWidget(ui) or ShowWidget(\"path.widget\")" },
 			{ "HideWidget", "HideWidget", "HideWidget(ui) or HideWidget(path)" },
@@ -115,7 +159,10 @@ namespace Blaze
 			{ "LAYER_TRIGGER", "LAYER_TRIGGER", "collision layer 4" },
 			{ "LAYER_GROUND", "LAYER_GROUND", "collision layer 5" },
 			{ "LAYER_PICKUP", "LAYER_PICKUP", "collision layer 6" },
-			{ "PlayAudio", "PlayAudio", "PlayAudio() or PlayAudio(obj)" },
+			{ "PlayAudio", "PlayAudio", "PlayAudio() or PlayAudio(obj) - Sound component" },
+			{ "PlayOneShot", "PlayOneShot", "PlayOneShot(\"content/audio/hit.wav\" [, volume])" },
+			{ "PlaySound", "PlaySound", "PlaySound(path [, volume]) - alias of PlayOneShot" },
+			{ "StopAudio", "StopAudio", "StopAudio() or StopAudio(obj)" },
 			{ "StopAudio", "StopAudio", "StopAudio() or StopAudio(obj)" },
 			{ "IsAudioPlaying", "IsAudioPlaying", "IsAudioPlaying()" },
 			{ "SetAudioVolume", "SetAudioVolume", "SetAudioVolume(0.0 to 1.0)" },
@@ -128,13 +175,31 @@ namespace Blaze
 			{ "SetFlipbook", "SetFlipbook", "SetFlipbook(cols, rows [, fps])" },
 			{ "SetFlipbookFrameCount", "SetFlipbookFrameCount", "SetFlipbookFrameCount(n) 0=full grid" },
 			{ "SetFlipbookFps", "SetFlipbookFps", "SetFlipbookFps(12)" },
-			{ "PlayFlipbook", "PlayFlipbook", "PlayFlipbook()" },
+			{ "PlayFlipbook", "PlayFlipbook", "PlayFlipbook() or PlayFlipbook(\"Idle\")" },
 			{ "StopFlipbook", "StopFlipbook", "StopFlipbook()" },
 			{ "PauseFlipbook", "PauseFlipbook", "PauseFlipbook()" },
 			{ "SetFlipbookFrame", "SetFlipbookFrame", "SetFlipbookFrame(index)" },
 			{ "GetFlipbookFrame", "GetFlipbookFrame", "frame = GetFlipbookFrame()" },
 			{ "SetFlipbookLoop", "SetFlipbookLoop", "SetFlipbookLoop(true)" },
 			{ "IsFlipbookPlaying", "IsFlipbookPlaying", "IsFlipbookPlaying()" },
+			{ "AddFlipbookClip", "AddFlipbookClip", "AddFlipbookClip(\"Idle\", 0, 7 [, fps [, loop]])" },
+			{ "SetFlipbookClip", "SetFlipbookClip", "SetFlipbookClip(\"Idle\", 0, 7 [, fps, loop])" },
+			{ "RemoveFlipbookClip", "RemoveFlipbookClip", "RemoveFlipbookClip(\"Idle\")" },
+			{ "ClearFlipbookClips", "ClearFlipbookClips", "ClearFlipbookClips()" },
+			{ "SetActiveFlipbookClip", "SetActiveFlipbookClip", "SetActiveFlipbookClip(\"Idle\")" },
+			{ "GetActiveFlipbookClip", "GetActiveFlipbookClip", "name = GetActiveFlipbookClip()" },
+			{ "HasFlipbookClip", "HasFlipbookClip", "HasFlipbookClip(\"Idle\")" },
+			{ "GetFlipbookClipCount", "GetFlipbookClipCount", "n = GetFlipbookClipCount()" },
+			{ "GetFlipbookClipName", "GetFlipbookClipName", "name = GetFlipbookClipName(i)" },
+			{ "SetFlipbookAsset", "SetFlipbookAsset", "SetFlipbookAsset(\"content/anims/Player.flipbook\")" },
+			{ "GetFlipbookAsset", "GetFlipbookAsset", "path = GetFlipbookAsset()" },
+			{ "SaveFlipbookAsset", "SaveFlipbookAsset", "SaveFlipbookAsset()" },
+			{ "CreateSaveObject", "CreateSaveObject", "data = CreateSaveObject([\"PlayerSave\"])" },
+			{ "SaveSaveObject", "SaveSaveObject", "SaveSaveObject(\"Slot1\", data)" },
+			{ "LoadSaveObject", "LoadSaveObject", "data = LoadSaveObject(\"Slot1\" [, \"PlayerSave\"])" },
+			{ "CastSaveObject", "CastSaveObject", "save = CastSaveObject(data, \"PlayerSave\")" },
+			{ "DoesSaveObjectExist", "DoesSaveObjectExist", "DoesSaveObjectExist(\"Slot1\")" },
+			{ "GetSaveObjectPath", "GetSaveObjectPath", "path = GetSaveObjectPath(\"Slot1\")" },
 			{ "SetTilemapSize", "SetTilemapSize", "SetTilemapSize(width, height)" },
 			{ "SetTileCellSize", "SetTileCellSize", "SetTileCellSize(32)" },
 			{ "SetTileset", "SetTileset", "SetTileset(cols, rows)" },
@@ -142,7 +207,24 @@ namespace Blaze
 			{ "GetTile", "GetTile", "id = GetTile(x, y)" },
 			{ "FillTiles", "FillTiles", "FillTiles(tileId)" },
 			{ "ClearTiles", "ClearTiles", "ClearTiles()" },
+			{ "GetTileLayerCount", "GetTileLayerCount", "GetTileLayerCount()" },
+			{ "GetActiveTileLayer", "GetActiveTileLayer", "GetActiveTileLayer()" },
+			{ "SetActiveTileLayer", "SetActiveTileLayer", "SetActiveTileLayer(index)" },
+			{ "AddTileLayer", "AddTileLayer", "AddTileLayer([name])" },
+			{ "RemoveTileLayer", "RemoveTileLayer", "RemoveTileLayer(index)" },
+			{ "SetTileLayerVisible", "SetTileLayerVisible", "SetTileLayerVisible(index, visible)" },
+			{ "SetTileLayerCollision", "SetTileLayerCollision", "SetTileLayerCollision(index, collision)" },
+			{ "SetTileLayerOpacity", "SetTileLayerOpacity", "SetTileLayerOpacity(index, opacity)" },
+			{ "SetTileOnLayer", "SetTileOnLayer", "SetTileOnLayer(layer, x, y, tileId)" },
+			{ "GetTileOnLayer", "GetTileOnLayer", "GetTileOnLayer(layer, x, y)" },
+			{ "ImportTiledMap", "ImportTiledMap", "ImportTiledMap(tiledPath [, outMapPath]) -> map path" },
 			{ "GetTilemapSize", "GetTilemapSize", "w, h = GetTilemapSize()" },
+			{ "WorldToTile", "WorldToTile", "tx, ty, ok = WorldToTile(wx, wy)" },
+			{ "TileCenter", "TileCenter", "cx, cy = TileCenter(tx, ty)" },
+			{ "SetTileCollision", "SetTileCollision", "SetTileCollision(true)" },
+			{ "SetTileSolid", "SetTileSolid", "SetTileSolid(tileId, true)" },
+			{ "IsTileSolid", "IsTileSolid", "solid = IsTileSolid(tileId)" },
+			{ "IsSolidAt", "IsSolidAt", "solid = IsSolidAt(x, y)" },
 			{ "SetParent", "SetParent", "SetParent(obj) or SetParent() to clear" },
 			{ "GetParent", "GetParent", "parent = GetParent()" },
 			{ "ClearParent", "ClearParent", "ClearParent() keep world pose" },
@@ -164,6 +246,12 @@ namespace Blaze
 			{ "Input.IsMousePressed", "Input.IsMousePressed", "Input.IsMousePressed(MOUSE_LEFT)" },
 			{ "Input.GetMouseX", "Input.GetMouseX", "Input.GetMouseX()" },
 			{ "Input.GetMouseY", "Input.GetMouseY", "Input.GetMouseY()" },
+			{ "Input.GetMouseWorld", "Input.GetMouseWorld", "wx, wy = Input.GetMouseWorld()" },
+			{ "Input.GetMouseWorldX", "Input.GetMouseWorldX", "Input.GetMouseWorldX()" },
+			{ "Input.GetMouseWorldY", "Input.GetMouseWorldY", "Input.GetMouseWorldY()" },
+			{ "Input.IsMouseOverGame", "Input.IsMouseOverGame", "Input.IsMouseOverGame()" },
+			{ "Input.ScreenToWorld", "Input.ScreenToWorld", "wx, wy = Input.ScreenToWorld(sx, sy)" },
+			{ "GetMouseWorld", "GetMouseWorld", "wx, wy = GetMouseWorld()" },
 
 		
 			{ "function", "function", "Lua keyword" },
@@ -556,25 +644,44 @@ namespace Blaze
 
 		static const std::unordered_set<std::string> kApi = {
 			"Input", "Translate", "Rotate", "SetLocation", "SetPosition", "GetLocation",
-			"SetRotation", "GetRotation", "SetScale", "GetScale", "SetColor", "GetColor",
-			"Destroy", "Spawn", "FindByTag", "FindAllByTag", "SetTag", "AddTag", "GetTag",
+			"SetRotation", "GetRotation", "GetRightVector", "GetUpVector", "GetLeftVector", "GetDownVector",
+			"SetScale", "GetScale", "SetColor", "GetColor",
+			"Destroy", "Spawn", "FindByTag", "FindAllByTag", "FindByName", "FindAllByName",
+			"EmitParticles", "Particles",
+			"Delay", "SetTimer", "ClearTimer", "IsTimerActive", "ClearAllTimers", "Tween", "TweenVec2",
+			"SetTag", "AddTag", "GetTag",
 			"HasTag", "print", "PrintString", "Log", "OnStart", "OnUpdate",
 			"OnCollisionBegin", "OnCollisionEnd", "OnTriggerBegin", "OnTriggerEnd", "OnWidgetClicked", "OpenMap", "GetCurrentMapName",
 			"ShowWidget", "HideWidget", "HideAllWidgets", "CreateWidget", "LoadWidget",
 			"SetWidgetText", "GetWidgetText", "AddText", "AddButton", "AddImage",
 			"FindImage", "SetTexture", "GetTexture", "SetImage", "GetImage", "SetWidgetImage",
+			"SetZoom", "GetZoom", "SetDrivesView", "DrivesView", "IsCamera",
+			"GetChildren", "GetChild", "GetChildCount", "SetCameraFollow", "ClearCameraFollow",
+			"EnableMouse", "ShowCursor", "SetCursorVisible", "IsMouseEnabled", "IsCursorVisible",
 			"Find", "FindText", "FindButton",
 			"SetVisible", "SetSize", "SetPosition", "SetAnchor", "SetFontSize",
 			"SetVelocity", "GetVelocity", "AddVelocity", "ApplyForce", "ApplyImpulse",
+			"Raycast", "RaycastAll", "OverlapPoint", "OverlapCircle", "MASK_ALL",
 			"SetGravity", "GetGravity", "SetGravityScale", "GetGravityScale",
 			"SetKinematic", "IsKinematic", "SetMass", "GetMass", "HasPhysics",
+			"IsGrounded", "CheckGround", "IsTouchingCeiling", "IsTouchingWall",
+			"IsTouchingWallLeft", "IsTouchingWallRight", "GetGroundNormal", "GetContactCount",
 			"SetTrigger", "IsTrigger", "SetCollisionLayer", "GetCollisionLayer", "SetCollisionMask", "SetCollidesWithLayer",
 			"LAYER_DEFAULT", "LAYER_PLAYER", "LAYER_ENEMY", "LAYER_PROJECTILE", "LAYER_TRIGGER", "LAYER_GROUND", "LAYER_PICKUP",
-			"PlayAudio", "StopAudio", "IsAudioPlaying", "SetAudioVolume", "GetAudioVolume",
+			"PlayAudio", "PlayOneShot", "PlaySound", "StopAudio", "IsAudioPlaying", "SetAudioVolume", "GetAudioVolume",
 			"SetAudioLoop", "GetAudioLoop", "SetAudioPath", "GetAudioPath", "HasAudio",
 			"SetFlipbook", "SetFlipbookFrameCount", "SetFlipbookFps", "PlayFlipbook", "StopFlipbook",
 			"PauseFlipbook", "SetFlipbookFrame", "GetFlipbookFrame", "SetFlipbookLoop", "IsFlipbookPlaying",
+			"AddFlipbookClip", "SetFlipbookClip", "RemoveFlipbookClip", "ClearFlipbookClips",
+			"SetActiveFlipbookClip", "GetActiveFlipbookClip", "HasFlipbookClip",
+			"GetFlipbookClipCount", "GetFlipbookClipName",
+			"SetFlipbookAsset", "GetFlipbookAsset", "SaveFlipbookAsset",
+			"CreateSaveObject", "SaveSaveObject", "LoadSaveObject", "CastSaveObject",
+			"DoesSaveObjectExist", "GetSaveObjectPath",
 			"SetTilemapSize", "SetTileCellSize", "SetTileset", "SetTile", "GetTile", "FillTiles", "ClearTiles", "GetTilemapSize",
+			"GetTileLayerCount", "GetActiveTileLayer", "SetActiveTileLayer", "AddTileLayer", "RemoveTileLayer",
+			"SetTileLayerVisible", "SetTileLayerCollision", "SetTileLayerOpacity", "SetTileOnLayer", "GetTileOnLayer", "ImportTiledMap",
+			"WorldToTile", "TileCenter", "SetTileCollision", "SetTileSolid", "IsTileSolid", "IsSolidAt",
 			"SetParent", "GetParent", "ClearParent", "GetWorldLocation",
 			"self", "mapName", "selfName"
 		};
@@ -928,13 +1035,11 @@ namespace Blaze
 			m_RefocusEditor = false;
 		}
 
-		// Full-height text box so the outer child scrolls both highlight + editor together.
+		// Full-height text box so the outer child scrolls gutter + highlight + editor together.
 		int lineCount = 1;
-		for (char c : m_EditBuf)
+		for (const char* p = m_EditBuf.data(); p && *p; ++p)
 		{
-			if (c == '\0')
-				break;
-			if (c == '\n')
+			if (*p == '\n')
 				++lineCount;
 		}
 		const float lineH = ImGui::GetTextLineHeight();
@@ -942,12 +1047,30 @@ namespace Blaze
 		float contentH = (float)lineCount * lineH + framePad.y * 2.0f + 4.0f;
 		if (contentH < textSize.y)
 			contentH = textSize.y;
-		ImVec2 editorSize(textSize.x, contentH);
+
+		int gutterDigits = 1;
+		for (int n = lineCount; n >= 10; n /= 10)
+			++gutterDigits;
+		if (gutterDigits < 2)
+			gutterDigits = 2;
+		const float digitW = ImGui::CalcTextSize("0").x;
+		const float gutterPad = 10.0f;
+		const float gutterW = digitW * (float)gutterDigits + gutterPad * 2.0f;
+		float editorW = textSize.x - gutterW;
+		if (editorW < 40.0f)
+			editorW = 40.0f;
+		ImVec2 editorSize(editorW, contentH);
+
+		ImDrawList* dl = ImGui::GetWindowDrawList();
+		const ImVec2 gutterOrigin = ImGui::GetCursorScreenPos();
+
+		// Reserve gutter space in ImGui layout (so InputText cannot cover it).
+		ImGui::InvisibleButton("##ScriptGutter", ImVec2(gutterW, contentH));
+		ImGui::SameLine(0.0f, 0.0f);
 
 		// Colored tokens under transparent InputText (keeps caret/selection on top).
 		{
 			ImVec2 cursorScreen = ImGui::GetCursorScreenPos();
-			ImDrawList* dl = ImGui::GetWindowDrawList();
 			const ImU32 frameBg = ImGui::GetColorU32(ImGuiCol_FrameBg);
 			dl->AddRectFilled(cursorScreen,
 				ImVec2(cursorScreen.x + editorSize.x, cursorScreen.y + editorSize.y), frameBg);
@@ -969,6 +1092,37 @@ namespace Blaze
 		const bool editorItemActive = ImGui::IsItemActive();
 		const ImVec2 itemMin = ImGui::GetItemRectMin();
 		ImGui::PopStyleColor(4);
+
+		// Draw on the child window list (not Foreground) so the gutter never covers Game / other panels.
+		{
+			const ImU32 gutterBg = IM_COL32(28, 28, 36, 255);
+			const ImU32 gutterBorder = IM_COL32(70, 70, 90, 255);
+			const ImU32 gutterText = IM_COL32(170, 170, 190, 255);
+
+			const ImVec2 clipMin = ImGui::GetWindowPos();
+			const ImVec2 clipMax = ImVec2(clipMin.x + ImGui::GetWindowSize().x, clipMin.y + ImGui::GetWindowSize().y);
+			dl->PushClipRect(clipMin, clipMax, true);
+
+			dl->AddRectFilled(gutterOrigin,
+				ImVec2(gutterOrigin.x + gutterW, gutterOrigin.y + contentH), gutterBg);
+			dl->AddLine(
+				ImVec2(gutterOrigin.x + gutterW - 0.5f, gutterOrigin.y),
+				ImVec2(gutterOrigin.x + gutterW - 0.5f, gutterOrigin.y + contentH),
+				gutterBorder, 1.0f);
+
+			char numBuf[16];
+			for (int line = 1; line <= lineCount; ++line)
+			{
+				std::snprintf(numBuf, sizeof(numBuf), "%d", line);
+				const ImVec2 numSize = ImGui::CalcTextSize(numBuf);
+				dl->AddText(
+					ImVec2(gutterOrigin.x + gutterW - gutterPad - numSize.x,
+						gutterOrigin.y + framePad.y + (float)(line - 1) * lineH),
+					gutterText,
+					numBuf);
+			}
+			dl->PopClipRect();
+		}
 
 		// ImGui draws the caret with ImGuiCol_Text (which is transparent above) — draw our own.
 		if (editorItemActive)
@@ -1002,7 +1156,6 @@ namespace Blaze
 			const float blink = (float)ImFmod((float)ImGui::GetTime(), 1.20f);
 			if (blink <= 0.80f)
 			{
-				ImDrawList* dl = ImGui::GetWindowDrawList();
 				dl->AddLine(
 					ImVec2(caretPos.x, caretPos.y + 0.5f),
 					ImVec2(caretPos.x, caretPos.y + lineH - 1.5f),

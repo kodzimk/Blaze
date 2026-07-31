@@ -83,6 +83,7 @@ namespace Blaze {
 	{
 		if (!m_Texture.IsValid() || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
 			return;
+		EnsureTileLayers();
 
 		const float cell = glm::max(m_TileCellSize, 1.0f);
 		const float mapW = (float)m_TilemapColumns * cell;
@@ -97,33 +98,42 @@ namespace Blaze {
 		if (glm::abs(sx) < 1e-8f || glm::abs(sy) < 1e-8f)
 			return;
 
-		shader.SetUniform4fv(m_Color, "color");
 		shader.SetUniform2fv(GetTilesetUVScale(), "uv_scale");
 
 		m_Texture.Bind();
 		m_VertexArray.Bind();
 
-		for (int row = 0; row < m_TilemapRows; ++row)
+		for (const TilemapLayer& layer : m_TileLayers)
 		{
-			for (int col = 0; col < m_TilemapColumns; ++col)
+			if (!layer.visible)
+				continue;
+
+			glm::vec4 tint = m_Color;
+			tint.a *= glm::clamp(layer.opacity, 0.0f, 1.0f);
+			shader.SetUniform4fv(tint, "color");
+
+			for (int row = 0; row < m_TilemapRows; ++row)
 			{
-				const int idx = row * m_TilemapColumns + col;
-				if (idx < 0 || idx >= (int)m_Tiles.size())
-					continue;
-				const int tileId = m_Tiles[idx];
-				if (tileId < 0)
-					continue;
+				for (int col = 0; col < m_TilemapColumns; ++col)
+				{
+					const int idx = row * m_TilemapColumns + col;
+					if (idx < 0 || idx >= (int)layer.tiles.size())
+						continue;
+					const int tileId = layer.tiles[idx];
+					if (tileId < 0)
+						continue;
 
-				const float cx = ((float)col + 0.5f) * cell - mapW * 0.5f;
-				const float cy = ((float)row + 0.5f) * cell - mapH * 0.5f;
+					const float cx = ((float)col + 0.5f) * cell - mapW * 0.5f;
+					const float cy = ((float)row + 0.5f) * cell - mapH * 0.5f;
 
-				glm::mat4 tileLocal = glm::translate(glm::mat4(1.0f), glm::vec3(cx * sx, cy * sy, 0.0f));
-				tileLocal = glm::scale(tileLocal, glm::vec3(meshScale, meshScale, 1.0f));
-				const glm::mat4 world = m_Matrix * tileLocal;
+					glm::mat4 tileLocal = glm::translate(glm::mat4(1.0f), glm::vec3(cx * sx, cy * sy, 0.0f));
+					tileLocal = glm::scale(tileLocal, glm::vec3(meshScale, meshScale, 1.0f));
+					const glm::mat4 world = m_Matrix * tileLocal;
 
-				shader.SetUniformMatrix4fv(world, "object_matrix");
-				shader.SetUniform2fv(GetTilesetUVOffset(tileId), "uv_offset");
-				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+					shader.SetUniformMatrix4fv(world, "object_matrix");
+					shader.SetUniform2fv(GetTilesetUVOffset(tileId), "uv_offset");
+					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+				}
 			}
 		}
 
@@ -162,7 +172,169 @@ namespace Blaze {
 		m_TileCellSize = 32.0f;
 		m_TilesetColumns = 1;
 		m_TilesetRows = 1;
+		m_TileCollisionEnabled = true;
+		m_TilesetSolid.assign(1, 1); // default single tile is solid
+		m_TileLayers.clear();
+		m_ActiveTileLayer = 0;
+		m_TilemapColumns = 0;
+		m_TilemapRows = 0;
+		AddTileLayer("Layer 0");
 		SetTilemapSize(16, 12);
+	}
+
+	void GameObject::EnsureTileLayers()
+	{
+		if (!m_TileLayers.empty())
+			return;
+		TilemapLayer layer;
+		layer.name = "Layer 0";
+		const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
+		layer.tiles.assign(expected, -1);
+		m_TileLayers.push_back(std::move(layer));
+		m_ActiveTileLayer = 0;
+	}
+
+	std::vector<int>& GameObject::ActiveTiles()
+	{
+		EnsureTileLayers();
+		m_ActiveTileLayer = glm::clamp(m_ActiveTileLayer, 0, (int)m_TileLayers.size() - 1);
+		return m_TileLayers[(size_t)m_ActiveTileLayer].tiles;
+	}
+
+	const std::vector<int>& GameObject::ActiveTiles() const
+	{
+		static const std::vector<int> empty;
+		if (m_TileLayers.empty())
+			return empty;
+		const int index = glm::clamp(m_ActiveTileLayer, 0, (int)m_TileLayers.size() - 1);
+		return m_TileLayers[(size_t)index].tiles;
+	}
+
+	void GameObject::SetActiveTileLayer(int index)
+	{
+		EnsureTileLayers();
+		if (index < 0 || index >= (int)m_TileLayers.size())
+			return;
+		m_ActiveTileLayer = index;
+	}
+
+	int GameObject::AddTileLayer(const std::string& name)
+	{
+		TilemapLayer layer;
+		layer.name = name.empty() ? "Layer" : name;
+		const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
+		layer.tiles.assign(expected, -1);
+		m_TileLayers.push_back(std::move(layer));
+		m_ActiveTileLayer = (int)m_TileLayers.size() - 1;
+		return m_ActiveTileLayer;
+	}
+
+	bool GameObject::RemoveTileLayer(int index)
+	{
+		EnsureTileLayers();
+		if ((int)m_TileLayers.size() <= 1)
+			return false;
+		if (index < 0 || index >= (int)m_TileLayers.size())
+			return false;
+		m_TileLayers.erase(m_TileLayers.begin() + index);
+		if (m_ActiveTileLayer >= (int)m_TileLayers.size())
+			m_ActiveTileLayer = (int)m_TileLayers.size() - 1;
+		else if (m_ActiveTileLayer > index)
+			--m_ActiveTileLayer;
+		return true;
+	}
+
+	void GameObject::ClearTileLayers()
+	{
+		m_TileLayers.clear();
+		m_ActiveTileLayer = 0;
+	}
+
+	void GameObject::SetTileLayers(const std::vector<TilemapLayer>& layers, int activeIndex)
+	{
+		m_TileLayers = layers;
+		if (m_TileLayers.empty())
+			EnsureTileLayers();
+		else
+		{
+			const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
+			for (TilemapLayer& layer : m_TileLayers)
+			{
+				if (layer.tiles.size() != expected)
+				{
+					std::vector<int> next(expected, -1);
+					const size_t n = std::min(expected, layer.tiles.size());
+					for (size_t i = 0; i < n; ++i)
+						next[i] = layer.tiles[i];
+					layer.tiles = std::move(next);
+				}
+			}
+		}
+		m_ActiveTileLayer = glm::clamp(activeIndex, 0, (int)m_TileLayers.size() - 1);
+	}
+
+	const TilemapLayer* GameObject::GetTileLayer(int index) const
+	{
+		if (index < 0 || index >= (int)m_TileLayers.size())
+			return nullptr;
+		return &m_TileLayers[(size_t)index];
+	}
+
+	TilemapLayer* GameObject::GetTileLayerMutable(int index)
+	{
+		if (index < 0 || index >= (int)m_TileLayers.size())
+			return nullptr;
+		return &m_TileLayers[(size_t)index];
+	}
+
+	void GameObject::SetTileLayerName(int index, const std::string& name)
+	{
+		if (TilemapLayer* layer = GetTileLayerMutable(index))
+			layer->name = name.empty() ? "Layer" : name;
+	}
+
+	void GameObject::SetTileLayerVisible(int index, bool visible)
+	{
+		if (TilemapLayer* layer = GetTileLayerMutable(index))
+			layer->visible = visible;
+	}
+
+	void GameObject::SetTileLayerCollision(int index, bool collision)
+	{
+		if (TilemapLayer* layer = GetTileLayerMutable(index))
+			layer->collision = collision;
+	}
+
+	void GameObject::SetTileLayerOpacity(int index, float opacity)
+	{
+		if (TilemapLayer* layer = GetTileLayerMutable(index))
+			layer->opacity = glm::clamp(opacity, 0.0f, 1.0f);
+	}
+
+	void GameObject::SetTileLayerTiles(int index, const std::vector<int>& tiles)
+	{
+		TilemapLayer* layer = GetTileLayerMutable(index);
+		if (!layer)
+			return;
+		const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
+		if (expected == 0)
+			return;
+		layer->tiles.assign(expected, -1);
+		const size_t n = std::min(expected, tiles.size());
+		for (size_t i = 0; i < n; ++i)
+			layer->tiles[i] = tiles[i];
+	}
+
+	const std::vector<int>& GameObject::GetTileLayerTiles(int index) const
+	{
+		static const std::vector<int> empty;
+		const TilemapLayer* layer = GetTileLayer(index);
+		return layer ? layer->tiles : empty;
+	}
+
+	const std::vector<int>& GameObject::GetTiles() const
+	{
+		return ActiveTiles();
 	}
 
 	void GameObject::RefreshTilemapBounds()
@@ -178,22 +350,26 @@ namespace Blaze {
 
 	void GameObject::SetTilemapSize(int columns, int rows)
 	{
-		columns = glm::clamp(columns, 1, 256);
-		rows = glm::clamp(rows, 1, 256);
-		std::vector<int> next((size_t)columns * (size_t)rows, -1);
-		for (int y = 0; y < std::min(rows, m_TilemapRows); ++y)
+		columns = glm::clamp(columns, 1, 512);
+		rows = glm::clamp(rows, 1, 512);
+		EnsureTileLayers();
+		for (TilemapLayer& layer : m_TileLayers)
 		{
-			for (int x = 0; x < std::min(columns, m_TilemapColumns); ++x)
+			std::vector<int> next((size_t)columns * (size_t)rows, -1);
+			for (int y = 0; y < std::min(rows, m_TilemapRows); ++y)
 			{
-				const int oldIdx = y * m_TilemapColumns + x;
-				const int newIdx = y * columns + x;
-				if (oldIdx >= 0 && oldIdx < (int)m_Tiles.size())
-					next[newIdx] = m_Tiles[oldIdx];
+				for (int x = 0; x < std::min(columns, m_TilemapColumns); ++x)
+				{
+					const int oldIdx = y * m_TilemapColumns + x;
+					const int newIdx = y * columns + x;
+					if (oldIdx >= 0 && oldIdx < (int)layer.tiles.size())
+						next[newIdx] = layer.tiles[oldIdx];
+				}
 			}
+			layer.tiles = std::move(next);
 		}
 		m_TilemapColumns = columns;
 		m_TilemapRows = rows;
-		m_Tiles = std::move(next);
 		RefreshTilemapBounds();
 	}
 
@@ -207,31 +383,153 @@ namespace Blaze {
 	{
 		m_TilesetColumns = glm::max(columns, 1);
 		m_TilesetRows = glm::max(rows, 1);
+		const int count = GetTilesetTileCount();
+		std::vector<uint8_t> next((size_t)count, 0);
+		const size_t n = std::min(next.size(), m_TilesetSolid.size());
+		for (size_t i = 0; i < n; ++i)
+			next[i] = m_TilesetSolid[i];
+		m_TilesetSolid = std::move(next);
+	}
+
+	void GameObject::SetTilesetSolid(int tileId, bool solid)
+	{
+		const int count = GetTilesetTileCount();
+		if (tileId < 0 || tileId >= count)
+			return;
+		if ((int)m_TilesetSolid.size() != count)
+			m_TilesetSolid.resize((size_t)count, 0);
+		m_TilesetSolid[(size_t)tileId] = solid ? 1 : 0;
+	}
+
+	bool GameObject::IsTilesetSolid(int tileId) const
+	{
+		if (tileId < 0 || tileId >= (int)m_TilesetSolid.size())
+			return false;
+		return m_TilesetSolid[(size_t)tileId] != 0;
+	}
+
+	void GameObject::SetAllTilesetSolid(bool solid)
+	{
+		const int count = GetTilesetTileCount();
+		m_TilesetSolid.assign((size_t)count, solid ? 1 : 0);
+	}
+
+	void GameObject::SetTilesetSolidFromList(const std::vector<uint8_t>& solids)
+	{
+		const int count = GetTilesetTileCount();
+		m_TilesetSolid.assign((size_t)count, 0);
+		const size_t n = std::min((size_t)count, solids.size());
+		for (size_t i = 0; i < n; ++i)
+			m_TilesetSolid[i] = solids[i] ? 1 : 0;
+	}
+
+	bool GameObject::IsPaintedTileSolid(int tileId) const
+	{
+		if (tileId < 0)
+			return false;
+
+		const int count = GetTilesetTileCount();
+		if (count <= 0)
+			return false;
+
+		bool anyMarked = false;
+		for (uint8_t flag : m_TilesetSolid)
+		{
+			if (flag)
+			{
+				anyMarked = true;
+				break;
+			}
+		}
+
+		// No solids marked yet => every painted tile collides (easy platformer default).
+		if (!anyMarked)
+			return true;
+
+		if (tileId >= (int)m_TilesetSolid.size())
+			return false;
+		return m_TilesetSolid[(size_t)tileId] != 0;
+	}
+
+	bool GameObject::IsTileIdSolid(int tileId) const
+	{
+		if (!m_TileCollisionEnabled)
+			return false;
+		return IsPaintedTileSolid(tileId);
+	}
+
+	bool GameObject::IsSolidAt(int x, int y) const
+	{
+		if (!m_TileCollisionEnabled)
+			return false;
+		if (m_TileLayers.empty())
+			return IsPaintedTileSolid(GetTile(x, y));
+
+		for (const TilemapLayer& layer : m_TileLayers)
+		{
+			if (!layer.collision)
+				continue;
+			if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
+				continue;
+			const int idx = y * m_TilemapColumns + x;
+			if (idx < 0 || idx >= (int)layer.tiles.size())
+				continue;
+			if (IsPaintedTileSolid(layer.tiles[idx]))
+				return true;
+		}
+		return false;
+	}
+
+	glm::vec2 GameObject::TileCenterLocal(int tileX, int tileY) const
+	{
+		const float cell = glm::max(m_TileCellSize, 1.0f);
+		const float mapW = (float)m_TilemapColumns * cell;
+		const float mapH = (float)m_TilemapRows * cell;
+		return glm::vec2(
+			((float)tileX + 0.5f) * cell - mapW * 0.5f,
+			((float)tileY + 0.5f) * cell - mapH * 0.5f);
 	}
 
 	void GameObject::SetTile(int x, int y, int tileId)
 	{
-		if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
-			return;
-		const int idx = y * m_TilemapColumns + x;
-		if (idx < 0 || idx >= (int)m_Tiles.size())
-			return;
-		m_Tiles[idx] = tileId;
+		SetTileOnLayer(m_ActiveTileLayer, x, y, tileId);
 	}
 
 	int GameObject::GetTile(int x, int y) const
 	{
+		return GetTileOnLayer(m_ActiveTileLayer, x, y);
+	}
+
+	void GameObject::SetTileOnLayer(int layerIndex, int x, int y, int tileId)
+	{
+		EnsureTileLayers();
+		if (layerIndex < 0 || layerIndex >= (int)m_TileLayers.size())
+			return;
+		if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
+			return;
+		const int idx = y * m_TilemapColumns + x;
+		std::vector<int>& tiles = m_TileLayers[(size_t)layerIndex].tiles;
+		if (idx < 0 || idx >= (int)tiles.size())
+			return;
+		tiles[idx] = tileId;
+	}
+
+	int GameObject::GetTileOnLayer(int layerIndex, int x, int y) const
+	{
+		if (layerIndex < 0 || layerIndex >= (int)m_TileLayers.size())
+			return -1;
 		if (x < 0 || y < 0 || x >= m_TilemapColumns || y >= m_TilemapRows)
 			return -1;
 		const int idx = y * m_TilemapColumns + x;
-		if (idx < 0 || idx >= (int)m_Tiles.size())
+		const std::vector<int>& tiles = m_TileLayers[(size_t)layerIndex].tiles;
+		if (idx < 0 || idx >= (int)tiles.size())
 			return -1;
-		return m_Tiles[idx];
+		return tiles[idx];
 	}
 
 	void GameObject::FillTiles(int tileId)
 	{
-		for (int& t : m_Tiles)
+		for (int& t : ActiveTiles())
 			t = tileId;
 	}
 
@@ -242,13 +540,15 @@ namespace Blaze {
 
 	void GameObject::SetTilesFromList(const std::vector<int>& tiles)
 	{
+		EnsureTileLayers();
 		const size_t expected = (size_t)glm::max(m_TilemapColumns, 0) * (size_t)glm::max(m_TilemapRows, 0);
 		if (expected == 0)
 			return;
-		m_Tiles.assign(expected, -1);
+		std::vector<int>& dest = ActiveTiles();
+		dest.assign(expected, -1);
 		const size_t n = std::min(expected, tiles.size());
 		for (size_t i = 0; i < n; ++i)
-			m_Tiles[i] = tiles[i];
+			dest[i] = tiles[i];
 	}
 
 	bool GameObject::WorldToTile(const CameraProp& prop, const glm::vec2& worldPoint, int& outX, int& outY) const
@@ -318,13 +618,101 @@ namespace Blaze {
 		return grid;
 	}
 
-	void GameObject::ClampFlipbookFrame()
+	void GameObject::GetFlipbookPlaybackRange(int& outStart, int& outEnd) const
 	{
 		const int total = GetFlipbookTotalFrames();
-		if (m_FlipFrame < 0)
-			m_FlipFrame = 0;
-		if (m_FlipFrame >= total)
-			m_FlipFrame = total - 1;
+		const int last = glm::max(total - 1, 0);
+		if (m_FlipActiveClip >= 0 && m_FlipActiveClip < (int)m_FlipClips.size())
+		{
+			outStart = glm::clamp(m_FlipClips[m_FlipActiveClip].startFrame, 0, last);
+			outEnd = glm::clamp(m_FlipClips[m_FlipActiveClip].endFrame, outStart, last);
+			return;
+		}
+		outStart = 0;
+		outEnd = last;
+	}
+
+	float GameObject::GetFlipbookPlaybackFps() const
+	{
+		if (m_FlipActiveClip >= 0 && m_FlipActiveClip < (int)m_FlipClips.size())
+		{
+			const float clipFps = m_FlipClips[m_FlipActiveClip].fps;
+			if (clipFps > 0.0f)
+				return clipFps;
+		}
+		return m_FlipFps;
+	}
+
+	bool GameObject::GetFlipbookPlaybackLoop() const
+	{
+		if (m_FlipActiveClip >= 0 && m_FlipActiveClip < (int)m_FlipClips.size())
+			return m_FlipClips[m_FlipActiveClip].loop;
+		return m_FlipLoop;
+	}
+
+	const FlipbookClip* GameObject::GetFlipbookClip(int index) const
+	{
+		if (index < 0 || index >= (int)m_FlipClips.size())
+			return nullptr;
+		return &m_FlipClips[index];
+	}
+
+	const FlipbookClip* GameObject::GetFlipbookClip(const std::string& name) const
+	{
+		const int index = FindFlipbookClip(name);
+		return index >= 0 ? &m_FlipClips[index] : nullptr;
+	}
+
+	std::string GameObject::GetActiveFlipbookClipName() const
+	{
+		if (m_FlipActiveClip < 0 || m_FlipActiveClip >= (int)m_FlipClips.size())
+			return {};
+		return m_FlipClips[m_FlipActiveClip].name;
+	}
+
+	int GameObject::FindFlipbookClip(const std::string& name) const
+	{
+		for (int i = 0; i < (int)m_FlipClips.size(); ++i)
+		{
+			if (m_FlipClips[i].name == name)
+				return i;
+		}
+		return -1;
+	}
+
+	void GameObject::NormalizeFlipbookClip(FlipbookClip& clip) const
+	{
+		const int total = GetFlipbookTotalFrames();
+		const int last = glm::max(total - 1, 0);
+		clip.startFrame = glm::clamp(clip.startFrame, 0, last);
+		clip.endFrame = glm::clamp(clip.endFrame, clip.startFrame, last);
+		if (clip.name.empty())
+			clip.name = "Clip";
+	}
+
+	std::string GameObject::MakeUniqueFlipbookClipName(const std::string& desired) const
+	{
+		std::string base = desired.empty() ? "Clip" : desired;
+		if (FindFlipbookClip(base) < 0)
+			return base;
+		for (int i = 2; i < 10000; ++i)
+		{
+			const std::string candidate = base + "_" + std::to_string(i);
+			if (FindFlipbookClip(candidate) < 0)
+				return candidate;
+		}
+		return base + "_x";
+	}
+
+	void GameObject::ClampFlipbookFrame()
+	{
+		int start = 0;
+		int end = 0;
+		GetFlipbookPlaybackRange(start, end);
+		if (m_FlipFrame < start)
+			m_FlipFrame = start;
+		if (m_FlipFrame > end)
+			m_FlipFrame = end;
 	}
 
 	glm::vec2 GameObject::GetFlipbookUVScale() const
@@ -353,24 +741,28 @@ namespace Blaze {
 		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound || m_Type == ObjectType::Tilemap || m_Type == ObjectType::Text)
 			return;
 
-		const int total = GetFlipbookTotalFrames();
-		if (total <= 1)
+		int start = 0;
+		int end = 0;
+		GetFlipbookPlaybackRange(start, end);
+		const int span = end - start + 1;
+		if (span <= 1)
 			return;
 
-		const float fps = glm::max(m_FlipFps, 0.01f);
+		const float fps = glm::max(GetFlipbookPlaybackFps(), 0.01f);
+		const bool loop = GetFlipbookPlaybackLoop();
 		m_FlipTime += dt;
 		const float frameDuration = 1.0f / fps;
 		while (m_FlipTime >= frameDuration)
 		{
 			m_FlipTime -= frameDuration;
 			++m_FlipFrame;
-			if (m_FlipFrame >= total)
+			if (m_FlipFrame > end)
 			{
-				if (m_FlipLoop)
-					m_FlipFrame = 0;
+				if (loop)
+					m_FlipFrame = start;
 				else
 				{
-					m_FlipFrame = total - 1;
+					m_FlipFrame = end;
 					m_FlipPlaying = false;
 					m_FlipTime = 0.0f;
 					break;
@@ -382,18 +774,24 @@ namespace Blaze {
 	void GameObject::SetFlipbookColumns(int columns)
 	{
 		m_FlipColumns = glm::max(columns, 1);
+		for (FlipbookClip& clip : m_FlipClips)
+			NormalizeFlipbookClip(clip);
 		ClampFlipbookFrame();
 	}
 
 	void GameObject::SetFlipbookRows(int rows)
 	{
 		m_FlipRows = glm::max(rows, 1);
+		for (FlipbookClip& clip : m_FlipClips)
+			NormalizeFlipbookClip(clip);
 		ClampFlipbookFrame();
 	}
 
 	void GameObject::SetFlipbookFrameCount(int count)
 	{
 		m_FlipFrameCount = glm::max(count, 0);
+		for (FlipbookClip& clip : m_FlipClips)
+			NormalizeFlipbookClip(clip);
 		ClampFlipbookFrame();
 	}
 
@@ -427,16 +825,175 @@ namespace Blaze {
 		m_FlipTime = 0.0f;
 	}
 
+	bool GameObject::PlayFlipbook(const std::string& clipName)
+	{
+		if (!SetActiveFlipbookClip(clipName))
+			return false;
+		int start = 0;
+		int end = 0;
+		GetFlipbookPlaybackRange(start, end);
+		(void)end;
+		m_FlipFrame = start;
+		m_FlipPlaying = true;
+		m_FlipTime = 0.0f;
+		return true;
+	}
+
 	void GameObject::StopFlipbook()
 	{
 		m_FlipPlaying = false;
-		m_FlipFrame = 0;
+		int start = 0;
+		int end = 0;
+		GetFlipbookPlaybackRange(start, end);
+		(void)end;
+		m_FlipFrame = start;
 		m_FlipTime = 0.0f;
 	}
 
 	void GameObject::PauseFlipbook()
 	{
 		m_FlipPlaying = false;
+	}
+
+	int GameObject::AddFlipbookClip(const std::string& name, int startFrame, int endFrame, float fps, bool loop)
+	{
+		FlipbookClip clip;
+		clip.name = MakeUniqueFlipbookClipName(name);
+		clip.startFrame = startFrame;
+		clip.endFrame = endFrame < startFrame ? startFrame : endFrame;
+		clip.fps = fps;
+		clip.loop = loop;
+		NormalizeFlipbookClip(clip);
+		m_FlipClips.push_back(clip);
+		return (int)m_FlipClips.size() - 1;
+	}
+
+	bool GameObject::SetFlipbookClip(const std::string& name, int startFrame, int endFrame, float fps, bool loop)
+	{
+		const int index = FindFlipbookClip(name);
+		if (index < 0)
+			return false;
+		FlipbookClip& clip = m_FlipClips[index];
+		clip.startFrame = startFrame;
+		clip.endFrame = endFrame < startFrame ? startFrame : endFrame;
+		clip.fps = fps;
+		clip.loop = loop;
+		NormalizeFlipbookClip(clip);
+		if (m_FlipActiveClip == index)
+			ClampFlipbookFrame();
+		return true;
+	}
+
+	bool GameObject::RemoveFlipbookClip(const std::string& name)
+	{
+		const int index = FindFlipbookClip(name);
+		if (index < 0)
+			return false;
+		return RemoveFlipbookClipAt(index);
+	}
+
+	bool GameObject::RemoveFlipbookClipAt(int index)
+	{
+		if (index < 0 || index >= (int)m_FlipClips.size())
+			return false;
+		m_FlipClips.erase(m_FlipClips.begin() + index);
+		if (m_FlipActiveClip == index)
+			m_FlipActiveClip = -1;
+		else if (m_FlipActiveClip > index)
+			--m_FlipActiveClip;
+		ClampFlipbookFrame();
+		return true;
+	}
+
+	void GameObject::ClearFlipbookClips()
+	{
+		m_FlipClips.clear();
+		m_FlipActiveClip = -1;
+		ClampFlipbookFrame();
+	}
+
+	void GameObject::SetFlipbookClips(const std::vector<FlipbookClip>& clips)
+	{
+		const std::string activeName = GetActiveFlipbookClipName();
+		m_FlipClips = clips;
+		for (size_t i = 0; i < m_FlipClips.size(); ++i)
+		{
+			if (m_FlipClips[i].name.empty())
+				m_FlipClips[i].name = "Clip_" + std::to_string(i + 1);
+			NormalizeFlipbookClip(m_FlipClips[i]);
+		}
+		m_FlipActiveClip = activeName.empty() ? -1 : FindFlipbookClip(activeName);
+		ClampFlipbookFrame();
+	}
+
+	bool GameObject::SetActiveFlipbookClip(const std::string& name)
+	{
+		const int index = FindFlipbookClip(name);
+		if (index < 0)
+			return false;
+		m_FlipActiveClip = index;
+		ClampFlipbookFrame();
+		return true;
+	}
+
+	void GameObject::ClearActiveFlipbookClip()
+	{
+		m_FlipActiveClip = -1;
+		ClampFlipbookFrame();
+	}
+
+	void GameObject::SetFlipbookAssetPath(const std::string& path, bool loadAsset)
+	{
+		m_FlipbookAssetPath = path;
+		if (loadAsset && !m_FlipbookAssetPath.empty())
+			LoadFlipbookAsset();
+	}
+
+	bool GameObject::ApplyFlipbookAsset(const FlipbookAsset& asset)
+	{
+		const std::string active = GetActiveFlipbookClipName();
+		m_FlipColumns = asset.GetColumns();
+		m_FlipRows = asset.GetRows();
+		m_FlipFrameCount = asset.GetFrameCount();
+		m_FlipFps = asset.GetFps();
+		SetFlipbookClips(asset.GetClips());
+		if (!asset.GetPath().empty())
+			m_FlipbookAssetPath = asset.GetPath();
+		if (!active.empty())
+			SetActiveFlipbookClip(active);
+		return true;
+	}
+
+	bool GameObject::LoadFlipbookAsset()
+	{
+		if (m_FlipbookAssetPath.empty())
+			return false;
+		FlipbookAsset asset;
+		if (!asset.LoadFromFile(m_FlipbookAssetPath))
+			return false;
+		return ApplyFlipbookAsset(asset);
+	}
+
+	bool GameObject::SaveFlipbookAsset() const
+	{
+		if (m_FlipbookAssetPath.empty())
+			return false;
+		FlipbookAsset asset;
+		asset.SetPath(m_FlipbookAssetPath);
+		asset.SetColumns(m_FlipColumns);
+		asset.SetRows(m_FlipRows);
+		asset.SetFrameCount(m_FlipFrameCount);
+		asset.SetFps(m_FlipFps);
+		asset.SetClips(m_FlipClips);
+		return asset.SaveToFile(m_FlipbookAssetPath);
+	}
+
+	bool GameObject::SaveFlipbookAssetAs(const std::string& path)
+	{
+		if (path.empty())
+			return false;
+		m_FlipbookAssetPath = path;
+		return SaveFlipbookAsset();
 	}
 
 	glm::vec3 GameObject::GetWorldPosition() const

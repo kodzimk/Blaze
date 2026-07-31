@@ -1,6 +1,7 @@
 #include "PhysicsWorld2D.h"
 #include "Blaze/Renderer/GameObject.h"
 #include "Blaze/Renderer/Camera.h"
+#include <algorithm>
 #include <unordered_set>
 
 namespace Blaze
@@ -27,6 +28,7 @@ namespace Blaze
 		m_Bodies.clear();
 		m_ActivePairs.clear();
 		m_Events.clear();
+		m_ContactsByObject.clear();
 	}
 
 	std::vector<CollisionEvent> PhysicsWorld2D::ConsumeCollisionEvents()
@@ -42,6 +44,7 @@ namespace Blaze
 			return;
 
 		m_PlayState.erase(object);
+		m_ContactsByObject.erase(object);
 
 		for (auto it = m_ActivePairs.begin(); it != m_ActivePairs.end(); )
 		{
@@ -112,6 +115,189 @@ namespace Blaze
 		}
 
 		m_ActivePairs.swap(current);
+	}
+
+	void PhysicsWorld2D::CacheContacts(const std::vector<Contact>& contacts)
+	{
+		m_ContactsByObject.clear();
+		for (const Contact& contact : contacts)
+		{
+			if (contact.a < 0 || contact.b < 0 ||
+				contact.a >= (int)m_Bodies.size() || contact.b >= (int)m_Bodies.size())
+				continue;
+
+			GameObject* oa = m_Bodies[contact.a].object;
+			GameObject* ob = m_Bodies[contact.b].object;
+			if (!oa || !ob || oa == ob)
+				continue;
+
+			// contact.normal points from A toward B. For each body, store the normal into that body.
+			BodyContactInfo infoA;
+			infoA.other = ob;
+			infoA.normal = -contact.normal;
+			infoA.isTrigger = contact.isTrigger;
+			m_ContactsByObject[oa].push_back(infoA);
+
+			BodyContactInfo infoB;
+			infoB.other = oa;
+			infoB.normal = contact.normal;
+			infoB.isTrigger = contact.isTrigger;
+			m_ContactsByObject[ob].push_back(infoB);
+		}
+	}
+
+	glm::vec2 PhysicsWorld2D::UpDirection() const
+	{
+		const float len = glm::length(m_Gravity);
+		if (len > 1e-6f)
+			return -m_Gravity / len;
+		return glm::vec2(0.0f, 1.0f);
+	}
+
+	bool PhysicsWorld2D::IsFloorNormal(const glm::vec2& n, const glm::vec2& up, float maxSlopeDegrees)
+	{
+		const float maxRad = glm::radians(glm::clamp(maxSlopeDegrees, 0.0f, 89.0f));
+		return glm::dot(n, up) >= glm::cos(maxRad);
+	}
+
+	bool PhysicsWorld2D::IsCeilingNormal(const glm::vec2& n, const glm::vec2& up, float maxSlopeDegrees)
+	{
+		const float maxRad = glm::radians(glm::clamp(maxSlopeDegrees, 0.0f, 89.0f));
+		return glm::dot(n, -up) >= glm::cos(maxRad);
+	}
+
+	const std::vector<BodyContactInfo>& PhysicsWorld2D::GetContacts(GameObject* object) const
+	{
+		auto it = m_ContactsByObject.find(object);
+		if (it == m_ContactsByObject.end())
+			return m_EmptyContacts;
+		return it->second;
+	}
+
+	bool PhysicsWorld2D::IsGrounded(GameObject* object, float maxSlopeDegrees) const
+	{
+		if (!object)
+			return false;
+		const glm::vec2 up = UpDirection();
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (c.isTrigger)
+				continue;
+			if (IsFloorNormal(c.normal, up, maxSlopeDegrees))
+				return true;
+		}
+		return false;
+	}
+
+	bool PhysicsWorld2D::IsTouchingCeiling(GameObject* object, float maxSlopeDegrees) const
+	{
+		if (!object)
+			return false;
+		const glm::vec2 up = UpDirection();
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (c.isTrigger)
+				continue;
+			if (IsCeilingNormal(c.normal, up, maxSlopeDegrees))
+				return true;
+		}
+		return false;
+	}
+
+	bool PhysicsWorld2D::IsTouchingWall(GameObject* object) const
+	{
+		return IsTouchingWallLeft(object) || IsTouchingWallRight(object);
+	}
+
+	bool PhysicsWorld2D::IsTouchingWallLeft(GameObject* object) const
+	{
+		if (!object)
+			return false;
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (c.isTrigger)
+				continue;
+			if (glm::abs(c.normal.x) >= glm::abs(c.normal.y) && c.normal.x > 0.5f)
+				return true;
+		}
+		return false;
+	}
+
+	bool PhysicsWorld2D::IsTouchingWallRight(GameObject* object) const
+	{
+		if (!object)
+			return false;
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (c.isTrigger)
+				continue;
+			if (glm::abs(c.normal.x) >= glm::abs(c.normal.y) && c.normal.x < -0.5f)
+				return true;
+		}
+		return false;
+	}
+
+	glm::vec2 PhysicsWorld2D::GetGroundNormal(GameObject* object, float maxSlopeDegrees) const
+	{
+		const glm::vec2 up = UpDirection();
+		glm::vec2 best = up;
+		float bestDot = -2.0f;
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (c.isTrigger)
+				continue;
+			if (!IsFloorNormal(c.normal, up, maxSlopeDegrees))
+				continue;
+			const float d = glm::dot(c.normal, up);
+			if (d > bestDot)
+			{
+				bestDot = d;
+				best = c.normal;
+			}
+		}
+		return best;
+	}
+
+	int PhysicsWorld2D::GetContactCount(GameObject* object, bool includeTriggers) const
+	{
+		int count = 0;
+		for (const BodyContactInfo& c : GetContacts(object))
+		{
+			if (!includeTriggers && c.isTrigger)
+				continue;
+			++count;
+		}
+		return count;
+	}
+
+	bool PhysicsWorld2D::CheckGround(GameObject* object, const std::vector<GameObject*>& objects,
+		float probeDistancePx, float maxSlopeDegrees, uint32_t layerMask) const
+	{
+		if (!object)
+			return false;
+		if (IsGrounded(object, maxSlopeDegrees))
+			return true;
+
+		float halfY = 50.0f;
+		ColliderShape shape = object->GetColliderShape();
+		if (object->GetCollisionType() == CollisionType::Circle)
+			shape = ColliderShape::Circle;
+		if (shape == ColliderShape::Circle)
+			halfY = object->GetCollisionRadius();
+		else
+			halfY = object->GetCollisionSize().y * 0.5f;
+
+		const glm::vec3 pos = object->GetPosition();
+		const glm::vec2 up = UpDirection();
+		const glm::vec2 start(pos.x - up.x * halfY * 0.92f, pos.y - up.y * halfY * 0.92f);
+		const float dist = glm::max(probeDistancePx, 1.0f);
+		const glm::vec2 end = start - up * dist;
+
+		RaycastHit hit;
+		PhysicsWorld2D* self = const_cast<PhysicsWorld2D*>(this);
+		if (!self->Raycast(start, end, objects, hit, layerMask, object, false))
+			return false;
+		return IsFloorNormal(hit.normal, up, maxSlopeDegrees);
 	}
 
 	glm::vec2 PhysicsWorld2D::GetVelocity(GameObject* object) const
@@ -227,6 +413,7 @@ namespace Blaze
 		if (m_Bodies.empty())
 		{
 			UpdateCollisionEvents({});
+			CacheContacts({});
 			return;
 		}
 
@@ -237,6 +424,7 @@ namespace Blaze
 		DetectContacts(contacts);
 		ResolveContacts(contacts);
 		UpdateCollisionEvents(contacts);
+		CacheContacts(contacts);
 
 		StorePlayState();
 	}
@@ -251,9 +439,75 @@ namespace Blaze
 		std::unordered_map<GameObject*, PlayState> live;
 		live.reserve(m_PlayState.size());
 
+		auto appendTileBodies = [&](GameObject* object)
+		{
+			if (!object || !object->IsTilemap() || !object->IsTileCollisionEnabled())
+				return;
+
+			const int cols = object->GetTilemapColumns();
+			const int rows = object->GetTilemapRows();
+			if (cols <= 0 || rows <= 0)
+				return;
+
+			const float cell = glm::max(object->GetTileCellSize(), 1.0f);
+			const glm::vec2 worldScale = object->GetWorldScale();
+			const float worldRot = object->GetWorldRotation();
+			const glm::vec3 worldPos = object->GetWorldPosition();
+			const float c = glm::cos(glm::radians(worldRot));
+			const float s = glm::sin(glm::radians(worldRot));
+			const glm::vec2 half(
+				glm::max(cell * glm::abs(worldScale.x) * 0.5f, 0.01f),
+				glm::max(cell * glm::abs(worldScale.y) * 0.5f, 0.01f));
+
+			const int layer = object->HasCollision()
+				? object->GetCollisionLayer()
+				: CollisionLayer_Ground;
+			const uint32_t mask = object->HasCollision()
+				? object->GetCollisionMask()
+				: 0xFFFFFFFFu;
+
+			for (int y = 0; y < rows; ++y)
+			{
+				for (int x = 0; x < cols; ++x)
+				{
+					if (!object->IsSolidAt(x, y))
+						continue;
+
+					const glm::vec2 local = object->TileCenterLocal(x, y);
+					glm::vec2 v(local.x * worldScale.x, local.y * worldScale.y);
+					glm::vec2 r(c * v.x - s * v.y, s * v.x + c * v.y);
+
+					Body body;
+					body.object = object;
+					body.shape = ShapeKind::Box;
+					body.halfSize = half;
+					body.radius = glm::max(half.x, half.y);
+					body.isStatic = true;
+					body.isTrigger = false;
+					body.invMass = 0.0f;
+					body.velocity = glm::vec2(0.0f);
+					body.pendingForce = glm::vec2(0.0f);
+					body.layer = layer;
+					body.mask = mask;
+					// Match other bodies: physics space = world / projection scale.
+					body.position = glm::vec2(worldPos.x / sx, worldPos.y / sy) + r;
+					m_Bodies.push_back(body);
+				}
+			}
+		};
+
 		for (GameObject* object : objects)
 		{
-			if (!object || !object->HasCollision() || object->IsCamera() || object->IsSound())
+			if (!object || object->IsCamera() || object->IsSound())
+				continue;
+
+			if (object->IsTilemap() && object->IsTileCollisionEnabled())
+			{
+				appendTileBodies(object);
+				continue;
+			}
+
+			if (!object->HasCollision())
 				continue;
 
 			Body body;
@@ -515,5 +769,268 @@ namespace Blaze
 			glm::vec3 pos(it->second.position.x * sx, it->second.position.y * sy, object->GetPosition().z);
 			object->SetPosition(pos);
 		}
+	}
+
+	bool PhysicsWorld2D::RaycastBody(const Body& body, const glm::vec2& origin, const glm::vec2& dir,
+		float length, float& outT, glm::vec2& outNormal)
+	{
+		outT = length;
+		if (body.shape == ShapeKind::Circle)
+		{
+			const glm::vec2 f = origin - body.position;
+			const float a = glm::dot(dir, dir);
+			const float b = 2.0f * glm::dot(f, dir);
+			const float c = glm::dot(f, f) - body.radius * body.radius;
+			const float disc = b * b - 4.0f * a * c;
+			if (disc < 0.0f || a < 1e-12f)
+				return false;
+			const float sqrtD = glm::sqrt(disc);
+			float t0 = (-b - sqrtD) / (2.0f * a);
+			float t1 = (-b + sqrtD) / (2.0f * a);
+			float t = length + 1.0f;
+			if (t0 >= 0.0f && t0 <= length)
+				t = t0;
+			else if (t1 >= 0.0f && t1 <= length)
+				t = t1;
+			else
+				return false;
+			outT = t;
+			glm::vec2 hit = origin + dir * t;
+			glm::vec2 n = hit - body.position;
+			float nLen = glm::length(n);
+			outNormal = (nLen > 1e-6f) ? (n / nLen) : glm::vec2(0.0f, 1.0f);
+			return true;
+		}
+
+		// AABB slab test
+		const glm::vec2 minB = body.position - body.halfSize;
+		const glm::vec2 maxB = body.position + body.halfSize;
+		float tmin = 0.0f;
+		float tmax = length;
+		glm::vec2 normal(0.0f, 1.0f);
+
+		for (int axis = 0; axis < 2; ++axis)
+		{
+			float o = (axis == 0) ? origin.x : origin.y;
+			float d = (axis == 0) ? dir.x : dir.y;
+			float mn = (axis == 0) ? minB.x : minB.y;
+			float mx = (axis == 0) ? maxB.x : maxB.y;
+			if (glm::abs(d) < 1e-8f)
+			{
+				if (o < mn || o > mx)
+					return false;
+				continue;
+			}
+			float inv = 1.0f / d;
+			float t1 = (mn - o) * inv;
+			float t2 = (mx - o) * inv;
+			float enterNormal = (axis == 0) ? -1.0f : -1.0f;
+			float exitSign = 1.0f;
+			if (t1 > t2)
+			{
+				std::swap(t1, t2);
+				enterNormal = 1.0f;
+			}
+			else
+			{
+				enterNormal = -1.0f;
+			}
+			(void)exitSign;
+			if (t1 > tmin)
+			{
+				tmin = t1;
+				normal = (axis == 0) ? glm::vec2(enterNormal, 0.0f) : glm::vec2(0.0f, enterNormal);
+			}
+			tmax = glm::min(tmax, t2);
+			if (tmin > tmax)
+				return false;
+		}
+
+		if (tmin < 0.0f || tmin > length)
+			return false;
+		outT = tmin;
+		outNormal = normal;
+		return true;
+	}
+
+	bool PhysicsWorld2D::PointInBody(const Body& body, const glm::vec2& point)
+	{
+		if (body.shape == ShapeKind::Circle)
+		{
+			glm::vec2 d = point - body.position;
+			return glm::dot(d, d) <= body.radius * body.radius;
+		}
+		return glm::abs(point.x - body.position.x) <= body.halfSize.x &&
+			glm::abs(point.y - body.position.y) <= body.halfSize.y;
+	}
+
+	bool PhysicsWorld2D::CircleOverlapsBody(const Body& body, const glm::vec2& center, float radius)
+	{
+		Body probe;
+		probe.shape = ShapeKind::Circle;
+		probe.position = center;
+		probe.radius = radius;
+		Contact c;
+		if (body.shape == ShapeKind::Circle)
+			return CircleCircle(probe, body, c);
+		return CircleBox(probe, body, c);
+	}
+
+	bool PhysicsWorld2D::Raycast(const glm::vec2& startPx, const glm::vec2& endPx,
+		const std::vector<GameObject*>& objects, RaycastHit& out,
+		uint32_t layerMask, GameObject* ignore, bool includeTriggers)
+	{
+		out = RaycastHit{};
+		BuildBodies(objects);
+
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		const glm::vec2 start(startPx.x / sx, startPx.y / sy);
+		const glm::vec2 end(endPx.x / sx, endPx.y / sy);
+		glm::vec2 delta = end - start;
+		const float length = glm::length(delta);
+		if (length < 1e-6f)
+			return false;
+		const glm::vec2 dir = delta / length;
+
+		float bestT = length + 1.0f;
+		const Body* best = nullptr;
+		glm::vec2 bestN(0.0f, 1.0f);
+
+		for (const Body& body : m_Bodies)
+		{
+			if (!body.object || body.object == ignore)
+				continue;
+			if (!includeTriggers && body.isTrigger)
+				continue;
+			if ((layerMask & (1u << (body.layer & 31))) == 0)
+				continue;
+
+			float t = 0.0f;
+			glm::vec2 n(0.0f, 1.0f);
+			if (!RaycastBody(body, start, dir, length, t, n))
+				continue;
+			if (t < bestT)
+			{
+				bestT = t;
+				best = &body;
+				bestN = n;
+			}
+		}
+
+		if (!best)
+			return false;
+
+		out.hit = true;
+		out.object = best->object;
+		out.fraction = bestT / length;
+		out.distance = bestT * glm::length(glm::vec2(sx, sy)); // approximate; use axis scale per component
+		{
+			glm::vec2 hitPhys = start + dir * bestT;
+			out.point = glm::vec2(hitPhys.x * sx, hitPhys.y * sy);
+			out.distance = glm::length(out.point - startPx);
+		}
+		out.normal = bestN;
+		return true;
+	}
+
+	std::vector<RaycastHit> PhysicsWorld2D::RaycastAll(const glm::vec2& startPx, const glm::vec2& endPx,
+		const std::vector<GameObject*>& objects, uint32_t layerMask, GameObject* ignore, bool includeTriggers)
+	{
+		std::vector<RaycastHit> hits;
+		BuildBodies(objects);
+
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		const glm::vec2 start(startPx.x / sx, startPx.y / sy);
+		const glm::vec2 end(endPx.x / sx, endPx.y / sy);
+		glm::vec2 delta = end - start;
+		const float length = glm::length(delta);
+		if (length < 1e-6f)
+			return hits;
+		const glm::vec2 dir = delta / length;
+
+		for (const Body& body : m_Bodies)
+		{
+			if (!body.object || body.object == ignore)
+				continue;
+			if (!includeTriggers && body.isTrigger)
+				continue;
+			if ((layerMask & (1u << (body.layer & 31))) == 0)
+				continue;
+
+			float t = 0.0f;
+			glm::vec2 n(0.0f, 1.0f);
+			if (!RaycastBody(body, start, dir, length, t, n))
+				continue;
+
+			RaycastHit hit;
+			hit.hit = true;
+			hit.object = body.object;
+			hit.fraction = t / length;
+			glm::vec2 hitPhys = start + dir * t;
+			hit.point = glm::vec2(hitPhys.x * sx, hitPhys.y * sy);
+			hit.distance = glm::length(hit.point - startPx);
+			hit.normal = n;
+			hits.push_back(hit);
+		}
+
+		std::sort(hits.begin(), hits.end(),
+			[](const RaycastHit& a, const RaycastHit& b) { return a.fraction < b.fraction; });
+		return hits;
+	}
+
+	bool PhysicsWorld2D::OverlapPoint(const glm::vec2& pointPx, const std::vector<GameObject*>& objects,
+		std::vector<GameObject*>& outObjects, uint32_t layerMask, GameObject* ignore, bool includeTriggers)
+	{
+		outObjects.clear();
+		BuildBodies(objects);
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		const glm::vec2 point(pointPx.x / sx, pointPx.y / sy);
+
+		std::unordered_set<GameObject*> unique;
+		for (const Body& body : m_Bodies)
+		{
+			if (!body.object || body.object == ignore)
+				continue;
+			if (!includeTriggers && body.isTrigger)
+				continue;
+			if ((layerMask & (1u << (body.layer & 31))) == 0)
+				continue;
+			if (!PointInBody(body, point))
+				continue;
+			if (unique.insert(body.object).second)
+				outObjects.push_back(body.object);
+		}
+		return !outObjects.empty();
+	}
+
+	bool PhysicsWorld2D::OverlapCircle(const glm::vec2& centerPx, float radiusPx,
+		const std::vector<GameObject*>& objects, std::vector<GameObject*>& outObjects,
+		uint32_t layerMask, GameObject* ignore, bool includeTriggers)
+	{
+		outObjects.clear();
+		BuildBodies(objects);
+		float sx, sy;
+		GetPixelScale(sx, sy);
+		const glm::vec2 center(centerPx.x / sx, centerPx.y / sy);
+		const float radius = radiusPx / glm::max(glm::min(sx, sy), 1e-6f);
+
+		std::unordered_set<GameObject*> unique;
+		for (const Body& body : m_Bodies)
+		{
+			if (!body.object || body.object == ignore)
+				continue;
+			if (!includeTriggers && body.isTrigger)
+				continue;
+			if ((layerMask & (1u << (body.layer & 31))) == 0)
+				continue;
+			if (!CircleOverlapsBody(body, center, radius))
+				continue;
+			if (unique.insert(body.object).second)
+				outObjects.push_back(body.object);
+		}
+		return !outObjects.empty();
 	}
 }

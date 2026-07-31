@@ -20,6 +20,11 @@ namespace Blaze
 		static void SyncVolume(GameObject* object);
 		static void SyncLoop(GameObject* object);
 
+		// Fire-and-forget clip (no Sound GameObject required).
+		static bool PlayOneShot(const std::string& path, float volume = 1.0f);
+		static void StopOneShots();
+		static void Update(); // frees finished one-shots
+
 		static void OnPlayModeStart(const std::vector<GameObject*>& objects);
 		static void OnPlayModeStop();
 

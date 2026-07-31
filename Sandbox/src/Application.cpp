@@ -33,6 +33,14 @@ public:
 		render->Render(*camera);
 		render->EndScene();
 
+		{
+			const glm::mat4 savedView = Blaze::Camera::m_prop.matrix;
+			Blaze::Camera::m_prop.matrix = cameraObject->GetCameraViewMatrix();
+			Blaze::DebugDraw2D::Flush(*camera);
+			Blaze::ParticleSystem2D::Flush(*camera);
+			Blaze::Camera::m_prop.matrix = savedView;
+		}
+
 		if (!Blaze::UISystem::IsReady())
 			Blaze::UISystem::Init();
 		Blaze::UISystem::Draw(
@@ -478,13 +486,12 @@ public:
 		if (!Blaze::Project::HasProject())
 			return;
 
-		if (!Blaze::UIBlocksMainEditor())
+		if (!Blaze::UIBlocksMainEditor() && !Blaze::StartWindow::IsPlaying())
 		{
 			// Right-click erases tiles on a selected tilemap — don't pan the camera.
 			const bool blockCameraPan =
 				m_TileEraseStrokeActive ||
 				(m_Selected && m_Selected->IsTilemap()
-					&& !Blaze::StartWindow::IsPlaying()
 					&& Blaze::Input::IsMouseButtonPressed(BZ_MOUSE_BUTTON_RIGHT));
 			if (!blockCameraPan)
 				camera->CameraMove();
@@ -573,7 +580,10 @@ public:
 				object.SetName("Tilemap");
 				object.SetType(Blaze::ObjectType::Tilemap);
 				object.SetTexture("content/texture/container.jpg");
+				object.InitTilemapDefaults();
 				object.SetTilesetGrid(1, 1);
+				object.SetTileCollisionEnabled(true);
+				object.SetAllTilesetSolid(true);
 			}
 			else if (droppedObjectType == "text")
 			{
@@ -799,7 +809,8 @@ public:
 				Blaze::ScriptEngine::OnCollisionEvents(physics->ConsumeCollisionEvents());
 				FlushScriptDestroys();
 				physics->ApplyPlayTransforms(render->GetObjects());
-				// Keep play poses (incl. physics) so next frame can resume game state
+				Blaze::ScriptEngine::UpdateCameraFollow(dt);
+				// Keep play poses (incl. physics + camera follow) so next frame can resume
 				// after the editor scene is frozen below.
 				Blaze::ScriptEngine::CapturePlayTransforms(render->GetObjects());
 				render->Update(dt);
