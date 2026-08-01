@@ -9,6 +9,17 @@
 #include "Blaze/ImGui/WidgetEditorWindow.h"
 #include "Blaze/UI/WidgetAsset.h"
 #include "Blaze/Renderer/FlipbookAsset.h"
+#include "Blaze/Renderer/AnimStateMachineAsset.h"
+#include "Blaze/Input/InputActionsAsset.h"
+#include "Blaze/Input/InputActions.h"
+#include "Blaze/Localization/LocalizationAsset.h"
+#include "Blaze/Localization/Localization.h"
+#include "Blaze/ImGui/LocalizationEditorWindow.h"
+#include "Blaze/Renderer/ParticleEmitterAsset.h"
+#include "Blaze/ImGui/ParticleEditorWindow.h"
+#include "Blaze/Renderer/PrefabAsset.h"
+#include "Blaze/Renderer/ComponentPresetAsset.h"
+#include "Blaze/Logging/Log.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include "Blaze/Assets/TiledImporter.h"
 #include <filesystem>
@@ -30,6 +41,7 @@ namespace Blaze
 	std::string ContentBrowser::s_DraggingPath;
 	std::string ContentBrowser::s_PendingDropPath;
 	std::string ContentBrowser::s_PendingOpenMap;
+	std::string ContentBrowser::s_PendingApplyPreset;
 
 	static const char* s_TexturePayload = "BLAZE_TEXTURE";
 	static const char* s_AudioPayload = "BLAZE_AUDIO";
@@ -37,6 +49,10 @@ namespace Blaze
 	static const char* s_ScriptPayload = "BLAZE_SCRIPT";
 	static const char* s_MapPayload = "BLAZE_MAP";
 	static const char* s_FlipbookPayload = "BLAZE_FLIPBOOK";
+	static const char* s_AnimPayload = "BLAZE_ANIM";
+	static const char* s_InputActionsPayload = "BLAZE_INPUTACTIONS";
+	static const char* s_PrefabPayload = "BLAZE_PREFAB";
+	static const char* s_CompPresetPayload = "BLAZE_COMPRESET";
 
 	ContentBrowser::ContentBrowser()
 		: onFocus(false), m_RootDir("content"), m_CurrentDir("content")
@@ -127,6 +143,48 @@ namespace Blaze
 		for (auto& c : extension)
 			c = (char)std::tolower((unsigned char)c);
 		return extension == ".flipbook";
+	}
+
+	bool ContentBrowser::IsAnimAssetFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".animasset";
+	}
+
+	bool ContentBrowser::IsInputActionsFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".inputactions";
+	}
+
+	bool ContentBrowser::IsLocalizationFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".loc";
+	}
+
+	bool ContentBrowser::IsParticleFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".particle";
+	}
+
+	bool ContentBrowser::IsPrefabFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".prefab";
+	}
+
+	bool ContentBrowser::IsComponentPresetFile(std::string extension) const
+	{
+		for (auto& c : extension)
+			c = (char)std::tolower((unsigned char)c);
+		return extension == ".compreset";
 	}
 
 	Texture* ContentBrowser::GetThumbnail(const std::string& path)
@@ -460,6 +518,159 @@ namespace Blaze
 		StartRename(flipPath.string());
 	}
 
+	void ContentBrowser::CreateAnimAsset()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path animPath = fs::path(m_CurrentDir) / "NewAnim.animasset";
+		int suffix = 1;
+		while (fs::exists(animPath))
+		{
+			animPath = fs::path(m_CurrentDir) / ("NewAnim (" + std::to_string(suffix) + ").animasset");
+			++suffix;
+		}
+
+		AnimStateMachineAsset asset = AnimStateMachineAsset::CreateDefault(animPath.stem().string());
+		asset.SetPath(animPath.string());
+		if (!asset.SaveToFile(animPath.string()))
+		{
+			BZ_INFO("Failed to create anim asset: {0}", animPath.string());
+			return;
+		}
+
+		BZ_INFO("Created anim asset: {0}", animPath.string());
+		StartRename(animPath.string());
+	}
+
+	void ContentBrowser::CreateInputActions()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path path = fs::path(m_CurrentDir) / "Default.inputactions";
+		int suffix = 1;
+		while (fs::exists(path))
+		{
+			path = fs::path(m_CurrentDir) / ("InputActions (" + std::to_string(suffix) + ").inputactions");
+			++suffix;
+		}
+
+		InputActionsAsset asset = InputActionsAsset::CreateDefault(path.stem().string());
+		asset.SetPath(path.string());
+		if (!asset.SaveToFile(path.string()))
+		{
+			BZ_INFO("Failed to create input actions: {0}", path.string());
+			return;
+		}
+
+		BZ_INFO("Created input actions: {0}", path.string());
+		StartRename(path.string());
+	}
+
+	void ContentBrowser::CreateLocalization()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path path = fs::path(m_CurrentDir) / "en.loc";
+		int suffix = 1;
+		while (fs::exists(path))
+		{
+			path = fs::path(m_CurrentDir) / ("lang (" + std::to_string(suffix) + ").loc");
+			++suffix;
+		}
+
+		std::string lang = path.stem().string();
+		if (lang.empty())
+			lang = "en";
+		LocalizationAsset asset = LocalizationAsset::CreateDefault(lang);
+		asset.SetPath(path.string());
+		if (!asset.SaveToFile(path.string()))
+		{
+			BZ_INFO("Failed to create localization: {0}", path.string());
+			return;
+		}
+
+		BZ_INFO("Created localization: {0}", path.string());
+		StartRename(path.string());
+	}
+
+	void ContentBrowser::CreateParticle()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path path = fs::path(m_CurrentDir) / "NewParticle.particle";
+		int suffix = 1;
+		while (fs::exists(path))
+		{
+			path = fs::path(m_CurrentDir) / ("NewParticle (" + std::to_string(suffix) + ").particle");
+			++suffix;
+		}
+
+		ParticleEmitterAsset asset = ParticleEmitterAsset::CreateDefault(path.stem().string());
+		asset.SetPath(path.string());
+		if (!asset.SaveToFile(path.string()))
+		{
+			BZ_INFO("Failed to create particle: {0}", path.string());
+			return;
+		}
+
+		BZ_INFO("Created particle asset: {0}", path.string());
+		StartRename(path.string());
+	}
+
+	void ContentBrowser::CreatePrefab()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path path = fs::path(m_CurrentDir) / "NewPrefab.prefab";
+		int suffix = 1;
+		while (fs::exists(path))
+		{
+			path = fs::path(m_CurrentDir) / ("NewPrefab (" + std::to_string(suffix) + ").prefab");
+			++suffix;
+		}
+
+		PrefabAsset asset = PrefabAsset::CreateDefault(path.stem().string());
+		asset.SetPath(path.string());
+		if (!asset.SaveToFile(path.string()))
+		{
+			BZ_INFO("Failed to create prefab: {0}", path.string());
+			return;
+		}
+
+		BZ_INFO("Created prefab: {0}", path.string());
+		StartRename(path.string());
+	}
+
+	void ContentBrowser::CreateComponentPreset()
+	{
+		if (!fs::exists(m_CurrentDir))
+			fs::create_directories(m_CurrentDir);
+
+		fs::path path = fs::path(m_CurrentDir) / "NewPreset.compreset";
+		int suffix = 1;
+		while (fs::exists(path))
+		{
+			path = fs::path(m_CurrentDir) / ("NewPreset (" + std::to_string(suffix) + ").compreset");
+			++suffix;
+		}
+
+		ComponentPresetAsset asset = ComponentPresetAsset::CreateDefault(path.stem().string());
+		asset.SetPath(path.string());
+		if (!asset.SaveToFile(path.string()))
+		{
+			BZ_INFO("Failed to create component preset: {0}", path.string());
+			return;
+		}
+
+		BZ_INFO("Created component preset: {0}", path.string());
+		StartRename(path.string());
+	}
+
 	void ContentBrowser::CreateMap()
 	{
 		if (!fs::exists(m_CurrentDir))
@@ -613,6 +824,18 @@ namespace Blaze
 				CreateScript();
 			if (ImGui::MenuItem("Create Flipbook"))
 				CreateFlipbook();
+			if (ImGui::MenuItem("Create Anim Graph"))
+				CreateAnimAsset();
+			if (ImGui::MenuItem("Create Input Actions"))
+				CreateInputActions();
+			if (ImGui::MenuItem("Create Localization"))
+				CreateLocalization();
+			if (ImGui::MenuItem("Create Particle"))
+				CreateParticle();
+			if (ImGui::MenuItem("Create Prefab"))
+				CreatePrefab();
+			if (ImGui::MenuItem("Create Component Preset"))
+				CreateComponentPreset();
 			if (ImGui::MenuItem("Create Widget"))
 				CreateWidget();
 			if (ImGui::MenuItem("Create Map"))
@@ -1009,6 +1232,154 @@ namespace Blaze
 
 				DrawAssetRenameLabel(fullPath, name, thumbSize);
 			}
+			else if (IsAnimAssetFile(path.extension().string()))
+			{
+				ImGui::Button("[AN]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_AnimPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("AnimItemContext"))
+				{
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsInputActionsFile(path.extension().string()))
+			{
+				ImGui::Button("[IA]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_InputActionsPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					if (InputActions::Load(fullPath))
+						BZ_INFO("Loaded input actions: {0}", fullPath);
+				}
+
+				if (ImGui::BeginPopupContextItem("InputActionsItemContext"))
+				{
+					if (ImGui::MenuItem("Load"))
+						InputActions::Load(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsLocalizationFile(path.extension().string()))
+			{
+				ImGui::Button("[LC]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload("BLAZE_LOC_ASSET", fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					LocalizationEditorWindow::OpenFile(fullPath);
+
+				if (ImGui::BeginPopupContextItem("LocalizationItemContext"))
+				{
+					if (ImGui::MenuItem("Edit"))
+						LocalizationEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Load Language"))
+						Localization::Load(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsParticleFile(path.extension().string()))
+			{
+				ImGui::Button("[FX]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload("BLAZE_PARTICLE", fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					ParticleEditorWindow::OpenFile(fullPath);
+
+				if (ImGui::BeginPopupContextItem("ParticleItemContext"))
+				{
+					if (ImGui::MenuItem("Edit"))
+						ParticleEditorWindow::OpenFile(fullPath);
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsPrefabFile(path.extension().string()))
+			{
+				ImGui::Button("[PF]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_PrefabPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("PrefabItemContext"))
+				{
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
+			else if (IsComponentPresetFile(path.extension().string()))
+			{
+				ImGui::Button("[CP]", ImVec2(thumbSize, thumbSize));
+
+				if (ImGui::BeginDragDropSource())
+				{
+					ImGui::SetDragDropPayload(s_CompPresetPayload, fullPath.c_str(), fullPath.size() + 1);
+					s_DraggingPath = fullPath;
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
+				if (ImGui::BeginPopupContextItem("CompPresetItemContext"))
+				{
+					if (ImGui::MenuItem("Apply to Selection"))
+						s_PendingApplyPreset = fullPath;
+					if (ImGui::MenuItem("Rename"))
+						StartRename(fullPath);
+					ImGui::EndPopup();
+				}
+
+				DrawAssetRenameLabel(fullPath, name, thumbSize);
+			}
 			else if (IsMapFile(path.extension().string()))
 			{
 				unsigned int mapTex = Gizmo2D::GetMapIconTextureID();
@@ -1070,8 +1441,14 @@ namespace Blaze
 		{
 			if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
 			{
-				s_PendingDropPath = s_DraggingPath;
-				BZ_INFO("Asset dropped on scene: {0}", s_PendingDropPath);
+				std::string ext = fs::path(s_DraggingPath).extension().string();
+				for (auto& c : ext)
+					c = (char)std::tolower((unsigned char)c);
+				if (ext != ".compreset" && ext != ".inputactions" && ext != ".animasset" && ext != ".flipbook" && ext != ".loc")
+				{
+					s_PendingDropPath = s_DraggingPath;
+					BZ_INFO("Asset dropped on scene: {0}", s_PendingDropPath);
+				}
 			}
 			s_DraggingPath.clear();
 		}
@@ -1094,6 +1471,16 @@ namespace Blaze
 
 		outPath = s_PendingOpenMap;
 		s_PendingOpenMap.clear();
+		return true;
+	}
+
+	bool ContentBrowser::ConsumePendingApplyPreset(std::string& outPath)
+	{
+		if (s_PendingApplyPreset.empty())
+			return false;
+
+		outPath = s_PendingApplyPreset;
+		s_PendingApplyPreset.clear();
 		return true;
 	}
 

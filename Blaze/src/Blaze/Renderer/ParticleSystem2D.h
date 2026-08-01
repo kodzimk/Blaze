@@ -7,6 +7,7 @@
 namespace Blaze
 {
 	class Camera;
+	class GameObject;
 
 	struct ParticleEmitParams
 	{
@@ -41,6 +42,19 @@ namespace Blaze
 		static void Update(float dt);
 		static void Flush(const Camera& camera);
 		static void Clear();
+
+		// Scene Particle Emitter component.
+		// Continuous assets keep emitting until StopSceneEmitter / play stop.
+		// Burst: fires once, or loops while previewLoop is true (editor Play).
+		static bool StartSceneEmitter(GameObject* object, bool previewLoop = true);
+		static void StopSceneEmitter(GameObject* object);
+		static bool IsSceneEmitterActive(GameObject* object);
+		static void UpdateSceneEmitters(float dt);
+
+		static void OnPlayModeStart(const std::vector<GameObject*>& objects);
+		static void OnPlayModeUpdate(float dt);
+		static void OnPlayModeStop();
+		static void RemoveObject(GameObject* object);
 
 	private:
 		struct Particle

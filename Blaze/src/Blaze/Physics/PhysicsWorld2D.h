@@ -2,6 +2,7 @@
 #include"bzpch.h"
 #include"Blaze/Core/Core.h"
 #include"glm.hpp"
+#include <vector>
 
 namespace Blaze
 {
@@ -93,7 +94,7 @@ namespace Blaze
 			bool includeTriggers = true);
 
 	private:
-		enum class ShapeKind { Circle, Box };
+		enum class ShapeKind { Circle, Box, Capsule, Polygon };
 
 		struct Body
 		{
@@ -110,6 +111,8 @@ namespace Blaze
 			ShapeKind shape = ShapeKind::Box;
 			float radius = 50.0f;
 			glm::vec2 halfSize = glm::vec2(50.0f);
+			float capsuleHalfLength = 0.0f; // distance from center to cap centers (along Y)
+			std::vector<glm::vec2> verts;  // world-space convex polygon
 		};
 
 		struct PlayState
@@ -154,7 +157,19 @@ namespace Blaze
 		static bool CircleCircle(const Body& a, const Body& b, Contact& out);
 		static bool BoxBox(const Body& a, const Body& b, Contact& out);
 		static bool CircleBox(const Body& circle, const Body& box, Contact& out);
+		static bool CircleCapsule(const Body& circle, const Body& capsule, Contact& out);
+		static bool CapsuleBox(const Body& capsule, const Body& box, Contact& out);
+		static bool CapsuleCapsule(const Body& a, const Body& b, Contact& out);
+		static bool PolygonPolygon(const Body& a, const Body& b, Contact& out);
+		static bool CirclePolygon(const Body& circle, const Body& poly, Contact& out);
+		static bool CapsulePolygon(const Body& capsule, const Body& poly, Contact& out);
+		static bool BoxPolygon(const Body& box, const Body& poly, Contact& out);
+		static bool CollideBodies(const Body& a, const Body& b, Contact& out);
 		static void GetPixelScale(float& sx, float& sy);
+		static glm::vec2 ClosestPointOnSegment(const glm::vec2& p, const glm::vec2& a, const glm::vec2& b);
+		static void CapsuleEndpoints(const Body& capsule, glm::vec2& outA, glm::vec2& outB);
+		static void BoxToVerts(const Body& box, std::vector<glm::vec2>& out);
+		static bool SatPolygons(const std::vector<glm::vec2>& a, const std::vector<glm::vec2>& b, Contact& out);
 
 		static bool RaycastBody(const Body& body, const glm::vec2& origin, const glm::vec2& dir,
 			float length, float& outT, glm::vec2& outNormal);

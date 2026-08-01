@@ -1,6 +1,7 @@
 #include "Shader.h"
 #include"glad/glad.h"
 #include<gtc/type_ptr.hpp>
+#include <string>
 
 
 namespace Blaze
@@ -61,6 +62,48 @@ namespace Blaze
 	void Shader::SetUniform4fv(const glm::vec4& data, const char* uniform_name)
 	{
 		glUniform4fv(glGetUniformLocation(m_Program, uniform_name), 1, glm::value_ptr(data));
+	}
+
+	void Shader::SetUniform1fvArray(const float* data, int count, const char* uniform_name)
+	{
+		if (!data || count <= 0)
+			return;
+		GLint loc = glGetUniformLocation(m_Program, uniform_name);
+		if (loc < 0)
+		{
+			std::string indexed = std::string(uniform_name) + "[0]";
+			loc = glGetUniformLocation(m_Program, indexed.c_str());
+		}
+		if (loc >= 0)
+			glUniform1fv(loc, count, data);
+	}
+
+	void Shader::SetUniform2fvArray(const glm::vec2* data, int count, const char* uniform_name)
+	{
+		if (!data || count <= 0)
+			return;
+		GLint loc = glGetUniformLocation(m_Program, uniform_name);
+		if (loc < 0)
+		{
+			std::string indexed = std::string(uniform_name) + "[0]";
+			loc = glGetUniformLocation(m_Program, indexed.c_str());
+		}
+		if (loc >= 0)
+			glUniform2fv(loc, count, glm::value_ptr(data[0]));
+	}
+
+	void Shader::SetUniform3fvArray(const glm::vec3* data, int count, const char* uniform_name)
+	{
+		if (!data || count <= 0)
+			return;
+		GLint loc = glGetUniformLocation(m_Program, uniform_name);
+		if (loc < 0)
+		{
+			std::string indexed = std::string(uniform_name) + "[0]";
+			loc = glGetUniformLocation(m_Program, indexed.c_str());
+		}
+		if (loc >= 0)
+			glUniform3fv(loc, count, glm::value_ptr(data[0]));
 	}
 
 	void Shader::SetUniformMatrix4fv(const glm::mat4& data, const char* uniform_name)

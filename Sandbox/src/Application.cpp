@@ -4,6 +4,12 @@
 #include <chrono>
 #include <filesystem>
 #include <cctype>
+#include <cstdio>
+
+#define NOMINMAX
+#include <windows.h>
+#include <commdlg.h>
+#pragma comment(lib, "Comdlg32.lib")
 
 class ExampleLayer : public Blaze::Layer
 {
@@ -142,6 +148,58 @@ public:
 		Blaze::UndoStack::Get().Push(std::move(cmd));
 	}
 
+	void PushCreatedObjects(const std::vector<Blaze::GameObject*>& objects)
+	{
+		for (Blaze::GameObject* object : objects)
+		{
+			if (object)
+				PushCreatedObject(*object);
+		}
+	}
+
+	bool SaveObjectAsPrefab(Blaze::GameObject* object)
+	{
+		if (!object)
+			return false;
+
+		char filePath[MAX_PATH] = {};
+		std::string suggested = object->GetName().empty() ? "Prefab" : object->GetName();
+		for (char& c : suggested)
+		{
+			if (c == '<' || c == '>' || c == ':' || c == '"' || c == '/' || c == '\\' || c == '|' || c == '?' || c == '*')
+				c = '_';
+		}
+		std::string defaultDir;
+		if (Blaze::Project::HasProject())
+			defaultDir = (std::filesystem::path(Blaze::Project::GetContentDirectory()) / "prefabs").string();
+		std::string defaultName = suggested + ".prefab";
+		if (!defaultDir.empty())
+		{
+			std::error_code ec;
+			std::filesystem::create_directories(defaultDir, ec);
+			std::snprintf(filePath, MAX_PATH, "%s\\%s", defaultDir.c_str(), defaultName.c_str());
+		}
+		else
+			std::snprintf(filePath, MAX_PATH, "%s", defaultName.c_str());
+
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFile = filePath;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.lpstrFilter = "Blaze Prefab (*.prefab)\0*.prefab\0All Files (*.*)\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
+		ofn.lpstrDefExt = "prefab";
+		if (!defaultDir.empty())
+			ofn.lpstrInitialDir = defaultDir.c_str();
+
+		if (!GetSaveFileNameA(&ofn))
+			return false;
+
+		Blaze::PrefabAsset asset;
+		return asset.SaveFromRoot(object, filePath);
+	}
+
 	void DeleteObjectWithUndo(Blaze::GameObject* object)
 	{
 		if (!object)
@@ -275,6 +333,7 @@ public:
 			return;
 
 		Blaze::AudioEngine::OnPlayModeStop();
+		Blaze::ParticleSystem2D::OnPlayModeStop();
 		Blaze::ScriptEngine::OnPlayModeStop();
 		physics->Reset();
 		m_Selected = nullptr;
@@ -300,6 +359,7 @@ public:
 
 		physics->Reset();
 		Blaze::AudioEngine::OnPlayModeStart(render->GetObjects());
+		Blaze::ParticleSystem2D::OnPlayModeStart(render->GetObjects());
 		BZ_INFO("Play map switched: {0}", path);
 	}
 
@@ -384,6 +444,18 @@ public:
 			{
 				if (auto* context = Blaze::Application::Get().GetContext())
 					context->m_projectSettings->Open();
+				break;
+			}
+			case Blaze::FileAction::BuildSettings:
+			{
+				if (auto* context = Blaze::Application::Get().GetContext())
+				{
+					context->m_buildSettings->SetSaveSceneCallback([this]() -> bool
+					{
+						return Blaze::Project::SaveScene(*render, GetObjectsWindow());
+					});
+					context->m_buildSettings->Open();
+				}
 				break;
 			}
 			case Blaze::FileAction::BuildProject:
@@ -541,6 +613,23 @@ public:
 				}
 			}
 
+			if (!Blaze::StartWindow::IsPlaying())
+			{
+				if (Blaze::GameObject* toSave = context->m_objectWindow->ConsumePendingSavePrefab())
+					SaveObjectAsPrefab(toSave);
+
+				if (Blaze::GameObject* toDup = context->m_objectWindow->ConsumePendingDuplicate())
+				{
+					std::vector<Blaze::GameObject*> created;
+					if (Blaze::GameObject* copy = Blaze::PrefabAsset::Duplicate(
+						toDup, *render, vertices, indices, glm::vec3(40.0f, 40.0f, 0.0f), &created))
+					{
+						PushCreatedObjects(created);
+						m_Selected = copy;
+					}
+				}
+			}
+
 			context->m_objectWindow->SetObjects(render->GetObjects());
 			if (context->m_objectWindow->IsMapSelected())
 			{
@@ -620,6 +709,26 @@ public:
 				object.SetType(Blaze::ObjectType::Sound);
 				object.AddAudio();
 			}
+			else if (droppedObjectType == "light")
+			{
+				object.SetName("Light");
+				object.SetType(Blaze::ObjectType::Light);
+				object.SetLightKind(Blaze::LightKind::Point);
+				object.SetLightRadius(300.0f);
+				object.SetLightIntensity(1.0f);
+				object.SetColor(1.0f, 0.92f, 0.75f, 1.0f);
+			}
+			else if (droppedObjectType == "spotlight")
+			{
+				object.SetName("Spot Light");
+				object.SetType(Blaze::ObjectType::Light);
+				object.SetLightKind(Blaze::LightKind::Spot);
+				object.SetLightRadius(400.0f);
+				object.SetLightIntensity(1.2f);
+				object.SetLightInnerAngle(20.0f);
+				object.SetLightOuterAngle(35.0f);
+				object.SetColor(1.0f, 0.92f, 0.75f, 1.0f);
+			}
 
 			m_Selected = &object;
 			PushCreatedObject(object);
@@ -632,28 +741,56 @@ public:
 		}
 		else if (Blaze::ContentBrowser::ConsumePendingDrop(droppedAsset))
 		{
-			render->CreateObject(vertices, indices);
-			Blaze::GameObject& object = *render->GetObjects().back();
-			glm::vec3 spawnPos(GetMouseWorldPos(), 0.0f);
-			object.SetPosition(spawnPos);
-
 			std::string ext = std::filesystem::path(droppedAsset).extension().string();
 			for (auto& c : ext)
 				c = (char)std::tolower((unsigned char)c);
 
-			if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+			if (ext == ".prefab")
 			{
-				object.SetName("Sound");
-				object.SetType(Blaze::ObjectType::Sound);
-				object.AddAudio();
-				object.SetAudioPath(droppedAsset);
+				std::vector<Blaze::GameObject*> created;
+				glm::vec3 spawnPos(GetMouseWorldPos(), 0.0f);
+				if (Blaze::GameObject* root = Blaze::PrefabAsset::Instantiate(
+					droppedAsset, *render, vertices, indices, spawnPos, &created))
+				{
+					PushCreatedObjects(created);
+					m_Selected = root;
+				}
+			}
+			else if (ext == ".particle")
+			{
+				render->CreateObject(vertices, indices);
+				Blaze::GameObject& object = *render->GetObjects().back();
+				glm::vec3 spawnPos(GetMouseWorldPos(), 0.0f);
+				object.SetPosition(spawnPos);
+				object.SetName(std::filesystem::path(droppedAsset).stem().string());
+				object.SetType(Blaze::ObjectType::Empty);
+				object.AddParticleEmitter();
+				object.SetParticlePath(droppedAsset);
+				object.SetParticlePlayOnStart(true);
+				m_Selected = &object;
+				PushCreatedObject(object);
 			}
 			else
 			{
-				object.SetTexture(droppedAsset);
+				render->CreateObject(vertices, indices);
+				Blaze::GameObject& object = *render->GetObjects().back();
+				glm::vec3 spawnPos(GetMouseWorldPos(), 0.0f);
+				object.SetPosition(spawnPos);
+
+				if (ext == ".wav" || ext == ".mp3" || ext == ".ogg" || ext == ".flac")
+				{
+					object.SetName("Sound");
+					object.SetType(Blaze::ObjectType::Sound);
+					object.AddAudio();
+					object.SetAudioPath(droppedAsset);
+				}
+				else
+				{
+					object.SetTexture(droppedAsset);
+				}
+				m_Selected = &object;
+				PushCreatedObject(object);
 			}
-			m_Selected = &object;
-			PushCreatedObject(object);
 		}
 
 		if (m_DragAxis != Blaze::GizmoAxis::None && !Blaze::UIBlocksMainEditor()
@@ -774,7 +911,7 @@ public:
 
 		const bool playing = Blaze::StartWindow::IsPlaying();
 		auto now = std::chrono::steady_clock::now();
-		float dt = std::chrono::duration<float>(now - m_LastTime).count();
+		float rawDt = std::chrono::duration<float>(now - m_LastTime).count();
 		m_LastTime = now;
 
 		if (playing)
@@ -797,11 +934,16 @@ public:
 				{
 					physics->Reset();
 					Blaze::AudioEngine::OnPlayModeStart(render->GetObjects());
+					Blaze::ParticleSystem2D::OnPlayModeStart(render->GetObjects());
 				}
 			}
 
 			if (Blaze::StartWindow::IsPlaying())
 			{
+				Blaze::Time::Tick(rawDt);
+				const float dt = Blaze::Time::GetDeltaTime();
+				Blaze::InputActions::Tick();
+
 				Blaze::ScriptEngine::OnUpdate(dt, render->GetObjects());
 				FlushScriptDestroys();
 
@@ -823,6 +965,7 @@ public:
 		{
 			physics->Reset();
 			Blaze::AudioEngine::OnPlayModeStop();
+			Blaze::ParticleSystem2D::OnPlayModeStop();
 			Blaze::ScriptEngine::OnPlayModeStop();
 			Blaze::UISystem::HideAll();
 			m_Selected = nullptr;
@@ -848,11 +991,17 @@ public:
 		m_WasPlaying = Blaze::StartWindow::IsPlaying();
 
 		if (!Blaze::StartWindow::IsPlaying())
-			render->Update(dt);
+		{
+			render->Update(rawDt);
+			Blaze::ParticleSystem2D::UpdateSceneEmitters(rawDt);
+			Blaze::ParticleSystem2D::Update(rawDt);
+		}
 
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
 		render->EndScene();
+
+		Blaze::ParticleSystem2D::Flush(*camera);
 
 		for (Blaze::GameObject* object : render->GetObjects())
 		{
@@ -866,7 +1015,12 @@ public:
 			}
 			if (object->IsSound())
 				gizmo->DrawSoundIcon(*camera, *object);
-			if (object->HasCollision() && !object->IsSound() && !object->IsCamera())
+			if (object->HasParticleEmitter())
+				gizmo->DrawParticleEmitterIcon(*camera, *object);
+			if (object->IsLight())
+				gizmo->DrawLightGizmo(*camera, *object);
+			if (object->HasCollision() && !object->IsSound() && !object->IsCamera() && !object->IsLight()
+				&& !object->HasParticleEmitter())
 				gizmo->DrawCollision(*camera, *object);
 		}
 
@@ -1215,20 +1369,62 @@ public:
 		"uniform vec2 uv_scale;\n"
 		"uniform vec2 uv_offset;\n"
 		"out vec2 TexCoord;\n"
+		"out vec2 WorldPos;\n"
 		"void main()\n"
 		"{\n"
-		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos,1.0f));\n"
+		"   vec4 local = ortho * vec4(pos, 1.0);\n"
+		"   vec4 world = object_matrix * local;\n"
+		"   // Same space as GetWorldPosition / gizmo rings (post-ortho).\n"
+		"   WorldPos = world.xy;\n"
+		"   gl_Position = matrix * world;\n"
 		"   TexCoord = texCoord * uv_scale + uv_offset;\n"
 		"}\0";
 
 	const char* fragmentShaderSource = "#version 330 core\n"
 		"uniform vec4 color;\n"
+		"uniform mat4 ortho;\n"
+		"uniform int u_LightingEnabled;\n"
+		"uniform vec3 u_Ambient;\n"
+		"uniform int u_LightCount;\n"
+		"uniform vec2 u_LightPos[16];\n"
+		"uniform vec3 u_LightColor[16];\n"
+		"uniform float u_LightRadius[16];\n"
+		"uniform float u_LightIntensity[16];\n"
+		"uniform float u_LightType[16];\n"
+		"uniform vec2 u_LightDir[16];\n"
+		"uniform float u_LightInnerCos[16];\n"
+		"uniform float u_LightOuterCos[16];\n"
 		"out vec4 FragColor;\n"
 		"in vec2 TexCoord;\n"
+		"in vec2 WorldPos;\n"
 		"uniform sampler2D in_texture;\n"
 		"void main()\n"
 		"{\n"
-		"   FragColor = texture(in_texture,TexCoord) * color;\n"
+		"   vec4 albedo = texture(in_texture, TexCoord) * color;\n"
+		"   if (u_LightingEnabled == 0) {\n"
+		"      FragColor = albedo;\n"
+		"      return;\n"
+		"   }\n"
+		"   // Radius is in mesh/pixel units (same as collision / light gizmo).\n"
+		"   vec2 scale = vec2(max(abs(ortho[0][0]), 1e-8), max(abs(ortho[1][1]), 1e-8));\n"
+		"   vec3 lighting = u_Ambient;\n"
+		"   int count = clamp(u_LightCount, 0, 16);\n"
+		"   for (int i = 0; i < 16; ++i) {\n"
+		"      if (i >= count) break;\n"
+		"      vec2 deltaPx = (WorldPos - u_LightPos[i]) / scale;\n"
+		"      float dist = length(deltaPx);\n"
+		"      float r = max(u_LightRadius[i], 1.0);\n"
+		"      float t = clamp(1.0 - dist / r, 0.0, 1.0);\n"
+		"      float atten = t * t * u_LightIntensity[i];\n"
+		"      if (u_LightType[i] > 0.5) {\n"
+		"         vec2 toFrag = (dist > 1e-4) ? (deltaPx / dist) : vec2(0.0);\n"
+		"         float cosTheta = dot(toFrag, normalize(u_LightDir[i]));\n"
+		"         float spot = smoothstep(u_LightOuterCos[i], u_LightInnerCos[i], cosTheta);\n"
+		"         atten *= spot;\n"
+		"      }\n"
+		"      lighting += u_LightColor[i] * atten;\n"
+		"   }\n"
+		"   FragColor = vec4(albedo.rgb * lighting, albedo.a);\n"
 		"}\n\0";
 };
 

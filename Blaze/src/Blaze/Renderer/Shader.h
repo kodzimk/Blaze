@@ -21,6 +21,10 @@ namespace Blaze
 		void SetUniform3fv(const glm::vec3& data, const char* uniform_name);
 		void SetUniform4fv(const glm::vec4& data, const char* uniform_name);
 
+		void SetUniform1fvArray(const float* data, int count, const char* uniform_name);
+		void SetUniform2fvArray(const glm::vec2* data, int count, const char* uniform_name);
+		void SetUniform3fvArray(const glm::vec3* data, int count, const char* uniform_name);
+
 		void SetUniformMatrix4fv(const glm::mat4& data, const char* uniform_name);
 	    
 

@@ -1,6 +1,8 @@
 #include "Project.h"
 #include "Blaze/Renderer/Renderer.h"
 #include "Blaze/Renderer/GameObject.h"
+#include "Blaze/Input/InputActionsAsset.h"
+#include "Blaze/Localization/LocalizationAsset.h"
 #include "Blaze/ImGui/ObjectWindow.h"
 #include "Blaze/UI/UISystem.h"
 #include "Blaze/Logging/Log.h"
@@ -10,6 +12,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cstdio>
+#include <vector>
 
 #define NOMINMAX
 #include <windows.h>
@@ -351,6 +354,13 @@ namespace Blaze
 
 	bool Project::BuildGame()
 	{
+		BuildGameOptions options;
+		options.promptForOutputPath = true;
+		return BuildGame(options);
+	}
+
+	bool Project::BuildGame(const BuildGameOptions& options)
+	{
 		if (!HasProject())
 		{
 			BZ_INFO("Build failed: no project open");
@@ -364,7 +374,7 @@ namespace Blaze
 			return false;
 		}
 
-		std::string gameName = GetGameName();
+		std::string gameName = options.gameName.empty() ? GetGameName() : options.gameName;
 		if (gameName.empty())
 			gameName = s_Name;
 		for (char& c : gameName)
@@ -373,23 +383,38 @@ namespace Blaze
 				c = '_';
 		}
 
-		char filePath[MAX_PATH] = {};
-		std::snprintf(filePath, MAX_PATH, "%s.exe", gameName.c_str());
+		fs::path outExe;
+		if (!options.outputExePath.empty())
+		{
+			outExe = options.outputExePath;
+			if (outExe.extension().empty())
+				outExe += ".exe";
+		}
+		else if (options.promptForOutputPath)
+		{
+			char filePath[MAX_PATH] = {};
+			std::snprintf(filePath, MAX_PATH, "%s.exe", gameName.c_str());
 
-		OPENFILENAMEA ofn = {};
-		ofn.lStructSize = sizeof(ofn);
-		ofn.lpstrFile = filePath;
-		ofn.nMaxFile = MAX_PATH;
-		ofn.lpstrFilter = "Executable (*.exe)\0*.exe\0All Files (*.*)\0*.*\0";
-		ofn.nFilterIndex = 1;
-		ofn.lpstrDefExt = "exe";
-		ofn.lpstrTitle = "Build game executable";
-		ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
+			OPENFILENAMEA ofn = {};
+			ofn.lStructSize = sizeof(ofn);
+			ofn.lpstrFile = filePath;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrFilter = "Executable (*.exe)\0*.exe\0All Files (*.*)\0*.*\0";
+			ofn.nFilterIndex = 1;
+			ofn.lpstrDefExt = "exe";
+			ofn.lpstrTitle = "Build game executable";
+			ofn.Flags = OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
 
-		if (!GetSaveFileNameA(&ofn))
+			if (!GetSaveFileNameA(&ofn))
+				return false;
+			outExe = filePath;
+		}
+		else
+		{
+			BZ_INFO("Build failed: no output path");
 			return false;
+		}
 
-		const fs::path outExe = filePath;
 		const fs::path outDir = outExe.parent_path();
 		std::error_code ec;
 		fs::create_directories(outDir, ec);
@@ -414,7 +439,6 @@ namespace Blaze
 			return false;
 		}
 
-		// Ship full content tree (maps, scripts, textures, audio, .widget UI assets, etc.)
 		const fs::path contentSrc = fs::path(s_Directory) / s_ContentFolder;
 		if (fs::exists(contentSrc, ec))
 		{
@@ -429,10 +453,13 @@ namespace Blaze
 			BZ_INFO("Build warning: content folder missing at {0}", contentSrc.string());
 		}
 
-		// Ensure starting map is present even if stored outside content/
-		std::string starting = s_StartingMap.empty() ? GetDefaultMapPath() : MakeProjectRelative(s_StartingMap);
+		std::string starting = options.startingMap.empty()
+			? (s_StartingMap.empty() ? GetDefaultMapPath() : MakeProjectRelative(s_StartingMap))
+			: MakeProjectRelative(options.startingMap);
 		{
 			fs::path startAbs = fs::path(s_Directory) / starting;
+			if (!fs::exists(startAbs, ec) && !options.startingMap.empty())
+				startAbs = options.startingMap;
 			if (!fs::exists(startAbs, ec) && !s_StartingMap.empty())
 				startAbs = s_StartingMap;
 			if (fs::exists(startAbs, ec))
@@ -440,6 +467,56 @@ namespace Blaze
 				const fs::path destMap = outDir / MakeProjectRelative(startAbs.string());
 				fs::create_directories(destMap.parent_path(), ec);
 				CopyPathRecursive(startAbs, destMap);
+			}
+		}
+
+		// Optionally strip maps not listed in includedMaps (assets stay).
+		if (!options.includedMaps.empty())
+		{
+			auto mapIncluded = [&](const fs::path& mapPathInBuild) -> bool
+			{
+				const std::string fileName = mapPathInBuild.filename().string();
+				std::string relFromContent;
+				{
+					std::error_code ecRel;
+					fs::path contentOutPath = outDir / s_ContentFolder;
+					fs::path rel = fs::relative(mapPathInBuild, contentOutPath, ecRel);
+					if (!ecRel)
+						relFromContent = (fs::path(s_ContentFolder) / rel).generic_string();
+				}
+
+				for (const std::string& included : options.includedMaps)
+				{
+					if (included.empty())
+						continue;
+					if (fs::path(included).filename() == fileName)
+						return true;
+					if (!relFromContent.empty() && included == relFromContent)
+						return true;
+					if (included == fileName)
+						return true;
+				}
+				return false;
+			};
+
+			const fs::path contentOutStrip = outDir / s_ContentFolder;
+			if (fs::exists(contentOutStrip, ec))
+			{
+				std::vector<fs::path> toRemove;
+				for (auto it = fs::recursive_directory_iterator(contentOutStrip, ec); it != fs::recursive_directory_iterator(); ++it)
+				{
+					if (ec || !it->is_regular_file())
+						continue;
+					std::string ext = it->path().extension().string();
+					for (char& c : ext)
+						c = (char)std::tolower((unsigned char)c);
+					if (ext != ".map")
+						continue;
+					if (!mapIncluded(it->path()))
+						toRemove.push_back(it->path());
+				}
+				for (const fs::path& path : toRemove)
+					fs::remove(path, ec);
 			}
 		}
 
@@ -473,7 +550,7 @@ namespace Blaze
 		}
 
 		gameProject << "BlazeProject 1\n";
-		gameProject << "name " << GetGameName() << "\n";
+		gameProject << "name " << gameName << "\n";
 		gameProject << "startingMap " << starting << "\n";
 		gameProject << "map " << starting << "\n";
 		gameProject.close();
@@ -576,6 +653,28 @@ namespace Blaze
 		s_GameName = name;
 		s_ProjectFile = (projectDir / (name + ".blaze")).string();
 		fs::create_directories(projectDir / s_ContentFolder / "maps", ec);
+		fs::create_directories(projectDir / s_ContentFolder / "input", ec);
+		fs::create_directories(projectDir / s_ContentFolder / "prefabs", ec);
+		fs::create_directories(projectDir / s_ContentFolder / "presets", ec);
+		fs::create_directories(projectDir / s_ContentFolder / "localization", ec);
+		{
+			fs::path inputPath = projectDir / s_ContentFolder / "input" / "Default.inputactions";
+			if (!fs::exists(inputPath, ec))
+			{
+				InputActionsAsset asset = InputActionsAsset::CreateDefault("Default");
+				asset.SetPath(inputPath.string());
+				asset.SaveToFile(inputPath.string());
+			}
+		}
+		{
+			fs::path locPath = projectDir / s_ContentFolder / "localization" / "en.loc";
+			if (!fs::exists(locPath, ec))
+			{
+				LocalizationAsset asset = LocalizationAsset::CreateDefault("en");
+				asset.SetPath(locPath.string());
+				asset.SaveToFile(locPath.string());
+			}
+		}
 		s_StartingMap = GetDefaultMapPath();
 		s_ActiveMapFile = (projectDir / s_StartingMap).string();
 		s_MapScriptPath = CreateMapScriptForMap(s_ActiveMapFile);
@@ -664,6 +763,220 @@ namespace Blaze
 		return true;
 	}
 
+	Project::GameObjectWriteFlags Project::GameObjectWriteFlags::All()
+	{
+		return GameObjectWriteFlags{};
+	}
+
+	Project::GameObjectWriteFlags Project::GameObjectWriteFlags::ComponentPreset()
+	{
+		GameObjectWriteFlags flags;
+		flags.name = false;
+		flags.type = false;
+		flags.transform = false;
+		flags.parent = false;
+		flags.cameraDrives = false;
+		flags.tilemapTiles = false;
+		return flags;
+	}
+
+	void Project::WriteGameObject(std::ostream& out, GameObject* object, int parentIndex, const GameObjectWriteFlags& flags)
+	{
+		if (!object)
+			return;
+
+		if (flags.objectMarkers)
+			out << "object\n";
+
+		if (flags.name)
+			out << "name " << object->GetName() << "\n";
+		if (flags.type)
+			out << "type " << (int)object->GetType() << "\n";
+
+		if (flags.transform)
+		{
+			glm::vec3 pos = object->GetLocalPosition();
+			out << "pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
+			out << "rot " << object->GetLocalRotation() << "\n";
+
+			glm::vec2 scale = object->GetLocalScale();
+			out << "scale " << scale.x << " " << scale.y << "\n";
+		}
+
+		if (flags.identity)
+		{
+			out << "layer " << object->GetLayer() << "\n";
+			out << "visible " << (object->IsVisible() ? 1 : 0) << "\n";
+			{
+				glm::vec4 color = object->GetColor();
+				out << "color " << color.r << " " << color.g << " " << color.b << " " << color.a << "\n";
+			}
+			if (!object->GetTags().empty())
+				out << "tags " << object->GetTagsString() << "\n";
+		}
+
+		if (flags.camera && object->IsCamera())
+		{
+			out << "zoom " << object->GetZoom() << "\n";
+			if (flags.cameraDrives)
+				out << "drives " << (object->DrivesView() ? 1 : 0) << "\n";
+		}
+
+		if (flags.light && object->IsLight())
+		{
+			out << "lightradius " << object->GetLightRadius() << "\n";
+			out << "lightintensity " << object->GetLightIntensity() << "\n";
+			out << "lightenabled " << (object->IsLightEnabled() ? 1 : 0) << "\n";
+			out << "lightkind " << (object->GetLightKind() == LightKind::Spot ? "spot" : "point") << "\n";
+			if (object->GetLightKind() == LightKind::Spot)
+			{
+				out << "lightinner " << object->GetLightInnerAngle() << "\n";
+				out << "lightouter " << object->GetLightOuterAngle() << "\n";
+			}
+		}
+
+		if (flags.texture && !object->GetTexturePath().empty())
+			out << "texture " << StoreTexturePath(object->GetTexturePath()) << "\n";
+
+		if (flags.flipbook)
+		{
+			if (object->GetFlipbookColumns() != 1 || object->GetFlipbookRows() != 1 ||
+				object->GetFlipbookFrameCount() != 0 || object->IsFlipbookPlaying() ||
+				object->GetFlipbookFrame() != 0 || !object->GetFlipbookLoop() ||
+				object->GetFlipbookFps() < 11.999f || object->GetFlipbookFps() > 12.001f ||
+				object->GetFlipbookClipCount() > 0 || object->GetActiveFlipbookClipIndex() >= 0)
+			{
+				out << "flipbook " << object->GetFlipbookColumns()
+					<< " " << object->GetFlipbookRows()
+					<< " " << object->GetFlipbookFrameCount()
+					<< " " << object->GetFlipbookFps()
+					<< " " << (object->IsFlipbookPlaying() ? 1 : 0)
+					<< " " << (object->GetFlipbookLoop() ? 1 : 0)
+					<< " " << object->GetFlipbookFrame() << "\n";
+			}
+
+			for (const FlipbookClip& clip : object->GetFlipbookClips())
+			{
+				if (object->HasFlipbookAsset())
+					break;
+				out << "flipclip " << clip.name
+					<< " " << clip.startFrame
+					<< " " << clip.endFrame
+					<< " " << clip.fps
+					<< " " << (clip.loop ? 1 : 0) << "\n";
+			}
+			if (object->HasFlipbookAsset())
+				out << "flipbookasset " << StoreTexturePath(object->GetFlipbookAssetPath()) << "\n";
+			if (object->GetActiveFlipbookClipIndex() >= 0)
+			{
+				const std::string active = object->GetActiveFlipbookClipName();
+				if (!active.empty())
+					out << "flipclipactive " << active << "\n";
+			}
+		}
+
+		if (flags.anim && object->HasAnimAsset())
+		{
+			out << "animasset " << StoreTexturePath(object->GetAnimAssetPath()) << "\n";
+			out << "animenabled " << (object->IsAnimEnabled() ? 1 : 0) << "\n";
+		}
+
+		if (flags.tilemap && object->IsTilemap())
+		{
+			out << "tilemap " << object->GetTilemapColumns()
+				<< " " << object->GetTilemapRows()
+				<< " " << object->GetTileCellSize() << "\n";
+			out << "tilesetgrid " << object->GetTilesetColumns()
+				<< " " << object->GetTilesetRows() << "\n";
+			out << "tilecollision " << (object->IsTileCollisionEnabled() ? 1 : 0) << "\n";
+			out << "tilesetsolid";
+			for (uint8_t flag : object->GetTilesetSolid())
+				out << " " << (int)flag;
+			out << "\n";
+			out << "tilelayers " << object->GetTileLayerCount() << "\n";
+			for (int li = 0; li < object->GetTileLayerCount(); ++li)
+			{
+				const TilemapLayer* layer = object->GetTileLayer(li);
+				if (!layer)
+					continue;
+				out << "tilelayer " << (layer->visible ? 1 : 0)
+					<< " " << (layer->collision ? 1 : 0)
+					<< " " << layer->opacity
+					<< " " << layer->name << "\n";
+				if (flags.tilemapTiles)
+				{
+					out << "tiles";
+					for (int tile : layer->tiles)
+						out << " " << tile;
+					out << "\n";
+				}
+			}
+			out << "tilelayeractive " << object->GetActiveTileLayer() << "\n";
+		}
+
+		if (flags.text && object->IsText())
+		{
+			out << "text " << object->GetText() << "\n";
+			out << "fontsize " << object->GetFontSize() << "\n";
+			if (!object->GetFontPath().empty())
+				out << "fontpath " << StoreTexturePath(object->GetFontPath()) << "\n";
+		}
+
+		if (flags.collision && object->HasCollision())
+		{
+			out << "collision " << (int)object->GetCollisionType() << "\n";
+			out << "collidershape " << (int)object->GetColliderShape() << "\n";
+			out << "collisionradius " << object->GetCollisionRadius() << "\n";
+			glm::vec2 csize = object->GetCollisionSize();
+			out << "collisionsize " << csize.x << " " << csize.y << "\n";
+			out << "rbmass " << object->GetRigidbodyMass() << "\n";
+			out << "rbgravity " << object->GetRigidbodyGravityScale() << "\n";
+			out << "rbkinematic " << (object->IsRigidbodyKinematic() ? 1 : 0) << "\n";
+			out << "trigger " << (object->IsTrigger() ? 1 : 0) << "\n";
+			out << "collisionlayer " << object->GetCollisionLayer() << "\n";
+			out << "collisionmask " << object->GetCollisionMask() << "\n";
+			if (object->GetColliderShape() == ColliderShape::Polygon)
+			{
+				const auto& verts = object->GetColliderVertices();
+				out << "colliderverts " << verts.size();
+				for (const glm::vec2& v : verts)
+					out << " " << v.x << " " << v.y;
+				out << "\n";
+			}
+		}
+
+		if (flags.audio && object->HasAudio())
+		{
+			out << "audio 1\n";
+			if (!object->GetAudioPath().empty())
+				out << "audiopath " << StoreTexturePath(object->GetAudioPath()) << "\n";
+			out << "audiovolume " << object->GetAudioVolume() << "\n";
+			out << "audioloop " << (object->GetAudioLoop() ? 1 : 0) << "\n";
+			out << "audioplayonstart " << (object->GetAudioPlayOnStart() ? 1 : 0) << "\n";
+		}
+
+		if (flags.particle && object->HasParticleEmitter())
+		{
+			out << "particle 1\n";
+			if (!object->GetParticlePath().empty())
+				out << "particlepath " << StoreTexturePath(object->GetParticlePath()) << "\n";
+			out << "particleplayonstart " << (object->GetParticlePlayOnStart() ? 1 : 0) << "\n";
+		}
+
+		if (flags.script && object->HasScript())
+		{
+			out << "script 1\n";
+			if (!object->GetScriptPath().empty())
+				out << "scriptpath " << StoreTexturePath(object->GetScriptPath()) << "\n";
+		}
+
+		if (flags.parent && parentIndex >= 0)
+			out << "parent " << parentIndex << "\n";
+
+		if (flags.objectMarkers)
+			out << "end\n";
+	}
+
 	bool Project::WriteSceneFile(const std::string& path, Renderer& renderer, ObjectWindow* objectsWindow, bool asMap)
 	{
 		if (path.empty())
@@ -687,139 +1000,7 @@ namespace Blaze
 			if (!object)
 				continue;
 
-			out << "object\n";
-			out << "name " << object->GetName() << "\n";
-			out << "type " << (int)object->GetType() << "\n";
-
-			glm::vec3 pos = object->GetLocalPosition();
-			out << "pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
-			out << "rot " << object->GetLocalRotation() << "\n";
-
-			glm::vec2 scale = object->GetLocalScale();
-			out << "scale " << scale.x << " " << scale.y << "\n";
-			out << "layer " << object->GetLayer() << "\n";
-			out << "visible " << (object->IsVisible() ? 1 : 0) << "\n";
-			{
-				glm::vec4 color = object->GetColor();
-				out << "color " << color.r << " " << color.g << " " << color.b << " " << color.a << "\n";
-			}
-			if (!object->GetTags().empty())
-				out << "tags " << object->GetTagsString() << "\n";
-
-			if (object->IsCamera())
-			{
-				out << "zoom " << object->GetZoom() << "\n";
-				out << "drives " << (object->DrivesView() ? 1 : 0) << "\n";
-			}
-
-			if (!object->GetTexturePath().empty())
-				out << "texture " << StoreTexturePath(object->GetTexturePath()) << "\n";
-
-			if (object->GetFlipbookColumns() != 1 || object->GetFlipbookRows() != 1 ||
-				object->GetFlipbookFrameCount() != 0 || object->IsFlipbookPlaying() ||
-				object->GetFlipbookFrame() != 0 || !object->GetFlipbookLoop() ||
-				object->GetFlipbookFps() < 11.999f || object->GetFlipbookFps() > 12.001f ||
-				object->GetFlipbookClipCount() > 0 || object->GetActiveFlipbookClipIndex() >= 0)
-			{
-				out << "flipbook " << object->GetFlipbookColumns()
-					<< " " << object->GetFlipbookRows()
-					<< " " << object->GetFlipbookFrameCount()
-					<< " " << object->GetFlipbookFps()
-					<< " " << (object->IsFlipbookPlaying() ? 1 : 0)
-					<< " " << (object->GetFlipbookLoop() ? 1 : 0)
-					<< " " << object->GetFlipbookFrame() << "\n";
-			}
-
-			for (const FlipbookClip& clip : object->GetFlipbookClips())
-			{
-				// Prefer asset file as source of truth when assigned
-				if (object->HasFlipbookAsset())
-					break;
-				out << "flipclip " << clip.name
-					<< " " << clip.startFrame
-					<< " " << clip.endFrame
-					<< " " << clip.fps
-					<< " " << (clip.loop ? 1 : 0) << "\n";
-			}
-			if (object->HasFlipbookAsset())
-				out << "flipbookasset " << StoreTexturePath(object->GetFlipbookAssetPath()) << "\n";
-			if (object->GetActiveFlipbookClipIndex() >= 0)
-			{
-				const std::string active = object->GetActiveFlipbookClipName();
-				if (!active.empty())
-					out << "flipclipactive " << active << "\n";
-			}
-
-			if (object->IsTilemap())
-			{
-				out << "tilemap " << object->GetTilemapColumns()
-					<< " " << object->GetTilemapRows()
-					<< " " << object->GetTileCellSize() << "\n";
-				out << "tilesetgrid " << object->GetTilesetColumns()
-					<< " " << object->GetTilesetRows() << "\n";
-				out << "tilecollision " << (object->IsTileCollisionEnabled() ? 1 : 0) << "\n";
-				out << "tilesetsolid";
-				for (uint8_t flag : object->GetTilesetSolid())
-					out << " " << (int)flag;
-				out << "\n";
-				out << "tilelayers " << object->GetTileLayerCount() << "\n";
-				for (int li = 0; li < object->GetTileLayerCount(); ++li)
-				{
-					const TilemapLayer* layer = object->GetTileLayer(li);
-					if (!layer)
-						continue;
-					out << "tilelayer " << (layer->visible ? 1 : 0)
-						<< " " << (layer->collision ? 1 : 0)
-						<< " " << layer->opacity
-						<< " " << layer->name << "\n";
-					out << "tiles";
-					for (int tile : layer->tiles)
-						out << " " << tile;
-					out << "\n";
-				}
-				out << "tilelayeractive " << object->GetActiveTileLayer() << "\n";
-			}
-
-			if (object->IsText())
-			{
-				out << "text " << object->GetText() << "\n";
-				out << "fontsize " << object->GetFontSize() << "\n";
-				if (!object->GetFontPath().empty())
-					out << "fontpath " << StoreTexturePath(object->GetFontPath()) << "\n";
-			}
-
-			if (object->HasCollision())
-			{
-				out << "collision " << (int)object->GetCollisionType() << "\n";
-				out << "collidershape " << (int)object->GetColliderShape() << "\n";
-				out << "collisionradius " << object->GetCollisionRadius() << "\n";
-				glm::vec2 csize = object->GetCollisionSize();
-				out << "collisionsize " << csize.x << " " << csize.y << "\n";
-				out << "rbmass " << object->GetRigidbodyMass() << "\n";
-				out << "rbgravity " << object->GetRigidbodyGravityScale() << "\n";
-				out << "rbkinematic " << (object->IsRigidbodyKinematic() ? 1 : 0) << "\n";
-				out << "trigger " << (object->IsTrigger() ? 1 : 0) << "\n";
-				out << "collisionlayer " << object->GetCollisionLayer() << "\n";
-				out << "collisionmask " << object->GetCollisionMask() << "\n";
-			}
-
-			if (object->HasAudio())
-			{
-				out << "audio 1\n";
-				if (!object->GetAudioPath().empty())
-					out << "audiopath " << StoreTexturePath(object->GetAudioPath()) << "\n";
-				out << "audiovolume " << object->GetAudioVolume() << "\n";
-				out << "audioloop " << (object->GetAudioLoop() ? 1 : 0) << "\n";
-				out << "audioplayonstart " << (object->GetAudioPlayOnStart() ? 1 : 0) << "\n";
-			}
-
-			if (object->HasScript())
-			{
-				out << "script 1\n";
-				if (!object->GetScriptPath().empty())
-					out << "scriptpath " << StoreTexturePath(object->GetScriptPath()) << "\n";
-			}
-
+			int parentIndex = -1;
 			if (GameObject* parent = object->GetParent())
 			{
 				const auto& objs = renderer.GetObjects();
@@ -827,13 +1008,12 @@ namespace Blaze
 				{
 					if (objs[i] == parent)
 					{
-						out << "parent " << (int)i << "\n";
+						parentIndex = (int)i;
 						break;
 					}
 				}
 			}
-
-			out << "end\n";
+			WriteGameObject(out, object, parentIndex);
 		}
 
 		if (objectsWindow)
@@ -844,6 +1024,500 @@ namespace Blaze
 
 		BZ_INFO("Scene saved: {0}", path);
 		return true;
+	}
+
+	bool Project::ApplyGameObjectProperty(GameObject* current, const std::string& line, int* outParentIndex)
+	{
+		if (!current)
+			return false;
+
+		std::istringstream stream(line);
+		std::string key;
+		stream >> key;
+
+		if (key == "name" && line.size() > 5)
+		{
+			current->SetName(line.substr(5));
+		}
+		else if (key == "type")
+		{
+			int type = 0;
+			stream >> type;
+			current->SetType((ObjectType)type);
+		}
+		else if (key == "pos")
+		{
+			glm::vec3 pos(0.0f);
+			stream >> pos.x >> pos.y >> pos.z;
+			current->SetLocalPosition(pos);
+		}
+		else if (key == "rot")
+		{
+			float rotation = 0.0f;
+			stream >> rotation;
+			current->SetLocalRotation(rotation);
+		}
+		else if (key == "scale")
+		{
+			glm::vec2 scale(1.0f);
+			stream >> scale.x >> scale.y;
+			current->SetLocalScale(scale);
+		}
+		else if (key == "layer")
+		{
+			int layer = 0;
+			stream >> layer;
+			current->SetLayer(layer);
+		}
+		else if (key == "visible")
+		{
+			int visible = 1;
+			stream >> visible;
+			current->SetVisible(visible != 0);
+		}
+		else if (key == "color")
+		{
+			glm::vec4 color(1.0f);
+			stream >> color.r >> color.g >> color.b >> color.a;
+			current->SetColor(color);
+		}
+		else if (key == "tags" && line.size() > 5)
+		{
+			current->SetTagsFromString(line.substr(5));
+		}
+		else if (key == "tag" && line.size() > 4)
+		{
+			current->SetTag(line.substr(4));
+		}
+		else if (key == "zoom")
+		{
+			float zoom = 1.0f;
+			stream >> zoom;
+			current->SetZoom(zoom);
+		}
+		else if (key == "drives")
+		{
+			int drives = 0;
+			stream >> drives;
+			current->SetDrivesView(drives != 0);
+		}
+		else if (key == "lightradius")
+		{
+			float radius = 300.0f;
+			stream >> radius;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			current->SetLightRadius(radius);
+		}
+		else if (key == "lightintensity")
+		{
+			float intensity = 1.0f;
+			stream >> intensity;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			current->SetLightIntensity(intensity);
+		}
+		else if (key == "lightenabled")
+		{
+			int enabled = 1;
+			stream >> enabled;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			current->SetLightEnabled(enabled != 0);
+		}
+		else if (key == "lightkind")
+		{
+			std::string kind;
+			stream >> kind;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			if (kind == "spot" || kind == "1")
+				current->SetLightKind(LightKind::Spot);
+			else
+				current->SetLightKind(LightKind::Point);
+		}
+		else if (key == "lightinner")
+		{
+			float angle = 20.0f;
+			stream >> angle;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			current->SetLightInnerAngle(angle);
+		}
+		else if (key == "lightouter")
+		{
+			float angle = 35.0f;
+			stream >> angle;
+			if (current->GetType() != ObjectType::Light)
+				current->SetType(ObjectType::Light);
+			current->SetLightOuterAngle(angle);
+		}
+		else if (key == "texture" && line.size() > 8)
+		{
+			std::string rel = line.substr(8);
+			if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+				rel = std::string(s_ContentFolder) + rel.substr(3);
+
+			std::error_code ec;
+			if (fs::exists(rel, ec))
+				current->SetTexture(rel);
+			else
+			{
+				fs::path full = fs::path(s_Directory) / rel;
+				if (fs::exists(full, ec))
+					current->SetTexture(full.generic_string());
+				else
+					current->SetTexture(rel);
+			}
+		}
+		else if (key == "fontsize")
+		{
+			float size = 48.0f;
+			stream >> size;
+			current->SetFontSize(size);
+		}
+		else if (key == "fontpath")
+		{
+			std::string rel;
+			stream >> rel;
+			std::error_code ec;
+			if (!s_Directory.empty())
+			{
+				fs::path full = fs::path(s_Directory) / rel;
+				if (fs::exists(full, ec))
+					current->SetFontPath(full.generic_string());
+				else
+					current->SetFontPath(rel);
+			}
+			else
+				current->SetFontPath(rel);
+		}
+		else if (key == "text" && line.size() > 5)
+		{
+			current->SetText(line.substr(5));
+		}
+		else if (key == "flipbook")
+		{
+			int cols = 1, rows = 1, frameCount = 0, playing = 0, loop = 1, frame = 0;
+			float fps = 12.0f;
+			stream >> cols >> rows >> frameCount >> fps >> playing >> loop >> frame;
+			current->SetFlipbookColumns(cols);
+			current->SetFlipbookRows(rows);
+			current->SetFlipbookFrameCount(frameCount);
+			current->SetFlipbookFps(fps);
+			current->SetFlipbookLoop(loop != 0);
+			current->SetFlipbookFrame(frame);
+			current->SetFlipbookPlaying(playing != 0);
+		}
+		else if (key == "flipclip")
+		{
+			std::string name;
+			int start = 0, end = 0, loop = 1;
+			float fps = -1.0f;
+			stream >> name >> start >> end >> fps >> loop;
+			if (!name.empty())
+				current->AddFlipbookClip(name, start, end, fps, loop != 0);
+		}
+		else if (key == "flipclipactive")
+		{
+			std::string name;
+			stream >> name;
+			if (!name.empty())
+				current->SetActiveFlipbookClip(name);
+		}
+		else if (key == "flipbookasset")
+		{
+			std::string rel;
+			stream >> rel;
+			if (!rel.empty())
+			{
+				fs::path resolved = Project::GetDirectory().empty()
+					? fs::path(rel)
+					: fs::path(Project::GetDirectory()) / rel;
+				if (!fs::exists(resolved))
+					resolved = rel;
+				current->SetFlipbookAssetPath(resolved.generic_string());
+			}
+		}
+		else if (key == "animasset")
+		{
+			std::string rel;
+			stream >> rel;
+			if (!rel.empty())
+			{
+				fs::path resolved = Project::GetDirectory().empty()
+					? fs::path(rel)
+					: fs::path(Project::GetDirectory()) / rel;
+				if (!fs::exists(resolved))
+					resolved = rel;
+				current->SetAnimAssetPath(resolved.generic_string());
+			}
+		}
+		else if (key == "animenabled")
+		{
+			int enabled = 1;
+			stream >> enabled;
+			current->SetAnimEnabled(enabled != 0);
+		}
+		else if (key == "tilemap")
+		{
+			int cols = 16, rows = 12;
+			float cell = 32.0f;
+			stream >> cols >> rows >> cell;
+			current->SetType(ObjectType::Tilemap);
+			current->ClearTileLayers();
+			current->SetTilemapSize(cols, rows);
+			current->SetTileCellSize(cell);
+		}
+		else if (key == "tilesetgrid")
+		{
+			int cols = 1, rows = 1;
+			stream >> cols >> rows;
+			current->SetTilesetGrid(cols, rows);
+		}
+		else if (key == "tilecollision")
+		{
+			int enabled = 1;
+			stream >> enabled;
+			current->SetTileCollisionEnabled(enabled != 0);
+		}
+		else if (key == "tilesetsolid")
+		{
+			std::vector<uint8_t> solids;
+			int value = 0;
+			while (stream >> value)
+				solids.push_back(value ? 1 : 0);
+			if (current->GetType() != ObjectType::Tilemap)
+				current->SetType(ObjectType::Tilemap);
+			current->SetTilesetSolidFromList(solids);
+		}
+		else if (key == "tilelayers")
+		{
+			int count = 1;
+			stream >> count;
+			if (current->GetType() != ObjectType::Tilemap)
+				current->SetType(ObjectType::Tilemap);
+			current->ClearTileLayers();
+			(void)count;
+		}
+		else if (key == "tilelayer")
+		{
+			int visible = 1;
+			int collision = 1;
+			float opacity = 1.0f;
+			stream >> visible >> collision >> opacity;
+			std::string name;
+			std::getline(stream, name);
+			while (!name.empty() && (name.front() == ' ' || name.front() == '\t'))
+				name.erase(name.begin());
+			while (!name.empty() && (name.back() == '\r' || name.back() == ' ' || name.back() == '\t'))
+				name.pop_back();
+			if (name.empty())
+				name = "Layer";
+			if (current->GetType() != ObjectType::Tilemap)
+				current->SetType(ObjectType::Tilemap);
+			const int index = current->AddTileLayer(name);
+			current->SetTileLayerVisible(index, visible != 0);
+			current->SetTileLayerCollision(index, collision != 0);
+			current->SetTileLayerOpacity(index, opacity);
+		}
+		else if (key == "tilelayeractive")
+		{
+			int active = 0;
+			stream >> active;
+			current->SetActiveTileLayer(active);
+		}
+		else if (key == "tiles")
+		{
+			std::vector<int> tiles;
+			int value = 0;
+			while (stream >> value)
+				tiles.push_back(value);
+			if (current->GetType() != ObjectType::Tilemap)
+				current->SetType(ObjectType::Tilemap);
+			if (current->GetTileLayerCount() <= 0)
+				current->AddTileLayer("Layer 0");
+			current->SetTilesFromList(tiles);
+		}
+		else if (key == "collision")
+		{
+			int type = 0;
+			stream >> type;
+			current->AddCollision((CollisionType)type);
+		}
+		else if (key == "collidershape")
+		{
+			int shape = 0;
+			stream >> shape;
+			current->SetColliderShape((ColliderShape)shape);
+		}
+		else if (key == "collisionradius")
+		{
+			float radius = 50.0f;
+			stream >> radius;
+			current->SetCollisionRadius(radius);
+		}
+		else if (key == "collisionsize")
+		{
+			glm::vec2 size(100.0f);
+			stream >> size.x >> size.y;
+			current->SetCollisionSize(size);
+		}
+		else if (key == "colliderverts")
+		{
+			size_t count = 0;
+			stream >> count;
+			std::vector<glm::vec2> verts;
+			verts.reserve(std::min(count, (size_t)8));
+			for (size_t i = 0; i < count && i < 8; ++i)
+			{
+				glm::vec2 v(0.0f);
+				stream >> v.x >> v.y;
+				verts.push_back(v);
+			}
+			current->SetColliderVertices(verts);
+		}
+		else if (key == "rbmass")
+		{
+			float mass = 1.0f;
+			stream >> mass;
+			current->SetRigidbodyMass(mass);
+		}
+		else if (key == "rbgravity")
+		{
+			float gravity = 1.0f;
+			stream >> gravity;
+			current->SetRigidbodyGravityScale(gravity);
+		}
+		else if (key == "rbkinematic")
+		{
+			int kinematic = 0;
+			stream >> kinematic;
+			current->SetRigidbodyKinematic(kinematic != 0);
+		}
+		else if (key == "trigger")
+		{
+			int trigger = 0;
+			stream >> trigger;
+			current->SetIsTrigger(trigger != 0);
+		}
+		else if (key == "collisionlayer")
+		{
+			int layer = 0;
+			stream >> layer;
+			current->SetCollisionLayer(layer);
+		}
+		else if (key == "collisionmask")
+		{
+			uint32_t mask = 0xFFFFFFFFu;
+			stream >> mask;
+			current->SetCollisionMask(mask);
+		}
+		else if (key == "audio")
+		{
+			current->AddAudio();
+		}
+		else if (key == "audiopath" && line.size() > 10)
+		{
+			std::string rel = line.substr(10);
+			if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+				rel = std::string(s_ContentFolder) + rel.substr(3);
+
+			std::error_code ec;
+			if (fs::exists(rel, ec))
+				current->SetAudioPath(rel);
+			else
+			{
+				fs::path full = fs::path(s_Directory) / rel;
+				if (fs::exists(full, ec))
+					current->SetAudioPath(full.generic_string());
+				else
+					current->SetAudioPath(rel);
+			}
+		}
+		else if (key == "audiovolume")
+		{
+			float volume = 1.0f;
+			stream >> volume;
+			current->SetAudioVolume(volume);
+		}
+		else if (key == "audioloop")
+		{
+			int loop = 0;
+			stream >> loop;
+			current->SetAudioLoop(loop != 0);
+		}
+		else if (key == "audioplayonstart")
+		{
+			int play = 1;
+			stream >> play;
+			current->SetAudioPlayOnStart(play != 0);
+		}
+		else if (key == "particle")
+		{
+			current->AddParticleEmitter();
+		}
+		else if (key == "particlepath" && line.size() > 13)
+		{
+			std::string rel = line.substr(13);
+			if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+				rel = std::string(s_ContentFolder) + rel.substr(3);
+
+			std::error_code ec;
+			if (fs::exists(rel, ec))
+				current->SetParticlePath(rel);
+			else
+			{
+				fs::path full = fs::path(s_Directory) / rel;
+				if (fs::exists(full, ec))
+					current->SetParticlePath(full.generic_string());
+				else
+					current->SetParticlePath(rel);
+			}
+		}
+		else if (key == "particleplayonstart")
+		{
+			int play = 1;
+			stream >> play;
+			current->SetParticlePlayOnStart(play != 0);
+		}
+		else if (key == "script")
+		{
+			current->AddScript();
+		}
+		else if (key == "scriptpath" && line.size() > 11)
+		{
+			std::string rel = line.substr(11);
+			if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
+				rel = std::string(s_ContentFolder) + rel.substr(3);
+
+			std::error_code ec;
+			if (fs::exists(rel, ec))
+				current->SetScriptPath(rel);
+			else
+			{
+				fs::path full = fs::path(s_Directory) / rel;
+				if (fs::exists(full, ec))
+					current->SetScriptPath(full.generic_string());
+				else
+					current->SetScriptPath(rel);
+			}
+		}
+		else if (key == "parent")
+		{
+			int parentIndex = -1;
+			stream >> parentIndex;
+			if (outParentIndex && parentIndex >= 0)
+				*outParentIndex = parentIndex;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+
+		return true;
+
 	}
 
 	bool Project::ReadSceneFile(const std::string& path, Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, ObjectWindow* objectsWindow)
@@ -925,370 +1599,10 @@ namespace Blaze
 				continue;
 			}
 
-			std::istringstream stream(line);
-			std::string key;
-			stream >> key;
-
-			if (key == "name" && line.size() > 5)
+			int parentIndex = -1;
+			if (ApplyGameObjectProperty(current, line, &parentIndex))
 			{
-				current->SetName(line.substr(5));
-			}
-			else if (key == "type")
-			{
-				int type = 0;
-				stream >> type;
-				current->SetType((ObjectType)type);
-			}
-			else if (key == "pos")
-			{
-				glm::vec3 pos(0.0f);
-				stream >> pos.x >> pos.y >> pos.z;
-				current->SetLocalPosition(pos);
-			}
-			else if (key == "rot")
-			{
-				float rotation = 0.0f;
-				stream >> rotation;
-				current->SetLocalRotation(rotation);
-			}
-			else if (key == "scale")
-			{
-				glm::vec2 scale(1.0f);
-				stream >> scale.x >> scale.y;
-				current->SetLocalScale(scale);
-			}
-			else if (key == "layer")
-			{
-				int layer = 0;
-				stream >> layer;
-				current->SetLayer(layer);
-			}
-			else if (key == "visible")
-			{
-				int visible = 1;
-				stream >> visible;
-				current->SetVisible(visible != 0);
-			}
-			else if (key == "color")
-			{
-				glm::vec4 color(1.0f);
-				stream >> color.r >> color.g >> color.b >> color.a;
-				current->SetColor(color);
-			}
-			else if (key == "tags" && line.size() > 5)
-			{
-				current->SetTagsFromString(line.substr(5));
-			}
-			else if (key == "tag" && line.size() > 4)
-			{
-				current->SetTag(line.substr(4));
-			}
-			else if (key == "zoom")
-			{
-				float zoom = 1.0f;
-				stream >> zoom;
-				current->SetZoom(zoom);
-			}
-			else if (key == "drives")
-			{
-				int drives = 0;
-				stream >> drives;
-				current->SetDrivesView(drives != 0);
-			}
-			else if (key == "texture" && line.size() > 8)
-			{
-				std::string rel = line.substr(8);
-				if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
-					rel = std::string(s_ContentFolder) + rel.substr(3);
-
-				std::error_code ec;
-				if (fs::exists(rel, ec))
-					current->SetTexture(rel);
-				else
-				{
-					fs::path full = fs::path(s_Directory) / rel;
-					if (fs::exists(full, ec))
-						current->SetTexture(full.generic_string());
-					else
-						current->SetTexture(rel);
-				}
-			}
-			else if (key == "fontsize")
-			{
-				float size = 48.0f;
-				stream >> size;
-				current->SetFontSize(size);
-			}
-			else if (key == "fontpath")
-			{
-				std::string rel;
-				stream >> rel;
-				std::error_code ec;
-				if (!s_Directory.empty())
-				{
-					fs::path full = fs::path(s_Directory) / rel;
-					if (fs::exists(full, ec))
-						current->SetFontPath(full.generic_string());
-					else
-						current->SetFontPath(rel);
-				}
-				else
-					current->SetFontPath(rel);
-			}
-			else if (key == "text" && line.size() > 5)
-			{
-				current->SetText(line.substr(5));
-			}
-			else if (key == "flipbook")
-			{
-				int cols = 1, rows = 1, frameCount = 0, playing = 0, loop = 1, frame = 0;
-				float fps = 12.0f;
-				stream >> cols >> rows >> frameCount >> fps >> playing >> loop >> frame;
-				current->SetFlipbookColumns(cols);
-				current->SetFlipbookRows(rows);
-				current->SetFlipbookFrameCount(frameCount);
-				current->SetFlipbookFps(fps);
-				current->SetFlipbookLoop(loop != 0);
-				current->SetFlipbookFrame(frame);
-				current->SetFlipbookPlaying(playing != 0);
-			}
-			else if (key == "flipclip")
-			{
-				std::string name;
-				int start = 0, end = 0, loop = 1;
-				float fps = -1.0f;
-				stream >> name >> start >> end >> fps >> loop;
-				if (!name.empty())
-					current->AddFlipbookClip(name, start, end, fps, loop != 0);
-			}
-			else if (key == "flipclipactive")
-			{
-				std::string name;
-				stream >> name;
-				if (!name.empty())
-					current->SetActiveFlipbookClip(name);
-			}
-			else if (key == "flipbookasset")
-			{
-				std::string rel;
-				stream >> rel;
-				if (!rel.empty())
-				{
-					fs::path resolved = Project::GetDirectory().empty()
-						? fs::path(rel)
-						: fs::path(Project::GetDirectory()) / rel;
-					if (!fs::exists(resolved))
-						resolved = rel;
-					current->SetFlipbookAssetPath(resolved.generic_string());
-				}
-			}
-			else if (key == "tilemap")
-			{
-				int cols = 16, rows = 12;
-				float cell = 32.0f;
-				stream >> cols >> rows >> cell;
-				current->SetType(ObjectType::Tilemap);
-				current->ClearTileLayers();
-				current->SetTilemapSize(cols, rows);
-				current->SetTileCellSize(cell);
-			}
-			else if (key == "tilesetgrid")
-			{
-				int cols = 1, rows = 1;
-				stream >> cols >> rows;
-				current->SetTilesetGrid(cols, rows);
-			}
-			else if (key == "tilecollision")
-			{
-				int enabled = 1;
-				stream >> enabled;
-				current->SetTileCollisionEnabled(enabled != 0);
-			}
-			else if (key == "tilesetsolid")
-			{
-				std::vector<uint8_t> solids;
-				int value = 0;
-				while (stream >> value)
-					solids.push_back(value ? 1 : 0);
-				if (current->GetType() != ObjectType::Tilemap)
-					current->SetType(ObjectType::Tilemap);
-				current->SetTilesetSolidFromList(solids);
-			}
-			else if (key == "tilelayers")
-			{
-				int count = 1;
-				stream >> count;
-				if (current->GetType() != ObjectType::Tilemap)
-					current->SetType(ObjectType::Tilemap);
-				current->ClearTileLayers();
-				(void)count;
-			}
-			else if (key == "tilelayer")
-			{
-				int visible = 1;
-				int collision = 1;
-				float opacity = 1.0f;
-				stream >> visible >> collision >> opacity;
-				std::string name;
-				std::getline(stream, name);
-				while (!name.empty() && (name.front() == ' ' || name.front() == '\t'))
-					name.erase(name.begin());
-				while (!name.empty() && (name.back() == '\r' || name.back() == ' ' || name.back() == '\t'))
-					name.pop_back();
-				if (name.empty())
-					name = "Layer";
-				if (current->GetType() != ObjectType::Tilemap)
-					current->SetType(ObjectType::Tilemap);
-				const int index = current->AddTileLayer(name);
-				current->SetTileLayerVisible(index, visible != 0);
-				current->SetTileLayerCollision(index, collision != 0);
-				current->SetTileLayerOpacity(index, opacity);
-			}
-			else if (key == "tilelayeractive")
-			{
-				int active = 0;
-				stream >> active;
-				current->SetActiveTileLayer(active);
-			}
-			else if (key == "tiles")
-			{
-				std::vector<int> tiles;
-				int value = 0;
-				while (stream >> value)
-					tiles.push_back(value);
-				if (current->GetType() != ObjectType::Tilemap)
-					current->SetType(ObjectType::Tilemap);
-				if (current->GetTileLayerCount() <= 0)
-					current->AddTileLayer("Layer 0");
-				current->SetTilesFromList(tiles);
-			}
-			else if (key == "collision")
-			{
-				int type = 0;
-				stream >> type;
-				current->AddCollision((CollisionType)type);
-			}
-			else if (key == "collidershape")
-			{
-				int shape = 0;
-				stream >> shape;
-				current->SetColliderShape((ColliderShape)shape);
-			}
-			else if (key == "collisionradius")
-			{
-				float radius = 50.0f;
-				stream >> radius;
-				current->SetCollisionRadius(radius);
-			}
-			else if (key == "collisionsize")
-			{
-				glm::vec2 size(100.0f);
-				stream >> size.x >> size.y;
-				current->SetCollisionSize(size);
-			}
-			else if (key == "rbmass")
-			{
-				float mass = 1.0f;
-				stream >> mass;
-				current->SetRigidbodyMass(mass);
-			}
-			else if (key == "rbgravity")
-			{
-				float gravity = 1.0f;
-				stream >> gravity;
-				current->SetRigidbodyGravityScale(gravity);
-			}
-			else if (key == "rbkinematic")
-			{
-				int kinematic = 0;
-				stream >> kinematic;
-				current->SetRigidbodyKinematic(kinematic != 0);
-			}
-			else if (key == "trigger")
-			{
-				int trigger = 0;
-				stream >> trigger;
-				current->SetIsTrigger(trigger != 0);
-			}
-			else if (key == "collisionlayer")
-			{
-				int layer = 0;
-				stream >> layer;
-				current->SetCollisionLayer(layer);
-			}
-			else if (key == "collisionmask")
-			{
-				uint32_t mask = 0xFFFFFFFFu;
-				stream >> mask;
-				current->SetCollisionMask(mask);
-			}
-			else if (key == "audio")
-			{
-				current->AddAudio();
-			}
-			else if (key == "audiopath" && line.size() > 10)
-			{
-				std::string rel = line.substr(10);
-				if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
-					rel = std::string(s_ContentFolder) + rel.substr(3);
-
-				std::error_code ec;
-				if (fs::exists(rel, ec))
-					current->SetAudioPath(rel);
-				else
-				{
-					fs::path full = fs::path(s_Directory) / rel;
-					if (fs::exists(full, ec))
-						current->SetAudioPath(full.generic_string());
-					else
-						current->SetAudioPath(rel);
-				}
-			}
-			else if (key == "audiovolume")
-			{
-				float volume = 1.0f;
-				stream >> volume;
-				current->SetAudioVolume(volume);
-			}
-			else if (key == "audioloop")
-			{
-				int loop = 0;
-				stream >> loop;
-				current->SetAudioLoop(loop != 0);
-			}
-			else if (key == "audioplayonstart")
-			{
-				int play = 1;
-				stream >> play;
-				current->SetAudioPlayOnStart(play != 0);
-			}
-			else if (key == "script")
-			{
-				current->AddScript();
-			}
-			else if (key == "scriptpath" && line.size() > 11)
-			{
-				std::string rel = line.substr(11);
-				if (rel.rfind("res/", 0) == 0 || rel.rfind("res\\", 0) == 0)
-					rel = std::string(s_ContentFolder) + rel.substr(3);
-
-				std::error_code ec;
-				if (fs::exists(rel, ec))
-					current->SetScriptPath(rel);
-				else
-				{
-					fs::path full = fs::path(s_Directory) / rel;
-					if (fs::exists(full, ec))
-						current->SetScriptPath(full.generic_string());
-					else
-						current->SetScriptPath(rel);
-				}
-			}
-			else if (key == "parent")
-			{
-				int parentIndex = -1;
-				stream >> parentIndex;
-				if (current && parentIndex >= 0)
+				if (parentIndex >= 0)
 					pendingParents.push_back({ current, parentIndex });
 			}
 		}

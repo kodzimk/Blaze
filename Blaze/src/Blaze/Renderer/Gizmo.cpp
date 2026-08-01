@@ -18,7 +18,10 @@
 namespace Blaze
 {
 	unsigned int Gizmo2D::s_SharedSoundIconTex = 0;
+	unsigned int Gizmo2D::s_SharedParticleIconTex = 0;
 	unsigned int Gizmo2D::s_SharedCameraIconTex = 0;
+	unsigned int Gizmo2D::s_SharedPointLightIconTex = 0;
+	unsigned int Gizmo2D::s_SharedSpotLightIconTex = 0;
 	unsigned int Gizmo2D::s_SharedScriptIconTex = 0;
 	unsigned int Gizmo2D::s_SharedSaveScriptIconTex = 0;
 	unsigned int Gizmo2D::s_SharedMapIconTex = 0;
@@ -56,12 +59,13 @@ namespace Blaze
 	static const char* s_IconFragmentSource = "#version 330 core\n"
 		"in vec2 vUV;\n"
 		"uniform sampler2D icon;\n"
+		"uniform vec4 tint;\n"
 		"out vec4 FragColor;\n"
 		"void main()\n"
 		"{\n"
 		"   vec4 c = texture(icon, vUV);\n"
 		"   if (c.a < 0.05) discard;\n"
-		"   FragColor = c;\n"
+		"   FragColor = vec4(c.rgb * tint.rgb, c.a * tint.a);\n"
 		"}\0";
 
 	static const float s_CenterHalf = 10.0f;
@@ -201,6 +205,123 @@ namespace Blaze
 			px[i + 1] = 245;
 			px[i + 2] = 245;
 			px[i + 3] = a;
+		}
+	}
+
+	static void PutIconPixelRGB(std::vector<unsigned char>& px, int size, int x, int y,
+		unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+	{
+		if (x < 0 || y < 0 || x >= size || y >= size || a == 0)
+			return;
+		size_t i = ((size_t)y * size + x) * 4;
+		if (a >= px[i + 3])
+		{
+			px[i + 0] = r;
+			px[i + 1] = g;
+			px[i + 2] = b;
+			px[i + 3] = a;
+		}
+	}
+
+	static void FillIconCircleRGB(std::vector<unsigned char>& px, int size, float cx, float cy, float radius,
+		unsigned char r, unsigned char g, unsigned char b)
+	{
+		int x0 = (int)std::floor(cx - radius - 1.0f);
+		int x1 = (int)std::ceil(cx + radius + 1.0f);
+		int y0 = (int)std::floor(cy - radius - 1.0f);
+		int y1 = (int)std::ceil(cy + radius + 1.0f);
+		for (int y = y0; y <= y1; ++y)
+		{
+			for (int x = x0; x <= x1; ++x)
+			{
+				float dx = (float)x + 0.5f - cx;
+				float dy = (float)y + 0.5f - cy;
+				float d = std::sqrt(dx * dx + dy * dy);
+				if (d <= radius)
+					PutIconPixelRGB(px, size, x, y, r, g, b, 255);
+				else if (d <= radius + 0.75f)
+					PutIconPixelRGB(px, size, x, y, r, g, b,
+						(unsigned char)(255.0f * (1.0f - (d - radius) / 0.75f)));
+			}
+		}
+	}
+
+	static void FillIconRingRGB(std::vector<unsigned char>& px, int size, float cx, float cy,
+		float outerR, float innerR, unsigned char r, unsigned char g, unsigned char b)
+	{
+		int x0 = (int)std::floor(cx - outerR - 1.0f);
+		int x1 = (int)std::ceil(cx + outerR + 1.0f);
+		int y0 = (int)std::floor(cy - outerR - 1.0f);
+		int y1 = (int)std::ceil(cy + outerR + 1.0f);
+		for (int y = y0; y <= y1; ++y)
+		{
+			for (int x = x0; x <= x1; ++x)
+			{
+				float dx = (float)x + 0.5f - cx;
+				float dy = (float)y + 0.5f - cy;
+				float d = std::sqrt(dx * dx + dy * dy);
+				if (d <= outerR && d >= innerR)
+					PutIconPixelRGB(px, size, x, y, r, g, b, 255);
+			}
+		}
+	}
+
+	static void FillIconLineRGB(std::vector<unsigned char>& px, int size,
+		float x0, float y0, float x1, float y1, float thickness,
+		unsigned char r, unsigned char g, unsigned char b)
+	{
+		float dx = x1 - x0;
+		float dy = y1 - y0;
+		float len = std::sqrt(dx * dx + dy * dy);
+		if (len < 1e-4f)
+			return;
+		dx /= len;
+		dy /= len;
+		float nx = -dy;
+		float ny = dx;
+		float half = thickness * 0.5f;
+		const int steps = (int)std::ceil(len) + 1;
+		for (int i = 0; i <= steps; ++i)
+		{
+			float t = (float)i / (float)steps;
+			float cx = x0 + (x1 - x0) * t;
+			float cy = y0 + (y1 - y0) * t;
+			for (float w = -half; w <= half; w += 0.5f)
+			{
+				int x = (int)std::floor(cx + nx * w);
+				int y = (int)std::floor(cy + ny * w);
+				PutIconPixelRGB(px, size, x, y, r, g, b, 255);
+			}
+		}
+	}
+
+	static void FillIconTriangleRGB(std::vector<unsigned char>& px, int size,
+		float x0, float y0, float x1, float y1, float x2, float y2,
+		unsigned char r, unsigned char g, unsigned char b)
+	{
+		float minX = std::min({ x0, x1, x2 });
+		float maxX = std::max({ x0, x1, x2 });
+		float minY = std::min({ y0, y1, y2 });
+		float maxY = std::max({ y0, y1, y2 });
+		auto edge = [](float ax, float ay, float bx, float by, float cx, float cy)
+		{
+			return (cx - ax) * (by - ay) - (cy - ay) * (bx - ax);
+		};
+		float area = edge(x0, y0, x1, y1, x2, y2);
+		if (std::abs(area) < 1e-6f)
+			return;
+		for (int y = (int)std::floor(minY); y <= (int)std::ceil(maxY); ++y)
+		{
+			for (int x = (int)std::floor(minX); x <= (int)std::ceil(maxX); ++x)
+			{
+				float pxX = (float)x + 0.5f;
+				float pxY = (float)y + 0.5f;
+				float w0 = edge(x1, y1, x2, y2, pxX, pxY);
+				float w1 = edge(x2, y2, x0, y0, pxX, pxY);
+				float w2 = edge(x0, y0, x1, y1, pxX, pxY);
+				if ((w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0))
+					PutIconPixelRGB(px, size, x, y, r, g, b, 255);
+			}
 		}
 	}
 
@@ -537,16 +658,145 @@ namespace Blaze
 		return UploadIconTexture(px, size, size);
 	}
 
-	// Unity movie-camera silhouette: body + twin film reels + trapezoid lens.
+
+	static unsigned int CreatePointLightIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+		const float cx = s * 0.50f;
+		const float cy = s * 0.50f;
+		const unsigned char r = 255, g = 210, b = 64;
+
+		const int rays = 8;
+		for (int i = 0; i < rays; ++i)
+		{
+			float ang = glm::two_pi<float>() * (float)i / (float)rays;
+			float c = std::cos(ang);
+			float sn = std::sin(ang);
+			FillIconLineRGB(px, size,
+				cx + c * s * 0.18f, cy + sn * s * 0.18f,
+				cx + c * s * 0.44f, cy + sn * s * 0.44f,
+				s * 0.055f, r, g, b);
+		}
+
+	
+		for (int i = 0; i < rays; ++i)
+		{
+			float ang = glm::two_pi<float>() * ((float)i + 0.5f) / (float)rays;
+			float c = std::cos(ang);
+			float sn = std::sin(ang);
+			FillIconLineRGB(px, size,
+				cx + c * s * 0.22f, cy + sn * s * 0.22f,
+				cx + c * s * 0.34f, cy + sn * s * 0.34f,
+				s * 0.035f, r, g, b);
+		}
+
+		FillIconCircleRGB(px, size, cx, cy, s * 0.16f, r, g, b);
+		FillIconRingRGB(px, size, cx, cy, s * 0.20f, s * 0.155f, 255, 235, 140);
+		return UploadIconTexture(px, size, size);
+	}
+
+	
+	static unsigned int CreateParticleIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+		const float cx = s * 0.50f;
+		const float cy = s * 0.50f;
+
+		FillIconCircleRGB(px, size, cx, cy, s * 0.10f, 255, 230, 120);
+
+		struct Spark { float ang; float dist; float rad; unsigned char r, g, b; };
+		const Spark sparks[] = {
+			{ 0.20f, 0.34f, 0.055f, 255, 180, 60 },
+			{ 1.10f, 0.30f, 0.045f, 255, 140, 40 },
+			{ 2.05f, 0.36f, 0.050f, 255, 210, 90 },
+			{ 2.90f, 0.28f, 0.040f, 255, 120, 50 },
+			{ 3.80f, 0.33f, 0.048f, 255, 200, 70 },
+			{ 4.70f, 0.31f, 0.042f, 255, 160, 45 },
+			{ 5.50f, 0.35f, 0.052f, 255, 220, 100 },
+			{ 0.70f, 0.22f, 0.035f, 255, 240, 160 },
+			{ 4.10f, 0.20f, 0.032f, 255, 190, 80 },
+		};
+		for (const Spark& spark : sparks)
+		{
+			const float x = cx + std::cos(spark.ang) * spark.dist * s;
+			const float y = cy + std::sin(spark.ang) * spark.dist * s;
+			FillIconCircleRGB(px, size, x, y, spark.rad * s, spark.r, spark.g, spark.b);
+		}
+
+		return UploadIconTexture(px, size, size);
+	}
+
+
+	static unsigned int CreateSpotLightIconTexture(int size)
+	{
+		std::vector<unsigned char> px((size_t)size * size * 4, 0);
+		const float s = (float)size;
+		const unsigned char r = 255, g = 210, b = 64;
+
+	
+		FillIconCircleRGB(px, size, s * 0.28f, s * 0.50f, s * 0.14f, r, g, b);
+		FillIconLineRGB(px, size, s * 0.14f, s * 0.50f, s * 0.28f, s * 0.50f, s * 0.08f, r, g, b);
+
+		
+		FillIconRingRGB(px, size, s * 0.36f, s * 0.50f, s * 0.12f, s * 0.07f, 255, 235, 140);
+
+		
+		FillIconTriangleRGB(px, size,
+			s * 0.40f, s * 0.50f,
+			s * 0.88f, s * 0.18f,
+			s * 0.88f, s * 0.82f,
+			r, g, b);
+
+	
+		auto clearTri = [&](float x0, float y0, float x1, float y1, float x2, float y2)
+		{
+			float minX = std::min({ x0, x1, x2 });
+			float maxX = std::max({ x0, x1, x2 });
+			float minY = std::min({ y0, y1, y2 });
+			float maxY = std::max({ y0, y1, y2 });
+			auto edge = [](float ax, float ay, float bx, float by, float cx, float cy)
+			{
+				return (cx - ax) * (by - ay) - (cy - ay) * (bx - ax);
+			};
+			for (int y = (int)std::floor(minY); y <= (int)std::ceil(maxY); ++y)
+			{
+				for (int x = (int)std::floor(minX); x <= (int)std::ceil(maxX); ++x)
+				{
+					float pxX = (float)x + 0.5f;
+					float pxY = (float)y + 0.5f;
+					float w0 = edge(x1, y1, x2, y2, pxX, pxY);
+					float w1 = edge(x2, y2, x0, y0, pxX, pxY);
+					float w2 = edge(x0, y0, x1, y1, pxX, pxY);
+					if ((w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0))
+					{
+						size_t i = ((size_t)y * size + x) * 4;
+						if (x >= 0 && y >= 0 && x < size && y < size)
+							px[i + 3] = 0;
+					}
+				}
+			}
+		};
+		clearTri(s * 0.48f, s * 0.50f, s * 0.84f, s * 0.30f, s * 0.84f, s * 0.70f);
+
+	
+		FillIconLineRGB(px, size, s * 0.40f, s * 0.50f, s * 0.88f, s * 0.18f, s * 0.04f, r, g, b);
+		FillIconLineRGB(px, size, s * 0.40f, s * 0.50f, s * 0.88f, s * 0.82f, s * 0.04f, r, g, b);
+		FillIconLineRGB(px, size, s * 0.88f, s * 0.18f, s * 0.88f, s * 0.82f, s * 0.035f, 255, 235, 140);
+
+		return UploadIconTexture(px, size, size);
+	}
+
 	static unsigned int CreateCameraIconTexture(int size)
 	{
 		std::vector<unsigned char> px((size_t)size * size * 4, 0);
 		const float s = (float)size;
 
-		// Body
+
 		FillIconRoundedRect(px, size, s * 0.14f, s * 0.48f, s * 0.60f, s * 0.80f, s * 0.05f);
 
-		// Twin film reels on top (Unity classic)
+
 		FillIconCircle(px, size, s * 0.30f, s * 0.36f, s * 0.17f);
 		FillIconCircle(px, size, s * 0.50f, s * 0.30f, s * 0.20f);
 
@@ -630,7 +880,6 @@ namespace Blaze
 		}
 
 		{
-			// pos.xyz + uv.xy  (Y flipped so icon reads upright in world space)
 			float vertices[] =
 			{
 				 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
@@ -653,7 +902,9 @@ namespace Blaze
 		}
 
 		EnsureSoundIcon();
+		EnsureParticleIcon();
 		EnsureCameraIcon();
+		EnsureLightIcons();
 	}
 
 	Gizmo2D::~Gizmo2D()
@@ -670,11 +921,28 @@ namespace Blaze
 		m_SoundIconTex = s_SharedSoundIconTex;
 	}
 
+	void Gizmo2D::EnsureParticleIcon()
+	{
+		if (s_SharedParticleIconTex == 0)
+			s_SharedParticleIconTex = CreateParticleIconTexture(s_ParticleIconSize);
+		m_ParticleIconTex = s_SharedParticleIconTex;
+	}
+
 	void Gizmo2D::EnsureCameraIcon()
 	{
 		if (s_SharedCameraIconTex == 0)
 			s_SharedCameraIconTex = CreateCameraIconTexture(s_CameraIconSize);
 		m_CameraIconTex = s_SharedCameraIconTex;
+	}
+
+	void Gizmo2D::EnsureLightIcons()
+	{
+		if (s_SharedPointLightIconTex == 0)
+			s_SharedPointLightIconTex = CreatePointLightIconTexture(s_LightIconSize);
+		if (s_SharedSpotLightIconTex == 0)
+			s_SharedSpotLightIconTex = CreateSpotLightIconTexture(s_LightIconSize);
+		m_PointLightIconTex = s_SharedPointLightIconTex;
+		m_SpotLightIconTex = s_SharedSpotLightIconTex;
 	}
 
 	unsigned int Gizmo2D::GetSoundIconTextureID()
@@ -684,11 +952,32 @@ namespace Blaze
 		return s_SharedSoundIconTex;
 	}
 
+	unsigned int Gizmo2D::GetParticleIconTextureID()
+	{
+		if (s_SharedParticleIconTex == 0)
+			s_SharedParticleIconTex = CreateParticleIconTexture(s_ParticleIconSize);
+		return s_SharedParticleIconTex;
+	}
+
 	unsigned int Gizmo2D::GetCameraIconTextureID()
 	{
 		if (s_SharedCameraIconTex == 0)
 			s_SharedCameraIconTex = CreateCameraIconTexture(s_CameraIconSize);
 		return s_SharedCameraIconTex;
+	}
+
+	unsigned int Gizmo2D::GetPointLightIconTextureID()
+	{
+		if (s_SharedPointLightIconTex == 0)
+			s_SharedPointLightIconTex = CreatePointLightIconTexture(s_LightIconSize);
+		return s_SharedPointLightIconTex;
+	}
+
+	unsigned int Gizmo2D::GetSpotLightIconTextureID()
+	{
+		if (s_SharedSpotLightIconTex == 0)
+			s_SharedSpotLightIconTex = CreateSpotLightIconTexture(s_LightIconSize);
+		return s_SharedSpotLightIconTex;
 	}
 
 	unsigned int Gizmo2D::GetScriptIconTextureID()
@@ -724,9 +1013,19 @@ namespace Blaze
 		return s_SoundIconSize;
 	}
 
+	int Gizmo2D::GetParticleIconSize()
+	{
+		return s_ParticleIconSize;
+	}
+
 	int Gizmo2D::GetCameraIconSize()
 	{
 		return s_CameraIconSize;
+	}
+
+	int Gizmo2D::GetLightIconSize()
+	{
+		return s_LightIconSize;
 	}
 
 	int Gizmo2D::GetScriptIconSize()
@@ -872,16 +1171,50 @@ namespace Blaze
 		ColliderShape shape = object.GetColliderShape();
 		if (object.GetCollisionType() == CollisionType::Circle)
 			shape = ColliderShape::Circle;
-		else if (object.GetCollisionType() == CollisionType::Block)
-			shape = ColliderShape::Block;
 
 		glm::vec2 thickness(2.5f * sx, 2.5f * sy);
 		const glm::vec4& color = object.IsTrigger() ? s_ColorTrigger : s_ColorCollision;
+
+		auto drawSeg = [&](const glm::vec2& a, const glm::vec2& b)
+		{
+			glm::vec2 delta = b - a;
+			float len = glm::length(delta);
+			if (len < 1e-4f)
+				return;
+			glm::vec2 mid = (a + b) * 0.5f;
+			float angle = glm::degrees(glm::atan(delta.y, delta.x));
+			DrawQuad(mid, glm::vec2(len * 0.5f, thickness.y), color, angle);
+		};
 
 		if (shape == ColliderShape::Circle)
 		{
 			float radius = object.GetCollisionRadius();
 			DrawRing(center, glm::vec2(radius * sx, radius * sy), color);
+		}
+		else if (shape == ColliderShape::Capsule)
+		{
+			float radius = object.GetCollisionRadius();
+			float height = object.GetCapsuleHeight();
+			float halfLen = glm::max(height * 0.5f - radius, 0.0f);
+			glm::vec2 top(center.x, center.y + halfLen * sy);
+			glm::vec2 bot(center.x, center.y - halfLen * sy);
+			DrawRing(top, glm::vec2(radius * sx, radius * sy), color);
+			DrawRing(bot, glm::vec2(radius * sx, radius * sy), color);
+			drawSeg(glm::vec2(top.x - radius * sx, top.y), glm::vec2(bot.x - radius * sx, bot.y));
+			drawSeg(glm::vec2(top.x + radius * sx, top.y), glm::vec2(bot.x + radius * sx, bot.y));
+		}
+		else if (shape == ColliderShape::Polygon)
+		{
+			const auto& verts = object.GetColliderVertices();
+			if (verts.size() >= 3)
+			{
+				for (size_t i = 0; i < verts.size(); ++i)
+				{
+					glm::vec2 a = center + glm::vec2(verts[i].x * sx, verts[i].y * sy);
+					glm::vec2 b = center + glm::vec2(verts[(i + 1) % verts.size()].x * sx, verts[(i + 1) % verts.size()].y * sy);
+					drawSeg(a, b);
+				}
+			}
 		}
 		else
 		{
@@ -955,7 +1288,125 @@ namespace Blaze
 		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_SoundIconTex);
 	}
 
-	void Gizmo2D::DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize, unsigned int textureID, float rotationDegrees)
+	void Gizmo2D::DrawParticleEmitterIcon(const Camera& camera, const GameObject& object)
+	{
+		EnsureParticleIcon();
+		if (!m_ParticleIconTex)
+			return;
+
+		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
+		glm::vec2 center(object.GetWorldPosition());
+
+		const float halfPx = 22.0f;
+		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_ParticleIconTex);
+	}
+
+	void Gizmo2D::DrawLightIcon(const Camera& camera, const GameObject& lightObject)
+	{
+		EnsureLightIcons();
+		const bool spot = lightObject.GetLightKind() == LightKind::Spot;
+		unsigned int tex = spot ? m_SpotLightIconTex : m_PointLightIconTex;
+		if (!tex)
+			return;
+
+		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
+		glm::vec2 center(lightObject.GetWorldPosition());
+
+		glm::vec4 tint = lightObject.GetColor();
+		tint.a = lightObject.IsLightEnabled() ? 1.0f : 0.35f;
+		// Keep icons readable even on very dark light colors.
+		float luma = 0.2126f * tint.r + 0.7152f * tint.g + 0.0722f * tint.b;
+		if (luma < 0.25f)
+		{
+			float boost = 0.25f / glm::max(luma, 0.01f);
+			tint.r = glm::min(tint.r * boost, 1.0f);
+			tint.g = glm::min(tint.g * boost, 1.0f);
+			tint.b = glm::min(tint.b * boost, 1.0f);
+		}
+
+		const float halfPx = 22.0f;
+		float rotation = spot ? lightObject.GetWorldRotation() : 0.0f;
+		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), tex, rotation, tint);
+	}
+
+	void Gizmo2D::DrawLightGizmo(const Camera& camera, const GameObject& lightObject)
+	{
+		DrawLightIcon(camera, lightObject);
+
+		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
+		if (glm::abs(sx) < 1e-8f || glm::abs(sy) < 1e-8f)
+			return;
+
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+
+		const glm::vec2 center(lightObject.GetWorldPosition());
+		const glm::vec4 c = lightObject.GetColor();
+		const float alpha = lightObject.IsLightEnabled() ? 0.85f : 0.35f;
+		const glm::vec4 ringColor(c.r, c.g, c.b, alpha);
+		const float radius = glm::max(lightObject.GetLightRadius(), 1.0f);
+
+		if (lightObject.GetLightKind() == LightKind::Spot)
+		{
+			const float aimDeg = lightObject.GetWorldRotation();
+			const float outer = glm::clamp(lightObject.GetLightOuterAngle(), 0.5f, 179.0f);
+			const float inner = glm::clamp(lightObject.GetLightInnerAngle(), 0.5f, outer);
+			const glm::vec2 dir = lightObject.GetLightDirection();
+
+			auto edgePoint = [&](float angleDeg)
+			{
+				const float rad = glm::radians(angleDeg);
+				return center + glm::vec2(glm::cos(rad) * radius * sx, glm::sin(rad) * radius * sy);
+			};
+
+			const glm::vec2 tip = center + glm::vec2(dir.x * radius * sx, dir.y * radius * sy);
+			const glm::vec2 left = edgePoint(aimDeg + outer);
+			const glm::vec2 right = edgePoint(aimDeg - outer);
+			const glm::vec2 leftInner = edgePoint(aimDeg + inner);
+			const glm::vec2 rightInner = edgePoint(aimDeg - inner);
+
+			auto drawSeg = [&](const glm::vec2& a, const glm::vec2& b, const glm::vec4& col, float thicknessPx)
+			{
+				glm::vec2 delta = b - a;
+				float len = glm::length(delta);
+				if (len < 1e-4f)
+					return;
+				glm::vec2 mid = (a + b) * 0.5f;
+				float angle = glm::degrees(glm::atan(delta.y, delta.x));
+				DrawQuad(mid, glm::vec2(len * 0.5f, thicknessPx * 0.5f * glm::abs(sx)), col, angle);
+			};
+
+			drawSeg(center, left, ringColor, 2.0f);
+			drawSeg(center, right, ringColor, 2.0f);
+			drawSeg(center, tip, glm::vec4(c.r, c.g, c.b, alpha), 2.5f);
+			drawSeg(leftInner, rightInner, glm::vec4(1.0f, 1.0f, 0.55f, alpha * 0.65f), 1.5f);
+			drawSeg(left, right, glm::vec4(c.r, c.g, c.b, alpha * 0.55f), 1.5f);
+
+			const int segments = 16;
+			glm::vec2 prev = left;
+			for (int i = 1; i <= segments; ++i)
+			{
+				float t = (float)i / (float)segments;
+				float ang = (aimDeg + outer) + (aimDeg - outer - (aimDeg + outer)) * t;
+				glm::vec2 p = edgePoint(ang);
+				drawSeg(prev, p, glm::vec4(c.r, c.g, c.b, alpha * 0.65f), 1.5f);
+				prev = p;
+			}
+		}
+		else
+		{
+			DrawRing(center, glm::vec2(radius * sx, radius * sy), ringColor);
+		}
+	}
+
+	void Gizmo2D::DrawTexturedIcon(const glm::mat4& viewMatrix, const glm::vec2& center, const glm::vec2& halfSize,
+		unsigned int textureID, float rotationDegrees, const glm::vec4& tint)
 	{
 		GLboolean blendWas = glIsEnabled(GL_BLEND);
 		GLint srcRGB = 0, dstRGB = 0;
@@ -968,6 +1419,7 @@ namespace Blaze
 
 		m_IconShader.Use();
 		m_IconShader.SetUniformMatrix4fv(viewMatrix, "matrix");
+		m_IconShader.SetUniform4fv(tint, "tint");
 
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(center, 0.0f));
 		transform = glm::rotate(transform, glm::radians(rotationDegrees), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -1057,10 +1509,13 @@ namespace Blaze
 		const glm::vec4& color, float rotationDegrees)
 	{
 		CameraProp prop = camera.GetCameraProp();
+		float sx = prop.projection[0][0];
+		float sy = prop.projection[1][1];
 		m_Shader.Use();
 		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+		// `size` is in mesh/pixel units (same as collision / debug draw).
 		const float half = glm::max(size * 0.5f, 0.25f);
-		DrawQuad(center, glm::vec2(half, half), color, rotationDegrees);
+		DrawQuad(center, glm::vec2(half * sx, half * sy), color, rotationDegrees);
 	}
 
 	void Gizmo2D::DrawQuad(const glm::vec2& center, const glm::vec2& halfSize, const glm::vec4& color, float rotationDegrees)

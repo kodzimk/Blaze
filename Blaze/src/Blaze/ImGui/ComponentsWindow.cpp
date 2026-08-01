@@ -10,13 +10,24 @@
 #include "Blaze/Editor/UndoStack.h"
 #include "Blaze/Logging/Log.h"
 #include "Blaze/Renderer/FlipbookAsset.h"
+#include "Blaze/Renderer/AnimStateMachineAsset.h"
+#include "Blaze/Renderer/ComponentPresetAsset.h"
+#include "Blaze/Renderer/Lighting2D.h"
+#include "Blaze/ImGui/ContentBrowser.h"
+#include "Blaze/ImGui/ParticleEditorWindow.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include <filesystem>
 #include <cctype>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <vector>
+
+#define NOMINMAX
+#include <windows.h>
+#include <commdlg.h>
+#pragma comment(lib, "Comdlg32.lib")
 
 namespace fs = std::filesystem;
 
@@ -177,10 +188,93 @@ namespace Blaze
 		}
 
 		ImGui::Text("Name: %s", m_Selected->GetName().c_str());
+		ImGui::Separator();
+
+		if (ImGui::Button("Save Component Preset...", ImVec2(-1.0f, 0.0f)))
+		{
+			char filePath[MAX_PATH] = {};
+			std::string suggested = m_Selected->GetName().empty() ? "Preset" : m_Selected->GetName();
+			for (char& c : suggested)
+			{
+				if (c == '<' || c == '>' || c == ':' || c == '"' || c == '/' || c == '\\' || c == '|' || c == '?' || c == '*')
+					c = '_';
+			}
+			std::string defaultDir;
+			if (Project::HasProject())
+				defaultDir = (fs::path(Project::GetContentDirectory()) / "presets").string();
+			std::string defaultName = suggested + ".compreset";
+			if (!defaultDir.empty())
+			{
+				std::error_code ec;
+				fs::create_directories(defaultDir, ec);
+				std::snprintf(filePath, MAX_PATH, "%s\\%s", defaultDir.c_str(), defaultName.c_str());
+			}
+			else
+				std::snprintf(filePath, MAX_PATH, "%s", defaultName.c_str());
+
+			OPENFILENAMEA ofn = {};
+			ofn.lStructSize = sizeof(ofn);
+			ofn.lpstrFile = filePath;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrFilter = "Component Preset (*.compreset)\0*.compreset\0All Files (*.*)\0*.*\0";
+			ofn.nFilterIndex = 1;
+			ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT | OFN_NOCHANGEDIR;
+			ofn.lpstrDefExt = "compreset";
+			if (!defaultDir.empty())
+				ofn.lpstrInitialDir = defaultDir.c_str();
+
+			if (GetSaveFileNameA(&ofn))
+			{
+				ComponentPresetAsset asset;
+				asset.SaveFromObject(m_Selected, filePath);
+			}
+		}
+
+		if (ImGui::Button("Apply Component Preset...", ImVec2(-1.0f, 0.0f)))
+		{
+			char filePath[MAX_PATH] = {};
+			std::string defaultDir;
+			if (Project::HasProject())
+				defaultDir = (fs::path(Project::GetContentDirectory()) / "presets").string();
+
+			OPENFILENAMEA ofn = {};
+			ofn.lStructSize = sizeof(ofn);
+			ofn.lpstrFile = filePath;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrFilter = "Component Preset (*.compreset)\0*.compreset\0All Files (*.*)\0*.*\0";
+			ofn.nFilterIndex = 1;
+			ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+			if (!defaultDir.empty())
+				ofn.lpstrInitialDir = defaultDir.c_str();
+
+			if (GetOpenFileNameA(&ofn))
+				ComponentPresetAsset::ApplyToObject(filePath, m_Selected);
+		}
+
+		{
+			std::string pendingPreset;
+			if (ContentBrowser::ConsumePendingApplyPreset(pendingPreset))
+				ComponentPresetAsset::ApplyToObject(pendingPreset, m_Selected);
+		}
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BLAZE_COMPRESET"))
+			{
+				const char* path = (const char*)payload->Data;
+				if (path && path[0])
+					ComponentPresetAsset::ApplyToObject(path, m_Selected);
+			}
+			ImGui::EndDragDropTarget();
+		}
+
+		ImGui::Separator();
 		if (m_Selected->IsCamera())
 			ImGui::TextDisabled("Type: Camera");
 		else if (m_Selected->IsSound())
 			ImGui::TextDisabled("Type: Sound");
+		else if (m_Selected->IsLight())
+			ImGui::TextDisabled("Type: Light");
 		else if (m_Selected->IsText())
 			ImGui::TextDisabled("Type: Text");
 		else if (m_Selected->IsTilemap())
@@ -331,6 +425,52 @@ namespace Blaze
 				if (ImGui::InputFloat("Zoom", &zoom, 0.0f, 0.0f, "%.3f"))
 					m_Selected->SetZoom(zoom);
 			}
+		}
+		else if (m_Selected->IsLight() && ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			bool enabled = m_Selected->IsLightEnabled();
+			if (ImGui::Checkbox("Enabled", &enabled))
+				m_Selected->SetLightEnabled(enabled);
+
+			int kind = (m_Selected->GetLightKind() == LightKind::Spot) ? 1 : 0;
+			const char* kindItems[] = { "Point", "Spot" };
+			if (ImGui::Combo("Kind", &kind, kindItems, 2))
+				m_Selected->SetLightKind(kind == 1 ? LightKind::Spot : LightKind::Point);
+
+			float radius = m_Selected->GetLightRadius();
+			if (ImGui::DragFloat("Radius", &radius, 1.0f, 1.0f, 5000.0f, "%.0f"))
+				m_Selected->SetLightRadius(radius);
+
+			float intensity = m_Selected->GetLightIntensity();
+			if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 20.0f, "%.2f"))
+				m_Selected->SetLightIntensity(intensity);
+
+			if (m_Selected->GetLightKind() == LightKind::Spot)
+			{
+				float inner = m_Selected->GetLightInnerAngle();
+				if (ImGui::DragFloat("Inner Angle", &inner, 0.5f, 0.5f, 179.0f, "%.1f deg"))
+					m_Selected->SetLightInnerAngle(inner);
+				float outer = m_Selected->GetLightOuterAngle();
+				if (ImGui::DragFloat("Outer Angle", &outer, 0.5f, 0.5f, 179.0f, "%.1f deg"))
+					m_Selected->SetLightOuterAngle(outer);
+				ImGui::TextDisabled("Aim with Rotation. Inner = full bright, Outer = cutoff.");
+			}
+
+			glm::vec4 color = m_Selected->GetColor();
+			float rgb[3] = { color.r, color.g, color.b };
+			if (ImGui::ColorEdit3("Light Color", rgb))
+				m_Selected->SetColor(rgb[0], rgb[1], rgb[2], color.a);
+
+			ImGui::Separator();
+			ImGui::TextUnformatted("Global ambient");
+			glm::vec3 ambient = Lighting2D::GetAmbient();
+			float amb[3] = { ambient.r, ambient.g, ambient.b };
+			if (ImGui::ColorEdit3("Ambient", amb))
+				Lighting2D::SetAmbient(amb[0], amb[1], amb[2]);
+			bool lightingOn = Lighting2D::IsEnabled();
+			if (ImGui::Checkbox("Lighting Enabled", &lightingOn))
+				Lighting2D::SetEnabled(lightingOn);
+			ImGui::TextDisabled("Lower Ambient for dark scenes so lights stand out.");
 		}
 		else if (m_Selected->IsTilemap() && ImGui::CollapsingHeader("Tilemap", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -703,7 +843,8 @@ namespace Blaze
 					m_Selected->SetColor(color);
 			}
 		}
-		else if (!m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsTilemap()
+		else if (!m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight()
+			&& !m_Selected->IsTilemap() && !m_Selected->IsText()
 			&& ImGui::CollapsingHeader("Sprite Renderer", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Text("Texture");
@@ -1103,6 +1244,306 @@ namespace Blaze
 						m_Selected->ClearActiveFlipbookClip();
 				}
 			}
+
+			ImGui::Separator();
+			ImGui::Text("Anim State Machine");
+			ImGui::TextDisabled("Graph (.animasset) drives which flipbook clip plays");
+			{
+				bool animOn = m_Selected->IsAnimEnabled();
+				if (ImGui::Checkbox("Anim Enabled", &animOn))
+					m_Selected->SetAnimEnabled(animOn);
+
+				const std::string& animPath = m_Selected->GetAnimAssetPath();
+				if (animPath.empty())
+					ImGui::TextDisabled("No anim asset assigned");
+				else
+					ImGui::TextWrapped("%s", animPath.c_str());
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BLAZE_ANIM"))
+					{
+						std::string path((const char*)payload->Data);
+						m_Selected->SetAnimAssetPath(path);
+						BZ_INFO("Assigned anim asset: {0}", path);
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				if (ImGui::Button("Select Anim..."))
+					ImGui::OpenPopup("AnimAssetPicker");
+				ImGui::SameLine();
+				if (ImGui::Button("Create Anim Asset"))
+				{
+					fs::path dir = "content/animations";
+					std::error_code ec;
+					fs::create_directories(dir, ec);
+					std::string baseName = m_Selected->GetName();
+					if (baseName.empty())
+						baseName = "NewAnim";
+					fs::path path = dir / (baseName + ".animasset");
+					int suffix = 1;
+					while (fs::exists(path))
+					{
+						path = dir / (baseName + "_" + std::to_string(suffix) + ".animasset");
+						++suffix;
+					}
+					AnimStateMachineAsset asset = AnimStateMachineAsset::CreateDefault(baseName);
+					asset.SetPath(path.string());
+					if (asset.SaveToFile(path.string()))
+					{
+						m_Selected->SetAnimAssetPath(path.generic_string());
+						BZ_INFO("Created anim asset: {0}", path.string());
+					}
+				}
+				if (m_Selected->HasAnimAsset())
+				{
+					ImGui::SameLine();
+					if (ImGui::Button("Save Anim"))
+						m_Selected->SaveAnimAsset();
+					ImGui::SameLine();
+					if (ImGui::Button("Clear Anim"))
+						m_Selected->SetAnimAssetPath("", false);
+				}
+
+				if (ImGui::BeginPopup("AnimAssetPicker"))
+				{
+					ImGui::TextUnformatted("Anim assets");
+					ImGui::Separator();
+					std::vector<std::string> assets;
+					std::error_code ec;
+					if (fs::exists("content", ec))
+					{
+						for (auto it = fs::recursive_directory_iterator("content", ec); it != fs::recursive_directory_iterator(); it.increment(ec))
+						{
+							if (ec) break;
+							if (!it->is_regular_file(ec)) continue;
+							if (it->path().extension() == ".animasset")
+								assets.push_back(it->path().generic_string());
+						}
+					}
+					if (assets.empty())
+						ImGui::TextDisabled("No .animasset files in content/");
+					else
+					{
+						ImGui::BeginChild("AnimPickerList", ImVec2(280.0f, 200.0f), true);
+						for (const std::string& path : assets)
+						{
+							if (ImGui::Selectable(path.c_str()))
+							{
+								m_Selected->SetAnimAssetPath(path);
+								ImGui::CloseCurrentPopup();
+							}
+						}
+						ImGui::EndChild();
+					}
+					ImGui::EndPopup();
+				}
+
+				if (m_Selected->HasAnimAsset())
+				{
+					ImGui::Text("State: %s", m_Selected->GetAnimState().empty() ? "(none)" : m_Selected->GetAnimState().c_str());
+					AnimStateMachineAsset& asset = m_Selected->GetAnimAssetMutable();
+
+					auto PersistAnim = [&]()
+					{
+						m_Selected->SaveAnimAsset();
+					};
+
+					// Default state
+					{
+						std::string def = asset.GetDefaultState();
+						char buf[64];
+						std::snprintf(buf, sizeof(buf), "%s", def.c_str());
+						if (ImGui::InputText("Default State", buf, sizeof(buf)))
+						{
+							asset.SetDefaultState(buf);
+							PersistAnim();
+						}
+					}
+
+					if (ImGui::Button("Add State"))
+					{
+						asset.AddState("State", "Idle");
+						PersistAnim();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Add Bool Param"))
+					{
+						AnimParam p;
+						p.name = "Param";
+						p.type = AnimParamType::Bool;
+						asset.AddParam(p);
+						PersistAnim();
+						m_Selected->AnimResetParams();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Add Trigger"))
+					{
+						AnimParam p;
+						p.name = "Trigger";
+						p.type = AnimParamType::Trigger;
+						asset.AddParam(p);
+						PersistAnim();
+						m_Selected->AnimResetParams();
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("Add Transition"))
+					{
+						AnimTransition t;
+						t.from = asset.GetDefaultState().empty() ? "*" : asset.GetDefaultState();
+						t.to = asset.GetDefaultState();
+						t.hasBool = true;
+						t.boolName = "IsRunning";
+						t.boolEquals = true;
+						if (!asset.GetStates().empty())
+							t.to = asset.GetStates().front().name;
+						asset.AddTransition(t);
+						PersistAnim();
+					}
+
+					if (ImGui::TreeNode("States"))
+					{
+						for (int i = 0; i < (int)asset.GetStates().size(); ++i)
+						{
+							AnimState& st = asset.GetStates()[i];
+							ImGui::PushID(i + 5000);
+							char nameBuf[64];
+							char clipBuf[64];
+							std::snprintf(nameBuf, sizeof(nameBuf), "%s", st.name.c_str());
+							std::snprintf(clipBuf, sizeof(clipBuf), "%s", st.clipName.c_str());
+							bool dirty = false;
+							if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf)))
+							{
+								st.name = nameBuf;
+								dirty = true;
+							}
+							if (ImGui::InputText("Clip", clipBuf, sizeof(clipBuf)))
+							{
+								st.clipName = clipBuf;
+								dirty = true;
+							}
+							ImGui::SameLine();
+							if (ImGui::SmallButton("Play"))
+								m_Selected->AnimPlay(st.name);
+							ImGui::SameLine();
+							if (ImGui::SmallButton("X"))
+							{
+								asset.GetStates().erase(asset.GetStates().begin() + i);
+								PersistAnim();
+								ImGui::PopID();
+								break;
+							}
+							if (dirty)
+								PersistAnim();
+							ImGui::PopID();
+						}
+						ImGui::TreePop();
+					}
+
+					if (ImGui::TreeNode("Params"))
+					{
+						for (int i = 0; i < (int)asset.GetParams().size(); ++i)
+						{
+							AnimParam& p = asset.GetParams()[i];
+							ImGui::PushID(i + 6000);
+							ImGui::Text("%s (%s)", p.name.c_str(),
+								p.type == AnimParamType::Trigger ? "Trigger" :
+								(p.type == AnimParamType::Float ? "Float" : "Bool"));
+							if (p.type == AnimParamType::Bool)
+							{
+								bool v = m_Selected->AnimGetBool(p.name);
+								if (ImGui::Checkbox("Value", &v))
+									m_Selected->AnimSetBool(p.name, v);
+							}
+							else if (p.type == AnimParamType::Float)
+							{
+								float v = m_Selected->AnimGetFloat(p.name);
+								if (ImGui::DragFloat("Value", &v, 0.05f))
+									m_Selected->AnimSetFloat(p.name, v);
+							}
+							else if (ImGui::SmallButton("Fire"))
+							{
+								m_Selected->AnimSetTrigger(p.name);
+							}
+							ImGui::SameLine();
+							if (ImGui::SmallButton("Remove"))
+							{
+								asset.GetParams().erase(asset.GetParams().begin() + i);
+								PersistAnim();
+								m_Selected->AnimResetParams();
+								ImGui::PopID();
+								break;
+							}
+							ImGui::PopID();
+						}
+						ImGui::TreePop();
+					}
+
+					if (ImGui::TreeNode("Transitions"))
+					{
+						for (int i = 0; i < (int)asset.GetTransitions().size(); ++i)
+						{
+							AnimTransition& t = asset.GetTransitions()[i];
+							ImGui::PushID(i + 7000);
+							char fromBuf[64], toBuf[64];
+							std::snprintf(fromBuf, sizeof(fromBuf), "%s", t.from.c_str());
+							std::snprintf(toBuf, sizeof(toBuf), "%s", t.to.c_str());
+							bool dirty = false;
+							if (ImGui::InputText("From", fromBuf, sizeof(fromBuf)))
+							{
+								t.from = fromBuf;
+								dirty = true;
+							}
+							if (ImGui::InputText("To", toBuf, sizeof(toBuf)))
+							{
+								t.to = toBuf;
+								dirty = true;
+							}
+							if (ImGui::Checkbox("On Finished", &t.onFinished))
+								dirty = true;
+							if (ImGui::Checkbox("Bool Cond", &t.hasBool))
+								dirty = true;
+							if (t.hasBool)
+							{
+								char boolBuf[64];
+								std::snprintf(boolBuf, sizeof(boolBuf), "%s", t.boolName.c_str());
+								if (ImGui::InputText("Bool Name", boolBuf, sizeof(boolBuf)))
+								{
+									t.boolName = boolBuf;
+									dirty = true;
+								}
+								if (ImGui::Checkbox("Equals True", &t.boolEquals))
+									dirty = true;
+							}
+							if (ImGui::Checkbox("Trigger Cond", &t.hasTrigger))
+								dirty = true;
+							if (t.hasTrigger)
+							{
+								char trigBuf[64];
+								std::snprintf(trigBuf, sizeof(trigBuf), "%s", t.triggerName.c_str());
+								if (ImGui::InputText("Trigger Name", trigBuf, sizeof(trigBuf)))
+								{
+									t.triggerName = trigBuf;
+									dirty = true;
+								}
+							}
+							if (ImGui::SmallButton("Remove##trans"))
+							{
+								asset.GetTransitions().erase(asset.GetTransitions().begin() + i);
+								PersistAnim();
+								ImGui::PopID();
+								break;
+							}
+							if (dirty)
+								PersistAnim();
+							ImGui::Separator();
+							ImGui::PopID();
+						}
+						ImGui::TreePop();
+					}
+				}
+			}
 		}
 
 		if (m_Selected->HasAudio())
@@ -1184,6 +1625,55 @@ namespace Blaze
 					AudioEngine::Stop(m_Selected);
 					m_Selected->RemoveAudio();
 				}
+			}
+		}
+
+		if (m_Selected->HasParticleEmitter())
+		{
+			if (ImGui::CollapsingHeader("Particle Emitter", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				const std::string& particlePath = m_Selected->GetParticlePath();
+				if (particlePath.empty())
+					ImGui::TextDisabled("No particle asset");
+				else
+					ImGui::TextWrapped("%s", particlePath.c_str());
+
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("BLAZE_PARTICLE"))
+					{
+						std::string path((const char*)payload->Data);
+						m_Selected->SetParticlePath(path);
+						BZ_INFO("Assigned particle: {0}", path);
+					}
+					ImGui::EndDragDropTarget();
+				}
+
+				ImGui::TextDisabled("Drag .particle from Content Browser");
+
+				bool playOnStart = m_Selected->GetParticlePlayOnStart();
+				if (ImGui::Checkbox("Play On Start", &playOnStart))
+					m_Selected->SetParticlePlayOnStart(playOnStart);
+
+				ImGui::TextDisabled("Continuous assets loop; Burst re-fires while previewing");
+
+				const bool playing = m_Selected->IsParticlePlaying();
+				if (playing)
+				{
+					if (ImGui::Button("Stop", ImVec2(80.0f, 0.0f)))
+						m_Selected->StopParticle();
+				}
+				else
+				{
+					if (ImGui::Button("Play", ImVec2(80.0f, 0.0f)))
+						m_Selected->PlayParticle();
+				}
+				ImGui::SameLine();
+				if (!particlePath.empty() && ImGui::Button("Edit Asset"))
+					ParticleEditorWindow::OpenFile(particlePath);
+
+				if (ImGui::Button("Remove Particle Emitter", ImVec2(-1.0f, 0.0f)))
+					m_Selected->RemoveParticleEmitter();
 			}
 		}
 
@@ -1334,7 +1824,7 @@ namespace Blaze
 			}
 		}
 
-		if (m_Selected->HasCollision() && !m_Selected->IsSound() && !m_Selected->IsCamera())
+		if (m_Selected->HasCollision() && !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight())
 		{
 			if (ImGui::CollapsingHeader("Collision", ImGuiTreeNodeFlags_DefaultOpen))
 			{
@@ -1350,38 +1840,86 @@ namespace Blaze
 					if (ImGui::InputFloat("Radius", &radius, 0.0f, 0.0f, "%.3f"))
 						m_Selected->SetCollisionRadius(radius);
 				}
-				else if (collisionType == CollisionType::Block)
+				else if (collisionType == CollisionType::Block || collisionType == CollisionType::PhysicsRigidbody2D)
 				{
-					glm::vec2 size = m_Selected->GetCollisionSize();
-					if (ImGui::InputFloat2("Size", &size.x, "%.3f"))
-						m_Selected->SetCollisionSize(size);
-				}
-				else if (collisionType == CollisionType::PhysicsRigidbody2D)
-				{
-					float mass = m_Selected->GetRigidbodyMass();
-					if (ImGui::InputFloat("Mass", &mass, 0.0f, 0.0f, "%.3f"))
-						m_Selected->SetRigidbodyMass(mass);
+					if (collisionType == CollisionType::PhysicsRigidbody2D)
+					{
+						float mass = m_Selected->GetRigidbodyMass();
+						if (ImGui::InputFloat("Mass", &mass, 0.0f, 0.0f, "%.3f"))
+							m_Selected->SetRigidbodyMass(mass);
 
-					float gravity = m_Selected->GetRigidbodyGravityScale();
-					if (ImGui::InputFloat("Gravity Scale", &gravity, 0.0f, 0.0f, "%.3f"))
-						m_Selected->SetRigidbodyGravityScale(gravity);
+						float gravity = m_Selected->GetRigidbodyGravityScale();
+						if (ImGui::InputFloat("Gravity Scale", &gravity, 0.0f, 0.0f, "%.3f"))
+							m_Selected->SetRigidbodyGravityScale(gravity);
 
-					bool kinematic = m_Selected->IsRigidbodyKinematic();
-					if (ImGui::Checkbox("Kinematic", &kinematic))
-						m_Selected->SetRigidbodyKinematic(kinematic);
+						bool kinematic = m_Selected->IsRigidbodyKinematic();
+						if (ImGui::Checkbox("Kinematic", &kinematic))
+							m_Selected->SetRigidbodyKinematic(kinematic);
 
-					ImGui::Separator();
+						ImGui::Separator();
+					}
+
 					ImGui::TextUnformatted("Collider Shape");
-					const char* shapeNames[] = { "Circle", "Block" };
+					const char* shapeNames[] = { "Circle", "Block", "Capsule", "Polygon" };
 					int shapeIndex = (int)m_Selected->GetColliderShape();
-					if (ImGui::Combo("Shape", &shapeIndex, shapeNames, 2))
+					if (shapeIndex < 0) shapeIndex = 0;
+					if (shapeIndex > 3) shapeIndex = 3;
+					if (ImGui::Combo("Shape", &shapeIndex, shapeNames, 4))
 						m_Selected->SetColliderShape((ColliderShape)shapeIndex);
 
-					if (m_Selected->GetColliderShape() == ColliderShape::Circle)
+					ColliderShape shape = m_Selected->GetColliderShape();
+					if (shape == ColliderShape::Circle)
 					{
 						float radius = m_Selected->GetCollisionRadius();
 						if (ImGui::InputFloat("Radius", &radius, 0.0f, 0.0f, "%.3f"))
 							m_Selected->SetCollisionRadius(radius);
+					}
+					else if (shape == ColliderShape::Capsule)
+					{
+						float radius = m_Selected->GetCollisionRadius();
+						if (ImGui::InputFloat("Radius", &radius, 0.0f, 0.0f, "%.3f"))
+							m_Selected->SetCollisionRadius(radius);
+						float height = m_Selected->GetCapsuleHeight();
+						if (ImGui::InputFloat("Height", &height, 0.0f, 0.0f, "%.3f"))
+							m_Selected->SetCapsuleHeight(height);
+						ImGui::TextDisabled("Vertical capsule (height >= 2 * radius)");
+					}
+					else if (shape == ColliderShape::Polygon)
+					{
+						if (m_Selected->GetColliderVertices().size() < 3)
+							m_Selected->ResetColliderVerticesToBox();
+
+						std::vector<glm::vec2> verts = m_Selected->GetColliderVertices();
+						ImGui::TextUnformatted("Vertices (local, convex, max 8)");
+						bool changed = false;
+						for (size_t i = 0; i < verts.size(); ++i)
+						{
+							ImGui::PushID((int)i);
+							if (ImGui::InputFloat2("##vert", &verts[i].x, "%.2f"))
+								changed = true;
+							ImGui::SameLine();
+							if (verts.size() > 3 && ImGui::SmallButton("X"))
+							{
+								verts.erase(verts.begin() + (std::ptrdiff_t)i);
+								changed = true;
+								ImGui::PopID();
+								break;
+							}
+							ImGui::PopID();
+						}
+						if (verts.size() < 8 && ImGui::Button("Add Vertex"))
+						{
+							verts.push_back(glm::vec2(0.0f));
+							changed = true;
+						}
+						ImGui::SameLine();
+						if (ImGui::Button("Reset Box"))
+						{
+							m_Selected->ResetColliderVerticesToBox();
+							changed = false;
+						}
+						if (changed)
+							m_Selected->SetColliderVertices(verts);
 					}
 					else
 					{
@@ -1430,7 +1968,7 @@ namespace Blaze
 
 		if (ImGui::BeginPopup("AddComponentPopup"))
 		{
-			const bool canAddCollision = !m_Selected->IsSound() && !m_Selected->IsCamera();
+			const bool canAddCollision = !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight();
 			if (canAddCollision && !m_Selected->HasCollision() && ImGui::MenuItem("Collision"))
 			{
 				m_Selected->AddCollision(CollisionType::Block);
@@ -1448,6 +1986,14 @@ namespace Blaze
 			}
 			if (m_Selected->HasAudio())
 				ImGui::TextDisabled("Audio already added");
+
+			if (!m_Selected->HasParticleEmitter() && ImGui::MenuItem("Particle Emitter"))
+			{
+				m_Selected->AddParticleEmitter();
+				ImGui::CloseCurrentPopup();
+			}
+			if (m_Selected->HasParticleEmitter())
+				ImGui::TextDisabled("Particle Emitter already added");
 
 			if (!m_Selected->HasScript() && ImGui::MenuItem("Script"))
 			{

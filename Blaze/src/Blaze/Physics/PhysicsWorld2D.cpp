@@ -498,7 +498,7 @@ namespace Blaze
 
 		for (GameObject* object : objects)
 		{
-			if (!object || object->IsCamera() || object->IsSound())
+			if (!object || !object->IsActive() || object->IsCamera() || object->IsSound() || object->IsLight())
 				continue;
 
 			if (object->IsTilemap() && object->IsTileCollisionEnabled())
@@ -517,14 +517,13 @@ namespace Blaze
 			ColliderShape shape = object->GetColliderShape();
 			if (type == CollisionType::Circle)
 				shape = ColliderShape::Circle;
-			else if (type == CollisionType::Block)
-				shape = ColliderShape::Block;
 
-			body.shape = (shape == ColliderShape::Circle) ? ShapeKind::Circle : ShapeKind::Box;
 			body.radius = glm::max(object->GetCollisionRadius(), 0.01f);
 			body.halfSize = object->GetCollisionSize() * 0.5f;
 			body.halfSize.x = glm::max(body.halfSize.x, 0.01f);
 			body.halfSize.y = glm::max(body.halfSize.y, 0.01f);
+			body.capsuleHalfLength = 0.0f;
+			body.verts.clear();
 			body.isTrigger = object->IsTrigger();
 			body.layer = object->GetCollisionLayer();
 			body.mask = object->GetCollisionMask();
@@ -557,6 +556,38 @@ namespace Blaze
 				body.velocity = glm::vec2(0.0f);
 				body.pendingForce = glm::vec2(0.0f);
 				body.position = editorPixel;
+			}
+
+			if (shape == ColliderShape::Circle)
+			{
+				body.shape = ShapeKind::Circle;
+			}
+			else if (shape == ColliderShape::Capsule)
+			{
+				body.shape = ShapeKind::Capsule;
+				const float height = object->GetCapsuleHeight();
+				body.capsuleHalfLength = glm::max(height * 0.5f - body.radius, 0.0f);
+				body.halfSize = glm::vec2(body.radius, body.capsuleHalfLength + body.radius);
+			}
+			else if (shape == ColliderShape::Polygon)
+			{
+				body.shape = ShapeKind::Polygon;
+				const auto& local = object->GetColliderVertices();
+				if (local.size() >= 3)
+				{
+					body.verts.reserve(local.size());
+					for (const glm::vec2& v : local)
+						body.verts.push_back(body.position + v);
+				}
+				else
+				{
+					BoxToVerts(body, body.verts);
+					body.shape = ShapeKind::Box;
+				}
+			}
+			else
+			{
+				body.shape = ShapeKind::Box;
 			}
 
 			live[object] = PlayState{ body.position, body.velocity, glm::vec2(0.0f) };
@@ -654,6 +685,405 @@ namespace Blaze
 		return true;
 	}
 
+	glm::vec2 PhysicsWorld2D::ClosestPointOnSegment(const glm::vec2& p, const glm::vec2& a, const glm::vec2& b)
+	{
+		glm::vec2 ab = b - a;
+		float lenSq = glm::dot(ab, ab);
+		if (lenSq < 1e-12f)
+			return a;
+		float t = glm::clamp(glm::dot(p - a, ab) / lenSq, 0.0f, 1.0f);
+		return a + ab * t;
+	}
+
+	void PhysicsWorld2D::CapsuleEndpoints(const Body& capsule, glm::vec2& outA, glm::vec2& outB)
+	{
+		outA = capsule.position + glm::vec2(0.0f, -capsule.capsuleHalfLength);
+		outB = capsule.position + glm::vec2(0.0f, capsule.capsuleHalfLength);
+	}
+
+	void PhysicsWorld2D::BoxToVerts(const Body& box, std::vector<glm::vec2>& out)
+	{
+		out.clear();
+		out.push_back(box.position + glm::vec2(-box.halfSize.x, -box.halfSize.y));
+		out.push_back(box.position + glm::vec2( box.halfSize.x, -box.halfSize.y));
+		out.push_back(box.position + glm::vec2( box.halfSize.x,  box.halfSize.y));
+		out.push_back(box.position + glm::vec2(-box.halfSize.x,  box.halfSize.y));
+	}
+
+	static void ProjectPolygon(const std::vector<glm::vec2>& verts, const glm::vec2& axis, float& minOut, float& maxOut)
+	{
+		minOut = maxOut = glm::dot(verts[0], axis);
+		for (size_t i = 1; i < verts.size(); ++i)
+		{
+			float p = glm::dot(verts[i], axis);
+			minOut = glm::min(minOut, p);
+			maxOut = glm::max(maxOut, p);
+		}
+	}
+
+	bool PhysicsWorld2D::SatPolygons(const std::vector<glm::vec2>& a, const std::vector<glm::vec2>& b, Contact& out)
+	{
+		if (a.size() < 3 || b.size() < 3)
+			return false;
+
+		float bestOverlap = 1e30f;
+		glm::vec2 bestAxis(0.0f, 1.0f);
+
+		auto testEdges = [&](const std::vector<glm::vec2>& poly) -> bool
+		{
+			const size_t n = poly.size();
+			for (size_t i = 0; i < n; ++i)
+			{
+				glm::vec2 edge = poly[(i + 1) % n] - poly[i];
+				glm::vec2 axis(-edge.y, edge.x);
+				float len = glm::length(axis);
+				if (len < 1e-8f)
+					continue;
+				axis /= len;
+
+				float minA, maxA, minB, maxB;
+				ProjectPolygon(a, axis, minA, maxA);
+				ProjectPolygon(b, axis, minB, maxB);
+				float overlap = glm::min(maxA, maxB) - glm::max(minA, minB);
+				if (overlap <= 0.0f)
+					return false;
+				if (overlap < bestOverlap)
+				{
+					bestOverlap = overlap;
+					bestAxis = axis;
+				}
+			}
+			return true;
+		};
+
+		if (!testEdges(a) || !testEdges(b))
+			return false;
+
+		glm::vec2 centerA(0.0f);
+		glm::vec2 centerB(0.0f);
+		for (const glm::vec2& v : a) centerA += v;
+		for (const glm::vec2& v : b) centerB += v;
+		centerA /= (float)a.size();
+		centerB /= (float)b.size();
+		if (glm::dot(centerB - centerA, bestAxis) < 0.0f)
+			bestAxis = -bestAxis;
+
+		out.normal = bestAxis;
+		out.penetration = bestOverlap;
+		return true;
+	}
+
+	bool PhysicsWorld2D::CircleCapsule(const Body& circle, const Body& capsule, Contact& out)
+	{
+		glm::vec2 a, b;
+		CapsuleEndpoints(capsule, a, b);
+		glm::vec2 closest = ClosestPointOnSegment(circle.position, a, b);
+		Body probe;
+		probe.position = closest;
+		probe.radius = capsule.radius;
+		return CircleCircle(circle, probe, out);
+	}
+
+	bool PhysicsWorld2D::CapsuleBox(const Body& capsule, const Body& box, Contact& out)
+	{
+		glm::vec2 a, b;
+		CapsuleEndpoints(capsule, a, b);
+
+		auto closestOnBox = [&](const glm::vec2& p)
+		{
+			glm::vec2 d = p - box.position;
+			return box.position + glm::vec2(
+				glm::clamp(d.x, -box.halfSize.x, box.halfSize.x),
+				glm::clamp(d.y, -box.halfSize.y, box.halfSize.y));
+		};
+
+		glm::vec2 bestSeg = a;
+		glm::vec2 bestBox = closestOnBox(a);
+		float bestDistSq = glm::dot(bestSeg - bestBox, bestSeg - bestBox);
+
+		glm::vec2 candSeg = b;
+		glm::vec2 candBox = closestOnBox(b);
+		float dSq = glm::dot(candSeg - candBox, candSeg - candBox);
+		if (dSq < bestDistSq)
+		{
+			bestDistSq = dSq;
+			bestSeg = candSeg;
+			bestBox = candBox;
+		}
+
+		const glm::vec2 corners[4] = {
+			box.position + glm::vec2(-box.halfSize.x, -box.halfSize.y),
+			box.position + glm::vec2( box.halfSize.x, -box.halfSize.y),
+			box.position + glm::vec2( box.halfSize.x,  box.halfSize.y),
+			box.position + glm::vec2(-box.halfSize.x,  box.halfSize.y),
+		};
+		for (const glm::vec2& c : corners)
+		{
+			glm::vec2 onSeg = ClosestPointOnSegment(c, a, b);
+			dSq = glm::dot(onSeg - c, onSeg - c);
+			if (dSq < bestDistSq)
+			{
+				bestDistSq = dSq;
+				bestSeg = onSeg;
+				bestBox = c;
+			}
+		}
+
+		Body probeCircle;
+		probeCircle.position = bestSeg;
+		probeCircle.radius = capsule.radius;
+		Body probeBox = box;
+		if (!CircleBox(probeCircle, probeBox, out))
+			return false;
+		// CircleBox normal points from box toward circle (= from box toward capsule axis).
+		// We want normal from capsule(a) toward box(b): flip.
+		out.normal = -out.normal;
+		return true;
+	}
+
+	bool PhysicsWorld2D::CapsuleCapsule(const Body& a, const Body& b, Contact& out)
+	{
+		glm::vec2 a0, a1, b0, b1;
+		CapsuleEndpoints(a, a0, a1);
+		CapsuleEndpoints(b, b0, b1);
+
+		// Sample closest between endpoints and clamped projections.
+		glm::vec2 bestA = a0;
+		glm::vec2 bestB = ClosestPointOnSegment(a0, b0, b1);
+		float bestDistSq = glm::dot(bestA - bestB, bestA - bestB);
+
+		auto consider = [&](const glm::vec2& pa, const glm::vec2& pb)
+		{
+			float d = glm::dot(pa - pb, pa - pb);
+			if (d < bestDistSq)
+			{
+				bestDistSq = d;
+				bestA = pa;
+				bestB = pb;
+			}
+		};
+		consider(a1, ClosestPointOnSegment(a1, b0, b1));
+		consider(ClosestPointOnSegment(b0, a0, a1), b0);
+		consider(ClosestPointOnSegment(b1, a0, a1), b1);
+
+		Body ca, cb;
+		ca.position = bestA;
+		ca.radius = a.radius;
+		cb.position = bestB;
+		cb.radius = b.radius;
+		return CircleCircle(ca, cb, out);
+	}
+
+	bool PhysicsWorld2D::PolygonPolygon(const Body& a, const Body& b, Contact& out)
+	{
+		return SatPolygons(a.verts, b.verts, out);
+	}
+
+	bool PhysicsWorld2D::CirclePolygon(const Body& circle, const Body& poly, Contact& out)
+	{
+		if (poly.verts.size() < 3)
+			return false;
+
+		const size_t n = poly.verts.size();
+		float bestEdgeDist = 1e30f;
+		glm::vec2 bestNormal(0.0f, 1.0f);
+
+		glm::vec2 centroid(0.0f);
+		for (const glm::vec2& v : poly.verts)
+			centroid += v;
+		centroid /= (float)n;
+
+		for (size_t i = 0; i < n; ++i)
+		{
+			const glm::vec2& v0 = poly.verts[i];
+			const glm::vec2& v1 = poly.verts[(i + 1) % n];
+			glm::vec2 closest = ClosestPointOnSegment(circle.position, v0, v1);
+			glm::vec2 diff = circle.position - closest;
+			float distSq = glm::dot(diff, diff);
+			if (distSq < bestEdgeDist * bestEdgeDist)
+			{
+				float dist = glm::sqrt(glm::max(distSq, 0.0f));
+				bestEdgeDist = dist;
+				if (dist > 1e-6f)
+					bestNormal = diff / dist;
+				else
+				{
+					glm::vec2 edge = v1 - v0;
+					glm::vec2 nrm(-edge.y, edge.x);
+					float len = glm::length(nrm);
+					bestNormal = (len > 1e-8f) ? (nrm / len) : glm::vec2(0.0f, 1.0f);
+				}
+			}
+		}
+
+		if (PointInBody(poly, circle.position))
+		{
+			// Push circle out along nearest edge normal (outward).
+			float minPen = 1e30f;
+			glm::vec2 pushN(0.0f, 1.0f);
+			for (size_t i = 0; i < n; ++i)
+			{
+				const glm::vec2& v0 = poly.verts[i];
+				const glm::vec2& v1 = poly.verts[(i + 1) % n];
+				glm::vec2 edge = v1 - v0;
+				glm::vec2 nrm(-edge.y, edge.x);
+				float len = glm::length(nrm);
+				if (len < 1e-8f)
+					continue;
+				nrm /= len;
+				if (glm::dot(v0 - centroid, nrm) < 0.0f)
+					nrm = -nrm;
+				float dist = glm::dot(circle.position - v0, nrm);
+				float pen = circle.radius - dist;
+				if (pen < minPen)
+				{
+					minPen = pen;
+					pushN = nrm;
+				}
+			}
+			if (minPen <= 0.0f)
+				return false;
+			out.normal = pushN;
+			out.penetration = minPen;
+			return true;
+		}
+
+		if (bestEdgeDist >= circle.radius)
+			return false;
+
+		if (glm::dot(bestNormal, circle.position - centroid) < 0.0f)
+			bestNormal = -bestNormal;
+		out.normal = bestNormal;
+		out.penetration = circle.radius - bestEdgeDist;
+		return true;
+	}
+
+	bool PhysicsWorld2D::CapsulePolygon(const Body& capsule, const Body& poly, Contact& out)
+	{
+		glm::vec2 a, b;
+		CapsuleEndpoints(capsule, a, b);
+
+		Body probe;
+		probe.shape = ShapeKind::Circle;
+		probe.radius = capsule.radius;
+
+		Contact best;
+		bool any = false;
+		auto consider = [&](const glm::vec2& p)
+		{
+			probe.position = p;
+			Contact c;
+			if (CirclePolygon(probe, poly, c))
+			{
+				if (!any || c.penetration > best.penetration)
+				{
+					best = c;
+					any = true;
+				}
+			}
+		};
+		consider(a);
+		consider(b);
+		consider(capsule.position);
+
+		// Also sample closest point on segment to each poly vertex / edge midpoint.
+		for (const glm::vec2& v : poly.verts)
+			consider(ClosestPointOnSegment(v, a, b));
+
+		if (!any)
+			return false;
+		out = best;
+		// CirclePolygon normal points roughly poly→circle; we want capsule→poly.
+		out.normal = -out.normal;
+		return true;
+	}
+
+	bool PhysicsWorld2D::BoxPolygon(const Body& box, const Body& poly, Contact& out)
+	{
+		std::vector<glm::vec2> boxVerts;
+		BoxToVerts(box, boxVerts);
+		Body a;
+		a.verts = std::move(boxVerts);
+		return SatPolygons(a.verts, poly.verts, out);
+	}
+
+	bool PhysicsWorld2D::CollideBodies(const Body& a, const Body& b, Contact& out)
+	{
+		const ShapeKind sa = a.shape;
+		const ShapeKind sb = b.shape;
+
+		if (sa == ShapeKind::Circle && sb == ShapeKind::Circle)
+			return CircleCircle(a, b, out);
+		if (sa == ShapeKind::Box && sb == ShapeKind::Box)
+			return BoxBox(a, b, out);
+		if (sa == ShapeKind::Capsule && sb == ShapeKind::Capsule)
+			return CapsuleCapsule(a, b, out);
+		if (sa == ShapeKind::Polygon && sb == ShapeKind::Polygon)
+			return PolygonPolygon(a, b, out);
+
+		if (sa == ShapeKind::Circle && sb == ShapeKind::Box)
+		{
+			if (!CircleBox(a, b, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+		if (sa == ShapeKind::Box && sb == ShapeKind::Circle)
+			return CircleBox(b, a, out);
+
+		if (sa == ShapeKind::Circle && sb == ShapeKind::Capsule)
+		{
+			if (!CircleCapsule(a, b, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+		if (sa == ShapeKind::Capsule && sb == ShapeKind::Circle)
+			return CircleCapsule(b, a, out);
+
+		if (sa == ShapeKind::Capsule && sb == ShapeKind::Box)
+			return CapsuleBox(a, b, out);
+		if (sa == ShapeKind::Box && sb == ShapeKind::Capsule)
+		{
+			if (!CapsuleBox(b, a, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+
+		if (sa == ShapeKind::Circle && sb == ShapeKind::Polygon)
+		{
+			if (!CirclePolygon(a, b, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+		if (sa == ShapeKind::Polygon && sb == ShapeKind::Circle)
+			return CirclePolygon(b, a, out);
+
+		if (sa == ShapeKind::Box && sb == ShapeKind::Polygon)
+			return BoxPolygon(a, b, out);
+		if (sa == ShapeKind::Polygon && sb == ShapeKind::Box)
+		{
+			if (!BoxPolygon(b, a, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+
+		if (sa == ShapeKind::Capsule && sb == ShapeKind::Polygon)
+			return CapsulePolygon(a, b, out);
+		if (sa == ShapeKind::Polygon && sb == ShapeKind::Capsule)
+		{
+			if (!CapsulePolygon(b, a, out))
+				return false;
+			out.normal = -out.normal;
+			return true;
+		}
+
+		return false;
+	}
+
 	void PhysicsWorld2D::DetectContacts(std::vector<Contact>& contacts) const
 	{
 		for (size_t i = 0; i < m_Bodies.size(); ++i)
@@ -672,21 +1102,8 @@ namespace Blaze
 				contact.a = (int)i;
 				contact.b = (int)j;
 				contact.isTrigger = a.isTrigger || b.isTrigger;
-				bool hit = false;
 
-				if (a.shape == ShapeKind::Circle && b.shape == ShapeKind::Circle)
-					hit = CircleCircle(a, b, contact);
-				else if (a.shape == ShapeKind::Box && b.shape == ShapeKind::Box)
-					hit = BoxBox(a, b, contact);
-				else if (a.shape == ShapeKind::Circle && b.shape == ShapeKind::Box)
-				{
-					hit = CircleBox(a, b, contact);
-					contact.normal = -contact.normal;
-				}
-				else
-					hit = CircleBox(b, a, contact);
-
-				if (hit && contact.penetration > 0.0f)
+				if (CollideBodies(a, b, contact) && contact.penetration > 0.0f)
 					contacts.push_back(contact);
 			}
 		}
@@ -802,6 +1219,107 @@ namespace Blaze
 			return true;
 		}
 
+		if (body.shape == ShapeKind::Capsule)
+		{
+			bool hit = false;
+			float bestT = length + 1.0f;
+			glm::vec2 bestN(0.0f, 1.0f);
+
+			auto rayCircle = [&](const glm::vec2& center)
+			{
+				Body c;
+				c.shape = ShapeKind::Circle;
+				c.position = center;
+				c.radius = body.radius;
+				float t;
+				glm::vec2 n;
+				if (RaycastBody(c, origin, dir, length, t, n) && t < bestT)
+				{
+					bestT = t;
+					bestN = n;
+					hit = true;
+				}
+			};
+
+			glm::vec2 a, b;
+			CapsuleEndpoints(body, a, b);
+			rayCircle(a);
+			rayCircle(b);
+
+			// Middle AABB (excluding caps' half-circles coverage is fine as over-test).
+			Body mid;
+			mid.shape = ShapeKind::Box;
+			mid.position = body.position;
+			mid.halfSize = glm::vec2(body.radius, body.capsuleHalfLength);
+			float t;
+			glm::vec2 n;
+			if (RaycastBody(mid, origin, dir, length, t, n) && t < bestT)
+			{
+				bestT = t;
+				bestN = n;
+				hit = true;
+			}
+
+			if (!hit)
+				return false;
+			outT = bestT;
+			outNormal = bestN;
+			return true;
+		}
+
+		if (body.shape == ShapeKind::Polygon)
+		{
+			if (body.verts.size() < 3)
+				return false;
+
+			bool hit = false;
+			float bestT = length + 1.0f;
+			glm::vec2 bestN(0.0f, 1.0f);
+			const size_t n = body.verts.size();
+			glm::vec2 centroid(0.0f);
+			for (const glm::vec2& v : body.verts)
+				centroid += v;
+			centroid /= (float)n;
+
+			for (size_t i = 0; i < n; ++i)
+			{
+				const glm::vec2& v0 = body.verts[i];
+				const glm::vec2& v1 = body.verts[(i + 1) % n];
+				glm::vec2 edge = v1 - v0;
+				glm::vec2 edgeN(-edge.y, edge.x);
+				float eLen = glm::length(edgeN);
+				if (eLen < 1e-8f)
+					continue;
+				edgeN /= eLen;
+				if (glm::dot(v0 - centroid, edgeN) < 0.0f)
+					edgeN = -edgeN;
+
+				// Ray-segment intersection
+				glm::vec2 r = dir;
+				glm::vec2 s = edge;
+				float rxs = r.x * s.y - r.y * s.x;
+				if (glm::abs(rxs) < 1e-8f)
+					continue;
+				glm::vec2 qp = v0 - origin;
+				float t = (qp.x * s.y - qp.y * s.x) / rxs;
+				float u = (qp.x * r.y - qp.y * r.x) / rxs;
+				if (t < 0.0f || t > length || u < 0.0f || u > 1.0f)
+					continue;
+				if (t < bestT)
+				{
+					bestT = t;
+					bestN = edgeN;
+					hit = true;
+				}
+			}
+
+			if (!hit)
+				return false;
+			outT = bestT;
+			outNormal = bestN;
+			return true;
+		}
+
 		// AABB slab test
 		const glm::vec2 minB = body.position - body.halfSize;
 		const glm::vec2 maxB = body.position + body.halfSize;
@@ -824,8 +1342,7 @@ namespace Blaze
 			float inv = 1.0f / d;
 			float t1 = (mn - o) * inv;
 			float t2 = (mx - o) * inv;
-			float enterNormal = (axis == 0) ? -1.0f : -1.0f;
-			float exitSign = 1.0f;
+			float enterNormal = -1.0f;
 			if (t1 > t2)
 			{
 				std::swap(t1, t2);
@@ -835,7 +1352,6 @@ namespace Blaze
 			{
 				enterNormal = -1.0f;
 			}
-			(void)exitSign;
 			if (t1 > tmin)
 			{
 				tmin = t1;
@@ -860,6 +1376,32 @@ namespace Blaze
 			glm::vec2 d = point - body.position;
 			return glm::dot(d, d) <= body.radius * body.radius;
 		}
+		if (body.shape == ShapeKind::Capsule)
+		{
+			glm::vec2 a, b;
+			CapsuleEndpoints(body, a, b);
+			glm::vec2 closest = ClosestPointOnSegment(point, a, b);
+			glm::vec2 d = point - closest;
+			return glm::dot(d, d) <= body.radius * body.radius;
+		}
+		if (body.shape == ShapeKind::Polygon)
+		{
+			if (body.verts.size() < 3)
+				return false;
+			// Ray cast to +X
+			bool inside = false;
+			const size_t n = body.verts.size();
+			for (size_t i = 0, j = n - 1; i < n; j = i++)
+			{
+				const glm::vec2& vi = body.verts[i];
+				const glm::vec2& vj = body.verts[j];
+				const bool intersect = ((vi.y > point.y) != (vj.y > point.y)) &&
+					(point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y + 1e-12f) + vi.x);
+				if (intersect)
+					inside = !inside;
+			}
+			return inside;
+		}
 		return glm::abs(point.x - body.position.x) <= body.halfSize.x &&
 			glm::abs(point.y - body.position.y) <= body.halfSize.y;
 	}
@@ -871,9 +1413,7 @@ namespace Blaze
 		probe.position = center;
 		probe.radius = radius;
 		Contact c;
-		if (body.shape == ShapeKind::Circle)
-			return CircleCircle(probe, body, c);
-		return CircleBox(probe, body, c);
+		return CollideBodies(probe, body, c);
 	}
 
 	bool PhysicsWorld2D::Raycast(const glm::vec2& startPx, const glm::vec2& endPx,

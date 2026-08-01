@@ -2,6 +2,7 @@
 #include<glad/glad.h>
 #include"Blaze/Renderer/Camera.h"
 #include"Blaze/Renderer/Shader.h"
+#include"Blaze/Renderer/ParticleSystem2D.h"
 #include"Blaze/UI/UISystem.h"
 #include<gtc/type_ptr.hpp>
 #include"Blaze/Logging/Log.h"
@@ -44,14 +45,21 @@ namespace Blaze {
 
 	GameObject::~GameObject()
 	{
+		DestroyTileLayerMeshes();
 		DetachFromHierarchy();
+		if (m_EBO)
+		{
+			glDeleteBuffers(1, &m_EBO);
+			m_EBO = 0;
+		}
 	}
 
 	void GameObject::Draw(const CameraProp& prop,Shader& const m_Shader)
 	{
-		if (!m_Visible)
+		if (!m_Visible || !m_Active)
 			return;
-		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound)
+		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound || m_Type == ObjectType::Light
+			|| m_Type == ObjectType::Empty)
 			return;
 		if (m_Type == ObjectType::Text)
 		{
@@ -79,64 +87,202 @@ namespace Blaze {
 		m_Texture.UnBind();
 	}
 
-	void GameObject::DrawTilemap(const CameraProp& prop, Shader& shader)
+	void GameObject::DestroyTileLayerMeshes()
 	{
-		if (!m_Texture.IsValid() || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
-			return;
+		for (TilemapLayerGpuMesh& mesh : m_TileLayerMeshes)
+		{
+			if (mesh.ebo)
+				glDeleteBuffers(1, &mesh.ebo);
+			if (mesh.vbo)
+				glDeleteBuffers(1, &mesh.vbo);
+			if (mesh.vao)
+				glDeleteVertexArrays(1, &mesh.vao);
+			mesh.vao = mesh.vbo = mesh.ebo = 0;
+			mesh.indexCount = 0;
+			mesh.dirty = true;
+		}
+		m_TileLayerMeshes.clear();
+	}
+
+	void GameObject::EnsureTileLayerMeshes()
+	{
 		EnsureTileLayers();
+		const size_t count = m_TileLayers.size();
+		if (m_TileLayerMeshes.size() == count)
+			return;
+
+		if (m_TileLayerMeshes.size() > count)
+		{
+			for (size_t i = count; i < m_TileLayerMeshes.size(); ++i)
+			{
+				TilemapLayerGpuMesh& mesh = m_TileLayerMeshes[i];
+				if (mesh.ebo) glDeleteBuffers(1, &mesh.ebo);
+				if (mesh.vbo) glDeleteBuffers(1, &mesh.vbo);
+				if (mesh.vao) glDeleteVertexArrays(1, &mesh.vao);
+			}
+			m_TileLayerMeshes.resize(count);
+		}
+		else
+		{
+			m_TileLayerMeshes.resize(count);
+		}
+
+		for (TilemapLayerGpuMesh& mesh : m_TileLayerMeshes)
+			mesh.dirty = true;
+	}
+
+	void GameObject::MarkTilemapMeshesDirty()
+	{
+		EnsureTileLayerMeshes();
+		for (TilemapLayerGpuMesh& mesh : m_TileLayerMeshes)
+			mesh.dirty = true;
+	}
+
+	void GameObject::MarkTilemapLayerMeshDirty(int layerIndex)
+	{
+		EnsureTileLayerMeshes();
+		if (layerIndex < 0 || layerIndex >= (int)m_TileLayerMeshes.size())
+			return;
+		m_TileLayerMeshes[(size_t)layerIndex].dirty = true;
+	}
+
+	void GameObject::RebuildTilemapLayerMesh(int layerIndex)
+	{
+		EnsureTileLayerMeshes();
+		if (layerIndex < 0 || layerIndex >= (int)m_TileLayers.size())
+			return;
+
+		TilemapLayerGpuMesh& mesh = m_TileLayerMeshes[(size_t)layerIndex];
+		const TilemapLayer& layer = m_TileLayers[(size_t)layerIndex];
+
+		if (mesh.ebo) { glDeleteBuffers(1, &mesh.ebo); mesh.ebo = 0; }
+		if (mesh.vbo) { glDeleteBuffers(1, &mesh.vbo); mesh.vbo = 0; }
+		if (mesh.vao) { glDeleteVertexArrays(1, &mesh.vao); mesh.vao = 0; }
+		mesh.indexCount = 0;
+
+		if (m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+		{
+			mesh.dirty = false;
+			return;
+		}
 
 		const float cell = glm::max(m_TileCellSize, 1.0f);
 		const float mapW = (float)m_TilemapColumns * cell;
 		const float mapH = (float)m_TilemapRows * cell;
-		const float meshScale = cell / 100.0f; // default mesh is 100x100 (±50)
+		const float half = cell * 0.5f;
+		const glm::vec2 uvScale = GetTilesetUVScale();
 
-		// Shader does: view * object_matrix * ortho * pos
-		// So translations injected into object_matrix must be in post-ortho units (mesh * projection scale),
-		// matching RebuildMatrixFromWorld — not raw mesh/pixel units.
-		const float sx = prop.projection[0][0];
-		const float sy = prop.projection[1][1];
-		if (glm::abs(sx) < 1e-8f || glm::abs(sy) < 1e-8f)
+		std::vector<float> verts;
+		std::vector<unsigned int> indices;
+		verts.reserve((size_t)m_TilemapColumns * (size_t)m_TilemapRows * 20);
+		indices.reserve((size_t)m_TilemapColumns * (size_t)m_TilemapRows * 6);
+
+		for (int row = 0; row < m_TilemapRows; ++row)
+		{
+			for (int col = 0; col < m_TilemapColumns; ++col)
+			{
+				const int idx = row * m_TilemapColumns + col;
+				if (idx < 0 || idx >= (int)layer.tiles.size())
+					continue;
+				const int tileId = layer.tiles[idx];
+				if (tileId < 0)
+					continue;
+
+				const float cx = ((float)col + 0.5f) * cell - mapW * 0.5f;
+				const float cy = ((float)row + 0.5f) * cell - mapH * 0.5f;
+				const glm::vec2 uvOff = GetTilesetUVOffset(tileId);
+
+				// Same corner/UV order as the default sprite mesh.
+				const float corners[4][2] = {
+					{ cx + half, cy + half }, // top right
+					{ cx + half, cy - half }, // bottom right
+					{ cx - half, cy - half }, // bottom left
+					{ cx - half, cy + half }, // top left
+				};
+				const float uvs[4][2] = {
+					{ 1.0f, 1.0f },
+					{ 1.0f, 0.0f },
+					{ 0.0f, 0.0f },
+					{ 0.0f, 1.0f },
+				};
+
+				const unsigned int base = (unsigned int)(verts.size() / 5);
+				for (int i = 0; i < 4; ++i)
+				{
+					verts.push_back(corners[i][0]);
+					verts.push_back(corners[i][1]);
+					verts.push_back(0.0f);
+					verts.push_back(uvs[i][0] * uvScale.x + uvOff.x);
+					verts.push_back(uvs[i][1] * uvScale.y + uvOff.y);
+				}
+				indices.push_back(base + 0);
+				indices.push_back(base + 1);
+				indices.push_back(base + 3);
+				indices.push_back(base + 1);
+				indices.push_back(base + 2);
+				indices.push_back(base + 3);
+			}
+		}
+
+		mesh.indexCount = (int)indices.size();
+		mesh.dirty = false;
+		if (mesh.indexCount == 0)
 			return;
 
-		shader.SetUniform2fv(GetTilesetUVScale(), "uv_scale");
+		glGenVertexArrays(1, &mesh.vao);
+		glGenBuffers(1, &mesh.vbo);
+		glGenBuffers(1, &mesh.ebo);
+
+		glBindVertexArray(mesh.vao);
+		glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(verts.size() * sizeof(float)), verts.data(), GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(indices.size() * sizeof(unsigned int)), indices.data(), GL_DYNAMIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+		glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	void GameObject::DrawTilemap(const CameraProp& prop, Shader& shader)
+	{
+		(void)prop;
+		if (!m_Texture.IsValid() || m_TilemapColumns <= 0 || m_TilemapRows <= 0)
+			return;
+		EnsureTileLayerMeshes();
+
+		// Baked tiles use absolute UVs; object_matrix is the tilemap transform only.
+		shader.SetUniform2fv(glm::vec2(1.0f, 1.0f), "uv_scale");
+		shader.SetUniform2fv(glm::vec2(0.0f, 0.0f), "uv_offset");
+		shader.SetUniformMatrix4fv(m_Matrix, "object_matrix");
 
 		m_Texture.Bind();
-		m_VertexArray.Bind();
 
-		for (const TilemapLayer& layer : m_TileLayers)
+		for (int li = 0; li < (int)m_TileLayers.size(); ++li)
 		{
+			const TilemapLayer& layer = m_TileLayers[(size_t)li];
 			if (!layer.visible)
+				continue;
+
+			TilemapLayerGpuMesh& mesh = m_TileLayerMeshes[(size_t)li];
+			if (mesh.dirty)
+				RebuildTilemapLayerMesh(li);
+			if (mesh.indexCount <= 0 || mesh.vao == 0)
 				continue;
 
 			glm::vec4 tint = m_Color;
 			tint.a *= glm::clamp(layer.opacity, 0.0f, 1.0f);
 			shader.SetUniform4fv(tint, "color");
 
-			for (int row = 0; row < m_TilemapRows; ++row)
-			{
-				for (int col = 0; col < m_TilemapColumns; ++col)
-				{
-					const int idx = row * m_TilemapColumns + col;
-					if (idx < 0 || idx >= (int)layer.tiles.size())
-						continue;
-					const int tileId = layer.tiles[idx];
-					if (tileId < 0)
-						continue;
-
-					const float cx = ((float)col + 0.5f) * cell - mapW * 0.5f;
-					const float cy = ((float)row + 0.5f) * cell - mapH * 0.5f;
-
-					glm::mat4 tileLocal = glm::translate(glm::mat4(1.0f), glm::vec3(cx * sx, cy * sy, 0.0f));
-					tileLocal = glm::scale(tileLocal, glm::vec3(meshScale, meshScale, 1.0f));
-					const glm::mat4 world = m_Matrix * tileLocal;
-
-					shader.SetUniformMatrix4fv(world, "object_matrix");
-					shader.SetUniform2fv(GetTilesetUVOffset(tileId), "uv_offset");
-					glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-				}
-			}
+			glBindVertexArray(mesh.vao);
+			glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
 		}
 
+		glBindVertexArray(0);
 		m_Texture.UnBind();
 	}
 
@@ -169,6 +315,7 @@ namespace Blaze {
 
 	void GameObject::InitTilemapDefaults()
 	{
+		DestroyTileLayerMeshes();
 		m_TileCellSize = 32.0f;
 		m_TilesetColumns = 1;
 		m_TilesetRows = 1;
@@ -192,6 +339,8 @@ namespace Blaze {
 		layer.tiles.assign(expected, -1);
 		m_TileLayers.push_back(std::move(layer));
 		m_ActiveTileLayer = 0;
+		EnsureTileLayerMeshes();
+		MarkTilemapMeshesDirty();
 	}
 
 	std::vector<int>& GameObject::ActiveTiles()
@@ -226,6 +375,8 @@ namespace Blaze {
 		layer.tiles.assign(expected, -1);
 		m_TileLayers.push_back(std::move(layer));
 		m_ActiveTileLayer = (int)m_TileLayers.size() - 1;
+		EnsureTileLayerMeshes();
+		MarkTilemapLayerMeshDirty(m_ActiveTileLayer);
 		return m_ActiveTileLayer;
 	}
 
@@ -241,6 +392,8 @@ namespace Blaze {
 			m_ActiveTileLayer = (int)m_TileLayers.size() - 1;
 		else if (m_ActiveTileLayer > index)
 			--m_ActiveTileLayer;
+		EnsureTileLayerMeshes();
+		MarkTilemapMeshesDirty();
 		return true;
 	}
 
@@ -248,6 +401,7 @@ namespace Blaze {
 	{
 		m_TileLayers.clear();
 		m_ActiveTileLayer = 0;
+		DestroyTileLayerMeshes();
 	}
 
 	void GameObject::SetTileLayers(const std::vector<TilemapLayer>& layers, int activeIndex)
@@ -271,6 +425,8 @@ namespace Blaze {
 			}
 		}
 		m_ActiveTileLayer = glm::clamp(activeIndex, 0, (int)m_TileLayers.size() - 1);
+		EnsureTileLayerMeshes();
+		MarkTilemapMeshesDirty();
 	}
 
 	const TilemapLayer* GameObject::GetTileLayer(int index) const
@@ -323,6 +479,7 @@ namespace Blaze {
 		const size_t n = std::min(expected, tiles.size());
 		for (size_t i = 0; i < n; ++i)
 			layer->tiles[i] = tiles[i];
+		MarkTilemapLayerMeshDirty(index);
 	}
 
 	const std::vector<int>& GameObject::GetTileLayerTiles(int index) const
@@ -371,12 +528,14 @@ namespace Blaze {
 		m_TilemapColumns = columns;
 		m_TilemapRows = rows;
 		RefreshTilemapBounds();
+		MarkTilemapMeshesDirty();
 	}
 
 	void GameObject::SetTileCellSize(float size)
 	{
 		m_TileCellSize = glm::max(size, 1.0f);
 		RefreshTilemapBounds();
+		MarkTilemapMeshesDirty();
 	}
 
 	void GameObject::SetTilesetGrid(int columns, int rows)
@@ -389,6 +548,7 @@ namespace Blaze {
 		for (size_t i = 0; i < n; ++i)
 			next[i] = m_TilesetSolid[i];
 		m_TilesetSolid = std::move(next);
+		MarkTilemapMeshesDirty();
 	}
 
 	void GameObject::SetTilesetSolid(int tileId, bool solid)
@@ -511,7 +671,10 @@ namespace Blaze {
 		std::vector<int>& tiles = m_TileLayers[(size_t)layerIndex].tiles;
 		if (idx < 0 || idx >= (int)tiles.size())
 			return;
+		if (tiles[idx] == tileId)
+			return;
 		tiles[idx] = tileId;
+		MarkTilemapLayerMeshDirty(layerIndex);
 	}
 
 	int GameObject::GetTileOnLayer(int layerIndex, int x, int y) const
@@ -531,6 +694,7 @@ namespace Blaze {
 	{
 		for (int& t : ActiveTiles())
 			t = tileId;
+		MarkTilemapLayerMeshDirty(m_ActiveTileLayer);
 	}
 
 	void GameObject::ClearTiles()
@@ -549,6 +713,7 @@ namespace Blaze {
 		const size_t n = std::min(expected, tiles.size());
 		for (size_t i = 0; i < n; ++i)
 			dest[i] = tiles[i];
+		MarkTilemapLayerMeshDirty(m_ActiveTileLayer);
 	}
 
 	bool GameObject::WorldToTile(const CameraProp& prop, const glm::vec2& worldPoint, int& outX, int& outY) const
@@ -736,8 +901,12 @@ namespace Blaze {
 
 	void GameObject::UpdateAnimation(float dt)
 	{
+		m_FlipJustFinished = false;
 		if (!m_FlipPlaying || dt <= 0.0f)
+		{
+			UpdateAnimStateMachine();
 			return;
+		}
 		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound || m_Type == ObjectType::Tilemap || m_Type == ObjectType::Text)
 			return;
 
@@ -746,7 +915,10 @@ namespace Blaze {
 		GetFlipbookPlaybackRange(start, end);
 		const int span = end - start + 1;
 		if (span <= 1)
+		{
+			UpdateAnimStateMachine();
 			return;
+		}
 
 		const float fps = glm::max(GetFlipbookPlaybackFps(), 0.01f);
 		const bool loop = GetFlipbookPlaybackLoop();
@@ -765,10 +937,13 @@ namespace Blaze {
 					m_FlipFrame = end;
 					m_FlipPlaying = false;
 					m_FlipTime = 0.0f;
+					m_FlipJustFinished = true;
 					break;
 				}
 			}
 		}
+
+		UpdateAnimStateMachine();
 	}
 
 	void GameObject::SetFlipbookColumns(int columns)
@@ -996,6 +1171,236 @@ namespace Blaze {
 		return SaveFlipbookAsset();
 	}
 
+	void GameObject::AnimResetParams()
+	{
+		m_AnimBools.clear();
+		m_AnimFloats.clear();
+		m_AnimTriggers.clear();
+		for (const AnimParam& param : m_AnimAsset.GetParams())
+		{
+			if (param.type == AnimParamType::Bool)
+				m_AnimBools[param.name] = param.boolDefault;
+			else if (param.type == AnimParamType::Float)
+				m_AnimFloats[param.name] = param.floatDefault;
+			else
+				m_AnimTriggers[param.name] = false;
+		}
+	}
+
+	bool GameObject::EnterAnimState(const std::string& stateName, bool forceRestart)
+	{
+		const int index = m_AnimAsset.FindState(stateName);
+		if (index < 0)
+			return false;
+		const AnimState& state = m_AnimAsset.GetStates()[index];
+		if (!forceRestart && m_AnimCurrentState == state.name)
+			return true;
+
+		m_AnimCurrentState = state.name;
+		m_FlipJustFinished = false;
+		if (!state.clipName.empty() && FindFlipbookClip(state.clipName) >= 0)
+			PlayFlipbook(state.clipName);
+		else if (!state.clipName.empty())
+		{
+			// Clip missing — still mark state so transitions can recover.
+			StopFlipbook();
+		}
+		return true;
+	}
+
+	bool GameObject::TransitionConditionMet(const AnimTransition& transition) const
+	{
+		if (!transition.onFinished && !transition.hasBool && !transition.hasTrigger && !transition.hasFloat)
+			return false;
+
+		if (transition.onFinished && !m_FlipJustFinished)
+			return false;
+
+		if (transition.hasBool)
+		{
+			auto it = m_AnimBools.find(transition.boolName);
+			const bool value = (it != m_AnimBools.end()) ? it->second : false;
+			if (value != transition.boolEquals)
+				return false;
+		}
+
+		if (transition.hasTrigger)
+		{
+			auto it = m_AnimTriggers.find(transition.triggerName);
+			if (it == m_AnimTriggers.end() || !it->second)
+				return false;
+		}
+
+		if (transition.hasFloat)
+		{
+			auto it = m_AnimFloats.find(transition.floatName);
+			const float value = (it != m_AnimFloats.end()) ? it->second : 0.0f;
+			switch (transition.floatCmp)
+			{
+			case AnimFloatCmp::Less:
+				if (!(value < transition.floatValue)) return false;
+				break;
+			case AnimFloatCmp::GreaterEqual:
+				if (!(value >= transition.floatValue)) return false;
+				break;
+			case AnimFloatCmp::LessEqual:
+				if (!(value <= transition.floatValue)) return false;
+				break;
+			case AnimFloatCmp::Equal:
+				if (glm::abs(value - transition.floatValue) > 1e-4f) return false;
+				break;
+			default:
+				if (!(value > transition.floatValue)) return false;
+				break;
+			}
+		}
+
+		return true;
+	}
+
+	void GameObject::ClearConsumedTriggers(const AnimTransition& transition)
+	{
+		if (transition.hasTrigger)
+			m_AnimTriggers[transition.triggerName] = false;
+	}
+
+	void GameObject::UpdateAnimStateMachine()
+	{
+		if (!m_AnimEnabled || m_AnimAssetPath.empty() || m_AnimAsset.GetStates().empty())
+			return;
+
+		if (m_AnimCurrentState.empty())
+		{
+			const std::string& def = m_AnimAsset.GetDefaultState();
+			if (!def.empty())
+				EnterAnimState(def, true);
+			else
+				EnterAnimState(m_AnimAsset.GetStates().front().name, true);
+			return;
+		}
+
+		for (const AnimTransition& transition : m_AnimAsset.GetTransitions())
+		{
+			const bool fromMatch = (transition.from == "*") || (transition.from == m_AnimCurrentState);
+			if (!fromMatch)
+				continue;
+			if (transition.to == m_AnimCurrentState && !transition.onFinished)
+				continue;
+			if (!TransitionConditionMet(transition))
+				continue;
+
+			ClearConsumedTriggers(transition);
+			EnterAnimState(transition.to, true);
+			break;
+		}
+	}
+
+	void GameObject::SetAnimAssetPath(const std::string& path, bool loadAsset)
+	{
+		m_AnimAssetPath = path;
+		if (path.empty())
+		{
+			m_AnimEnabled = false;
+			m_AnimCurrentState.clear();
+			m_AnimAsset = AnimStateMachineAsset{};
+			AnimResetParams();
+			return;
+		}
+		if (loadAsset)
+			LoadAnimAsset();
+	}
+
+	bool GameObject::ApplyAnimAsset(const AnimStateMachineAsset& asset)
+	{
+		m_AnimAsset = asset;
+		if (!m_AnimAssetPath.empty())
+			m_AnimAsset.SetPath(m_AnimAssetPath);
+		AnimResetParams();
+		m_AnimEnabled = true;
+		m_AnimCurrentState.clear();
+		AnimRestart();
+		return true;
+	}
+
+	bool GameObject::LoadAnimAsset()
+	{
+		if (m_AnimAssetPath.empty())
+			return false;
+		AnimStateMachineAsset asset;
+		if (!asset.LoadFromFile(m_AnimAssetPath))
+			return false;
+		return ApplyAnimAsset(asset);
+	}
+
+	bool GameObject::SaveAnimAsset() const
+	{
+		if (m_AnimAssetPath.empty())
+			return false;
+		return m_AnimAsset.SaveToFile(m_AnimAssetPath);
+	}
+
+	bool GameObject::SaveAnimAssetAs(const std::string& path)
+	{
+		if (path.empty())
+			return false;
+		m_AnimAssetPath = path;
+		m_AnimAsset.SetPath(path);
+		return SaveAnimAsset();
+	}
+
+	void GameObject::SetAnimEnabled(bool enabled)
+	{
+		m_AnimEnabled = enabled;
+		if (enabled)
+			AnimRestart();
+	}
+
+	bool GameObject::AnimPlay(const std::string& stateName)
+	{
+		if (!m_AnimEnabled && !m_AnimAssetPath.empty())
+			m_AnimEnabled = true;
+		return EnterAnimState(stateName, true);
+	}
+
+	void GameObject::AnimSetBool(const std::string& name, bool value)
+	{
+		m_AnimBools[name] = value;
+	}
+
+	void GameObject::AnimSetTrigger(const std::string& name)
+	{
+		m_AnimTriggers[name] = true;
+	}
+
+	void GameObject::AnimSetFloat(const std::string& name, float value)
+	{
+		m_AnimFloats[name] = value;
+	}
+
+	bool GameObject::AnimGetBool(const std::string& name) const
+	{
+		auto it = m_AnimBools.find(name);
+		return it != m_AnimBools.end() ? it->second : false;
+	}
+
+	float GameObject::AnimGetFloat(const std::string& name) const
+	{
+		auto it = m_AnimFloats.find(name);
+		return it != m_AnimFloats.end() ? it->second : 0.0f;
+	}
+
+	void GameObject::AnimRestart()
+	{
+		if (!m_AnimEnabled || m_AnimAsset.GetStates().empty())
+			return;
+		AnimResetParams();
+		const std::string& def = m_AnimAsset.GetDefaultState();
+		if (!def.empty())
+			EnterAnimState(def, true);
+		else
+			EnterAnimState(m_AnimAsset.GetStates().front().name, true);
+	}
+
 	glm::vec3 GameObject::GetWorldPosition() const
 	{
 		if (!m_Parent)
@@ -1039,6 +1444,19 @@ namespace Blaze {
 	{
 		m_Scale = scale;
 		RebuildMatrix();
+	}
+
+	void GameObject::SetActive(bool active, bool recurseChildren)
+	{
+		m_Active = active;
+		m_Visible = active;
+		if (!recurseChildren)
+			return;
+		for (GameObject* child : m_Children)
+		{
+			if (child)
+				child->SetActive(active, true);
+		}
 	}
 
 	void GameObject::SetPosition(glm::vec3& pos)
@@ -1185,6 +1603,22 @@ namespace Blaze {
 			m_HasCollision = false;
 			m_DrivesView = false;
 		}
+		else if (type == ObjectType::Light)
+		{
+			m_HasCollision = false;
+			m_DrivesView = false;
+			if (m_LightRadius < 1.0f)
+				m_LightRadius = 300.0f;
+			if (m_LightIntensity < 0.0f)
+				m_LightIntensity = 1.0f;
+			m_LightEnabled = true;
+			if (m_LightOuterAngle < m_LightInnerAngle)
+				m_LightOuterAngle = m_LightInnerAngle;
+			if (m_Color.r > 0.99f && m_Color.g > 0.99f && m_Color.b > 0.99f)
+				m_Color = glm::vec4(1.0f, 0.92f, 0.75f, 1.0f);
+			m_LocalMin = glm::vec2(-24.0f, -24.0f);
+			m_LocalMax = glm::vec2(24.0f, 24.0f);
+		}
 		else if (type == ObjectType::Tilemap)
 		{
 			m_DrivesView = false;
@@ -1240,6 +1674,46 @@ namespace Blaze {
 	void GameObject::SetZoom(float zoom)
 	{
 		m_Zoom = glm::max(zoom, 0.05f);
+	}
+
+	void GameObject::SetLightRadius(float radius)
+	{
+		m_LightRadius = glm::max(radius, 1.0f);
+	}
+
+	void GameObject::SetLightIntensity(float intensity)
+	{
+		m_LightIntensity = glm::max(intensity, 0.0f);
+	}
+
+	void GameObject::SetLightEnabled(bool enabled)
+	{
+		m_LightEnabled = enabled;
+	}
+
+	void GameObject::SetLightKind(LightKind kind)
+	{
+		m_LightKind = kind;
+	}
+
+	void GameObject::SetLightInnerAngle(float degrees)
+	{
+		m_LightInnerAngle = glm::clamp(degrees, 0.5f, 179.0f);
+		if (m_LightOuterAngle < m_LightInnerAngle)
+			m_LightOuterAngle = m_LightInnerAngle;
+	}
+
+	void GameObject::SetLightOuterAngle(float degrees)
+	{
+		m_LightOuterAngle = glm::clamp(degrees, 0.5f, 179.0f);
+		if (m_LightOuterAngle < m_LightInnerAngle)
+			m_LightInnerAngle = m_LightOuterAngle;
+	}
+
+	glm::vec2 GameObject::GetLightDirection() const
+	{
+		const float rad = glm::radians(GetWorldRotation());
+		return glm::vec2(glm::cos(rad), glm::sin(rad));
 	}
 
 	glm::mat4 GameObject::GetCameraViewMatrix() const
@@ -1399,24 +1873,67 @@ namespace Blaze {
 		m_HasCollision = true;
 		if (type == CollisionType::Circle)
 			m_ColliderShape = ColliderShape::Circle;
-		else if (type == CollisionType::Block)
-			m_ColliderShape = ColliderShape::Block;
+		// Block / PhysicsRigidbody2D keep the current ColliderShape (Circle/Block/Capsule/Polygon).
 	}
 
 	void GameObject::SetColliderShape(ColliderShape shape)
 	{
 		m_ColliderShape = shape;
+		if (shape == ColliderShape::Polygon && m_ColliderVertices.size() < 3)
+			ResetColliderVerticesToBox();
+		if (shape == ColliderShape::Capsule)
+			SetCapsuleHeight(GetCapsuleHeight());
 	}
 
 	void GameObject::SetCollisionRadius(float radius)
 	{
 		m_CollisionRadius = glm::max(radius, 0.01f);
+		if (m_ColliderShape == ColliderShape::Capsule)
+			SetCapsuleHeight(GetCapsuleHeight());
 	}
 
 	void GameObject::SetCollisionSize(glm::vec2 size)
 	{
 		m_CollisionSize.x = glm::max(size.x, 0.01f);
 		m_CollisionSize.y = glm::max(size.y, 0.01f);
+		if (m_ColliderShape == ColliderShape::Capsule)
+			SetCapsuleHeight(m_CollisionSize.y);
+	}
+
+	float GameObject::GetCapsuleHeight() const
+	{
+		return glm::max(m_CollisionSize.y, m_CollisionRadius * 2.0f);
+	}
+
+	void GameObject::SetCapsuleHeight(float height)
+	{
+		m_CollisionSize.y = glm::max(height, m_CollisionRadius * 2.0f);
+	}
+
+	void GameObject::ResetColliderVerticesToBox()
+	{
+		const glm::vec2 half = m_CollisionSize * 0.5f;
+		m_ColliderVertices = {
+			{ -half.x, -half.y },
+			{  half.x, -half.y },
+			{  half.x,  half.y },
+			{ -half.x,  half.y },
+		};
+	}
+
+	void GameObject::ClearColliderVertices()
+	{
+		m_ColliderVertices.clear();
+	}
+
+	void GameObject::SetColliderVertices(const std::vector<glm::vec2>& localVerts)
+	{
+		m_ColliderVertices.clear();
+		const size_t n = std::min<size_t>(localVerts.size(), 8);
+		for (size_t i = 0; i < n; ++i)
+			m_ColliderVertices.push_back(localVerts[i]);
+		if (m_ColliderVertices.size() >= 3)
+			m_ColliderShape = ColliderShape::Polygon;
 	}
 
 	void GameObject::SetRigidbodyMass(float mass)
@@ -1496,6 +2013,44 @@ namespace Blaze {
 	void GameObject::SetAudioPlayOnStart(bool playOnStart)
 	{
 		m_AudioPlayOnStart = playOnStart;
+	}
+
+	void GameObject::AddParticleEmitter()
+	{
+		m_HasParticleEmitter = true;
+	}
+
+	void GameObject::RemoveParticleEmitter()
+	{
+		ParticleSystem2D::StopSceneEmitter(this);
+		m_HasParticleEmitter = false;
+		m_ParticlePath.clear();
+	}
+
+	void GameObject::SetParticlePath(const std::string& path)
+	{
+		m_ParticlePath = path;
+		m_HasParticleEmitter = true;
+	}
+
+	void GameObject::SetParticlePlayOnStart(bool playOnStart)
+	{
+		m_ParticlePlayOnStart = playOnStart;
+	}
+
+	void GameObject::PlayParticle()
+	{
+		ParticleSystem2D::StartSceneEmitter(this, true);
+	}
+
+	void GameObject::StopParticle()
+	{
+		ParticleSystem2D::StopSceneEmitter(this);
+	}
+
+	bool GameObject::IsParticlePlaying() const
+	{
+		return ParticleSystem2D::IsSceneEmitterActive(const_cast<GameObject*>(this));
 	}
 
 	void GameObject::AddScript()

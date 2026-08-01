@@ -8,7 +8,10 @@
 #include"ComponentsWindow.h"
 #include"ScriptEditorWindow.h"
 #include"WidgetEditorWindow.h"
+#include"LocalizationEditorWindow.h"
+#include"ParticleEditorWindow.h"
 #include"ProjectSettingsWindow.h"
+#include"BuildSettingsWindow.h"
 #include"ViewPort.h"
 
 struct ImGuiViewport;
@@ -49,7 +52,10 @@ namespace Blaze
 		ContentBrowser* m_contextWindow;
 		ScriptEditorWindow* m_scriptEditor;
 		WidgetEditorWindow* m_widgetEditor;
+		LocalizationEditorWindow* m_locEditor;
+		ParticleEditorWindow* m_particleEditor;
 		ProjectSettingsWindow* m_projectSettings;
+		BuildSettingsWindow* m_buildSettings;
 		ViewPort* m_ViewPort;
 		MenuBar* m_menuBar;
 		GameWindow* m_gameWindow;

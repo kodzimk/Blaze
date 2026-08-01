@@ -20,6 +20,16 @@ namespace Blaze
 		static bool SaveProjectSettings();
 		static bool BuildGame();
 
+		struct BuildGameOptions
+		{
+			std::string outputExePath;              // empty + promptForOutputPath → save dialog
+			std::string startingMap;                // empty → project starting map
+			std::string gameName;                   // empty → project game name
+			std::vector<std::string> includedMaps;  // empty → keep all maps in content/
+			bool promptForOutputPath = false;
+		};
+		static bool BuildGame(const BuildGameOptions& options);
+
 		static bool HasProject();
 		static void CloseProject();
 		static const std::string& GetProjectFile();
@@ -47,13 +57,45 @@ namespace Blaze
 		static void SetProjectFromFile(const std::string& projectFile);
 		static std::vector<std::string> GetRecentProjects();
 		static void RegisterRecentProject(const std::string& projectFile);
+
+		struct GameObjectWriteFlags
+		{
+			bool objectMarkers = true; // "object" / "end"
+			bool name = true;
+			bool type = true;
+			bool transform = true; // pos / rot / scale
+			bool identity = true;  // layer / visible / color / tags
+			bool parent = true;
+			bool camera = true;
+			bool cameraDrives = true;
+			bool light = true;
+			bool texture = true;
+			bool flipbook = true;
+			bool anim = true;
+			bool tilemap = true;
+			bool tilemapTiles = true;
+			bool text = true;
+			bool collision = true;
+			bool audio = true;
+			bool particle = true;
+			bool script = true;
+
+			static GameObjectWriteFlags All();
+			static GameObjectWriteFlags ComponentPreset();
+		};
+
+		// Shared GameObject block I/O (maps + prefabs + component presets).
+		// parentIndex < 0 omits the parent field (also gated by flags.parent).
+		static void WriteGameObject(std::ostream& out, class GameObject* object, int parentIndex = -1,
+			const GameObjectWriteFlags& flags = GameObjectWriteFlags::All());
+		static bool ApplyGameObjectProperty(class GameObject* object, const std::string& line, int* outParentIndex = nullptr);
+		static std::string StoreTexturePath(const std::string& texturePath);
+		static std::string MakeProjectRelative(const std::string& path);
 	private:
 		static bool SetupProjectAt(const std::string& pickedFile);
-		static std::string StoreTexturePath(const std::string& texturePath);
 		static bool WriteSceneFile(const std::string& path, Renderer& renderer, ObjectWindow* objectsWindow, bool asMap);
 		static bool ReadSceneFile(const std::string& path, Renderer& renderer, const std::vector<float>& vertices, const std::vector<unsigned int>& indices, ObjectWindow* objectsWindow);
 		static bool WriteProjectPointer();
-		static std::string MakeProjectRelative(const std::string& path);
 	private:
 		static std::string s_ProjectFile;
 		static std::string s_Directory;

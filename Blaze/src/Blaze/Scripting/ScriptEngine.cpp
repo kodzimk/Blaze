@@ -16,6 +16,15 @@
 #include "Blaze/Physics/PhysicsWorld2D.h"
 #include "Blaze/Renderer/DebugDraw2D.h"
 #include "Blaze/Renderer/ParticleSystem2D.h"
+#include "Blaze/Renderer/ParticleEmitterAsset.h"
+#include "Blaze/Renderer/Lighting2D.h"
+#include "Blaze/Core/Time.h"
+#include "Blaze/Input/InputActions.h"
+#include "Blaze/Localization/Localization.h"
+#include "Blaze/Renderer/PrefabAsset.h"
+#include "Blaze/Renderer/ComponentPresetAsset.h"
+#include "Blaze/Scripting/ObjectPool.h"
+#include "Blaze/Navigation/Pathfinder2D.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include "Blaze/Assets/TiledImporter.h"
 #include <filesystem>
@@ -48,6 +57,8 @@ namespace Blaze
 		sol::environment env;
 		sol::protected_function onStart;
 		sol::protected_function onUpdate;
+		sol::protected_function onSpawn;
+		sol::protected_function onDespawn;
 		sol::protected_function onCollisionBegin;
 		sol::protected_function onCollisionEnd;
 		sol::protected_function onTriggerBegin;
@@ -1237,6 +1248,168 @@ namespace Blaze
 				return ScriptObject(object);
 			}));
 
+		lua.set_function("Instantiate", sol::overload(
+			[](const std::string& path)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path));
+			},
+			[](const std::string& path, float x, float y)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, 0.0f));
+			},
+			[](const std::string& path, float x, float y, float z)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, z));
+			},
+			[](const sol::table& opts)
+			{
+				std::string path;
+				float x = 0.0f, y = 0.0f, z = 0.0f;
+				std::string name;
+				std::string tag;
+				if (sol::optional<std::string> p = opts["path"]) path = *p;
+				else if (sol::optional<std::string> p = opts["prefab"]) path = *p;
+				if (sol::optional<float> ox = opts["x"]) x = *ox;
+				if (sol::optional<float> oy = opts["y"]) y = *oy;
+				if (sol::optional<float> oz = opts["z"]) z = *oz;
+				if (sol::optional<std::string> n = opts["name"]) name = *n;
+				if (sol::optional<std::string> tg = opts["tag"]) tag = *tg;
+				else if (sol::optional<std::string> tags = opts["tags"]) tag = *tags;
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, z, name, tag));
+			}));
+		lua.set_function("SpawnPrefab", sol::overload(
+			[](const std::string& path)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path));
+			},
+			[](const std::string& path, float x, float y)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, 0.0f));
+			},
+			[](const std::string& path, float x, float y, float z)
+			{
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, z));
+			},
+			[](const sol::table& opts)
+			{
+				std::string path;
+				float x = 0.0f, y = 0.0f, z = 0.0f;
+				std::string name;
+				std::string tag;
+				if (sol::optional<std::string> p = opts["path"]) path = *p;
+				else if (sol::optional<std::string> p = opts["prefab"]) path = *p;
+				if (sol::optional<float> ox = opts["x"]) x = *ox;
+				if (sol::optional<float> oy = opts["y"]) y = *oy;
+				if (sol::optional<float> oz = opts["z"]) z = *oz;
+				if (sol::optional<std::string> n = opts["name"]) name = *n;
+				if (sol::optional<std::string> tg = opts["tag"]) tag = *tg;
+				else if (sol::optional<std::string> tags = opts["tags"]) tag = *tags;
+				return ScriptObject(ScriptEngine::InstantiatePrefab(path, x, y, z, name, tag));
+			}));
+
+		lua.set_function("ApplyComponentPreset", sol::overload(
+			[](const std::string& path)
+			{
+				if (!s_CurrentObject)
+					return false;
+				std::string resolved = path;
+				{
+					std::error_code ec;
+					namespace fs = std::filesystem;
+					if (!fs::exists(resolved, ec) && !Project::GetDirectory().empty())
+					{
+						fs::path full = fs::path(Project::GetDirectory()) / path;
+						if (fs::exists(full, ec))
+							resolved = full.generic_string();
+					}
+				}
+				return ComponentPresetAsset::ApplyToObject(resolved, s_CurrentObject);
+			},
+			[](const ScriptObject& object, const std::string& path)
+			{
+				if (!object.IsValid())
+					return false;
+				std::string resolved = path;
+				{
+					std::error_code ec;
+					namespace fs = std::filesystem;
+					if (!fs::exists(resolved, ec) && !Project::GetDirectory().empty())
+					{
+						fs::path full = fs::path(Project::GetDirectory()) / path;
+						if (fs::exists(full, ec))
+							resolved = full.generic_string();
+					}
+				}
+				return ComponentPresetAsset::ApplyToObject(resolved, object.raw);
+			}));
+
+		sol::table pool = lua.create_named_table("Pool");
+		pool["Prewarm"] = [](const std::string& path, int count)
+		{
+			return ObjectPool::Prewarm(path, count);
+		};
+		pool["Acquire"] = sol::overload(
+			[](const std::string& path)
+			{
+				return ScriptObject(ObjectPool::Acquire(path));
+			},
+			[](const std::string& path, float x, float y)
+			{
+				return ScriptObject(ObjectPool::Acquire(path, x, y, 0.0f));
+			},
+			[](const std::string& path, float x, float y, float z)
+			{
+				return ScriptObject(ObjectPool::Acquire(path, x, y, z));
+			},
+			[](const sol::table& opts)
+			{
+				std::string path;
+				float x = 0.0f, y = 0.0f, z = 0.0f;
+				if (sol::optional<std::string> p = opts["path"]) path = *p;
+				else if (sol::optional<std::string> p = opts["prefab"]) path = *p;
+				if (sol::optional<float> ox = opts["x"]) x = *ox;
+				if (sol::optional<float> oy = opts["y"]) y = *oy;
+				if (sol::optional<float> oz = opts["z"]) z = *oz;
+				return ScriptObject(ObjectPool::Acquire(path, x, y, z));
+			});
+		pool["Release"] = [](const ScriptObject& object)
+		{
+			return object.IsValid() ? ObjectPool::Release(object.raw) : false;
+		};
+		pool["Owns"] = [](const ScriptObject& object)
+		{
+			return object.IsValid() ? ObjectPool::Owns(object.raw) : false;
+		};
+		pool["FreeCount"] = [](const std::string& path)
+		{
+			return ObjectPool::GetFreeCount(path);
+		};
+		pool["TotalCount"] = [](const std::string& path)
+		{
+			return ObjectPool::GetTotalCount(path);
+		};
+
+		lua.set_function("SetActive", sol::overload(
+			[](bool active)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetActive(active, true);
+			},
+			[](const ScriptObject& object, bool active)
+			{
+				if (object.IsValid())
+					object.raw->SetActive(active, true);
+			}));
+		lua.set_function("IsActive", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->IsActive() : false;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->IsActive() : false;
+			}));
+
 		sol::table log = lua.create_named_table("Log");
 		log["Info"] = [](const std::string& msg)
 		{
@@ -1350,6 +1523,104 @@ namespace Blaze
 			return std::make_tuple(world.x, world.y);
 		};
 
+		input["WasPressed"] = [](const std::string& action)
+		{
+			return InputActions::WasPressed(action);
+		};
+		input["WasReleased"] = [](const std::string& action)
+		{
+			return InputActions::WasReleased(action);
+		};
+		input["IsHeld"] = [](const std::string& action)
+		{
+			return InputActions::IsHeld(action);
+		};
+		input["GetAxis"] = [](const std::string& action)
+		{
+			return InputActions::GetAxis(action);
+		};
+		input["GetVector"] = [](const std::string& action)
+		{
+			const glm::vec2 v = InputActions::GetVector(action);
+			return std::make_tuple(v.x, v.y);
+		};
+		input["HasAction"] = [](const std::string& action)
+		{
+			return InputActions::HasAction(action);
+		};
+		input["LoadActions"] = [](const std::string& path)
+		{
+			return InputActions::Load(path);
+		};
+		input["ReloadActions"] = []()
+		{
+			return InputActions::LoadDefault();
+		};
+
+		sol::table loc = lua.create_named_table("Loc");
+		loc["Load"] = [](const std::string& path)
+		{
+			return Localization::Load(path);
+		};
+		loc["LoadDefault"] = []()
+		{
+			return Localization::LoadDefault();
+		};
+		loc["SetLanguage"] = [](const std::string& code)
+		{
+			return Localization::SetLanguage(code);
+		};
+		loc["GetLanguage"] = []()
+		{
+			return Localization::GetLanguage();
+		};
+		loc["Has"] = [](const std::string& key)
+		{
+			return Localization::Has(key);
+		};
+		loc["Get"] = sol::overload(
+			[](const std::string& key)
+			{
+				return Localization::Get(key);
+			},
+			[](const std::string& key, const std::string& fallback)
+			{
+				return Localization::Get(key, fallback);
+			});
+		loc["Format"] = [](const std::string& key, sol::variadic_args va)
+		{
+			std::vector<std::string> args;
+			args.reserve(va.size());
+			for (sol::object obj : va)
+			{
+				if (obj.is<std::string>())
+					args.push_back(obj.as<std::string>());
+				else if (obj.is<bool>())
+					args.push_back(obj.as<bool>() ? "true" : "false");
+				else if (obj.is<int64_t>())
+					args.push_back(std::to_string(obj.as<int64_t>()));
+				else if (obj.is<double>())
+				{
+					double d = obj.as<double>();
+					if (std::floor(d) == d && std::abs(d) < 1e15)
+						args.push_back(std::to_string((long long)d));
+					else
+						args.push_back(std::to_string(d));
+				}
+				else
+					args.push_back(obj.as<std::string>());
+			}
+			return Localization::Format(key, args);
+		};
+		loc["IsLoaded"] = []()
+		{
+			return Localization::IsLoaded();
+		};
+		loc["GetPath"] = []()
+		{
+			return Localization::GetLoadedPath();
+		};
+
 		lua.set_function("GetMouseWorld", [resolveMouseWorld]()
 		{
 			const glm::vec2 w = resolveMouseWorld();
@@ -1429,6 +1700,33 @@ namespace Blaze
 			}));
 		particles.set_function("Clear", []() { ParticleSystem2D::Clear(); });
 		particles.set_function("GetCount", []() { return ParticleSystem2D::GetAliveCount(); });
+		particles.set_function("Play", sol::overload(
+			[](const std::string& path, float x, float y)
+			{
+				ParticleEmitterAsset asset;
+				if (!asset.LoadFromFile(path))
+					return false;
+				asset.PlayAt(x, y);
+				return true;
+			},
+			[](const std::string& path)
+			{
+				ParticleEmitterAsset asset;
+				if (!asset.LoadFromFile(path))
+					return false;
+				asset.PlayAt(0.0f, 0.0f);
+				return true;
+			}));
+		particles.set_function("EmitAsset", [](const std::string& path, float x, float y, float dt)
+		{
+			static std::unordered_map<std::string, float> s_Accum;
+			ParticleEmitterAsset asset;
+			if (!asset.LoadFromFile(path))
+				return false;
+			float& accum = s_Accum[path];
+			asset.EmitContinuous(x, y, dt, accum);
+			return true;
+		});
 
 		lua.set_function("EmitParticles", sol::overload(
 			[](float x, float y, int count)
@@ -1468,6 +1766,17 @@ namespace Blaze
 		{
 			ScriptTimers::ClearAll();
 		});
+
+		lua.set_function("GetDeltaTime", []() { return Time::GetDeltaTime(); });
+		lua.set_function("GetUnscaledDeltaTime", []() { return Time::GetUnscaledDeltaTime(); });
+		lua.set_function("GetTime", []() { return Time::GetTime(); });
+		lua.set_function("GetUnscaledTime", []() { return Time::GetUnscaledTime(); });
+		lua.set_function("GetTimeScale", []() { return Time::GetTimeScale(); });
+		lua.set_function("SetTimeScale", [](float scale) { Time::SetTimeScale(scale); });
+		lua.set_function("IsPaused", []() { return Time::IsPaused(); });
+		lua.set_function("SetPaused", [](bool paused) { Time::SetPaused(paused); });
+		lua.set_function("Pause", []() { Time::Pause(); });
+		lua.set_function("Unpause", []() { Time::Unpause(); });
 
 		lua.set_function("Tween", sol::overload(
 			[](float from, float to, float duration, sol::protected_function onUpdate)
@@ -1845,6 +2154,172 @@ namespace Blaze
 		{
 			s_CameraFollowTarget = nullptr;
 		});
+
+		lua.set_function("EnableLighting", [](bool enabled)
+		{
+			Lighting2D::SetEnabled(enabled);
+		});
+		lua.set_function("IsLightingEnabled", []()
+		{
+			return Lighting2D::IsEnabled();
+		});
+		lua.set_function("SetAmbientLight", sol::overload(
+			[](float r, float g, float b)
+			{
+				Lighting2D::SetAmbient(r, g, b);
+			},
+			[](float gray)
+			{
+				Lighting2D::SetAmbient(gray, gray, gray);
+			}));
+		lua.set_function("GetAmbientLight", []()
+		{
+			glm::vec3 a = Lighting2D::GetAmbient();
+			return std::make_tuple(a.r, a.g, a.b);
+		});
+		lua.set_function("SetLightRadius", sol::overload(
+			[](float radius)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetLightRadius(radius);
+			},
+			[](const ScriptObject& object, float radius)
+			{
+				if (object.IsValid())
+					object.raw->SetLightRadius(radius);
+			}));
+		lua.set_function("GetLightRadius", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetLightRadius() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetLightRadius() : 0.0f;
+			}));
+		lua.set_function("SetLightIntensity", sol::overload(
+			[](float intensity)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetLightIntensity(intensity);
+			},
+			[](const ScriptObject& object, float intensity)
+			{
+				if (object.IsValid())
+					object.raw->SetLightIntensity(intensity);
+			}));
+		lua.set_function("GetLightIntensity", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetLightIntensity() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetLightIntensity() : 0.0f;
+			}));
+		lua.set_function("SetLightEnabled", sol::overload(
+			[](bool enabled)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetLightEnabled(enabled);
+			},
+			[](const ScriptObject& object, bool enabled)
+			{
+				if (object.IsValid())
+					object.raw->SetLightEnabled(enabled);
+			}));
+		lua.set_function("IsLightEnabled", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsLightEnabled();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsLightEnabled();
+			}));
+		lua.set_function("IsLight", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsLight();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsLight();
+			}));
+		lua.set_function("SetLightKind", sol::overload(
+			[](const std::string& kind)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetLightKind((kind == "spot" || kind == "Spot") ? LightKind::Spot : LightKind::Point);
+			},
+			[](ScriptObject object, const std::string& kind)
+			{
+				if (object.IsValid())
+					object.raw->SetLightKind((kind == "spot" || kind == "Spot") ? LightKind::Spot : LightKind::Point);
+			}));
+		lua.set_function("GetLightKind", sol::overload(
+			[]()
+			{
+				if (!s_CurrentObject || !s_CurrentObject->IsLight())
+					return std::string("point");
+				return s_CurrentObject->GetLightKind() == LightKind::Spot ? std::string("spot") : std::string("point");
+			},
+			[](const ScriptObject& object)
+			{
+				if (!object.IsValid() || !object.raw->IsLight())
+					return std::string("point");
+				return object.raw->GetLightKind() == LightKind::Spot ? std::string("spot") : std::string("point");
+			}));
+		lua.set_function("IsSpotLight", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsSpotLight();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsSpotLight();
+			}));
+		lua.set_function("SetLightInnerAngle", sol::overload(
+			[](float degrees)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetLightInnerAngle(degrees);
+			},
+			[](ScriptObject object, float degrees)
+			{
+				if (object.IsValid())
+					object.raw->SetLightInnerAngle(degrees);
+			}));
+		lua.set_function("GetLightInnerAngle", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetLightInnerAngle() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetLightInnerAngle() : 0.0f;
+			}));
+		lua.set_function("SetLightOuterAngle", sol::overload(
+			[](float degrees)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetLightOuterAngle(degrees);
+			},
+			[](ScriptObject object, float degrees)
+			{
+				if (object.IsValid())
+					object.raw->SetLightOuterAngle(degrees);
+			}));
+		lua.set_function("GetLightOuterAngle", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetLightOuterAngle() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetLightOuterAngle() : 0.0f;
+			}));
 
 		lua.set_function("SetLocation", sol::overload(
 			[](float x, float y)
@@ -2268,6 +2743,87 @@ namespace Blaze
 				return result;
 			});
 
+		auto pathToTable = [&lua](const std::vector<PathPoint>& path) -> sol::table
+		{
+			sol::table result = lua.create_table();
+			int i = 1;
+			for (const PathPoint& p : path)
+			{
+				sol::table pt = lua.create_table();
+				pt["x"] = p.x;
+				pt["y"] = p.y;
+				result[i++] = pt;
+			}
+			return result;
+		};
+
+		auto readPathTable = [](const sol::table& table) -> std::vector<PathPoint>
+		{
+			std::vector<PathPoint> path;
+			for (size_t i = 1;; ++i)
+			{
+				sol::optional<sol::table> pt = table[i];
+				if (!pt)
+					break;
+				PathPoint p;
+				if (sol::optional<float> x = (*pt)["x"])
+					p.x = *x;
+				if (sol::optional<float> y = (*pt)["y"])
+					p.y = *y;
+				path.push_back(p);
+			}
+			return path;
+		};
+
+		lua.set_function("FindPath",
+			[pathToTable](float sx, float sy, float ex, float ey,
+				sol::optional<bool> diagonalOpt,
+				sol::optional<bool> drawOpt,
+				sol::optional<float> durationOpt) -> sol::table
+			{
+				if (!s_Renderer)
+					return pathToTable({});
+				const bool diagonal = diagonalOpt.value_or(false);
+				std::vector<PathPoint> path = Pathfinder2D::FindPath(
+					s_Renderer->GetObjects(), Camera::m_prop, sx, sy, ex, ey, diagonal);
+				if (drawOpt.value_or(false))
+					Pathfinder2D::DrawPath(path, durationOpt.value_or(0.0f));
+				return pathToTable(path);
+			});
+
+		lua.set_function("FindPathOn",
+			[pathToTable](ScriptObject tilemap, float sx, float sy, float ex, float ey,
+				sol::optional<bool> diagonalOpt,
+				sol::optional<bool> drawOpt,
+				sol::optional<float> durationOpt) -> sol::table
+			{
+				if (!tilemap.IsValid())
+					return pathToTable({});
+				const bool diagonal = diagonalOpt.value_or(false);
+				std::vector<PathPoint> path = Pathfinder2D::FindPathOn(
+					*tilemap.raw, Camera::m_prop, sx, sy, ex, ey, diagonal);
+				if (drawOpt.value_or(false))
+					Pathfinder2D::DrawPath(path, durationOpt.value_or(0.0f));
+				return pathToTable(path);
+			});
+
+		lua.set_function("DrawPath",
+			[readPathTable](const sol::table& pathTable,
+				sol::optional<float> durationOpt,
+				sol::optional<float> rOpt,
+				sol::optional<float> gOpt,
+				sol::optional<float> bOpt,
+				sol::optional<float> aOpt)
+			{
+				std::vector<PathPoint> path = readPathTable(pathTable);
+				glm::vec4 color(
+					rOpt.value_or(0.2f),
+					gOpt.value_or(1.0f),
+					bOpt.value_or(0.45f),
+					aOpt.value_or(1.0f));
+				Pathfinder2D::DrawPath(path, durationOpt.value_or(0.0f), color);
+			});
+
 		lua.set_function("OverlapPoint",
 			[&lua](float x, float y, sol::optional<uint32_t> layerMaskOpt) -> sol::table
 			{
@@ -2596,6 +3152,151 @@ namespace Blaze
 			{
 				return object.IsValid() && object.raw->IsTrigger();
 			}));
+
+		lua.set_function("SetColliderShape", sol::overload(
+			[](int shape)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetColliderShape((ColliderShape)shape);
+			},
+			[](const ScriptObject& object, int shape)
+			{
+				if (object.IsValid())
+					object.raw->SetColliderShape((ColliderShape)shape);
+			}));
+
+		lua.set_function("GetColliderShape", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? (int)s_CurrentObject->GetColliderShape() : 0;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? (int)object.raw->GetColliderShape() : 0;
+			}));
+
+		lua.set_function("SetCollisionRadius", sol::overload(
+			[](float radius)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCollisionRadius(radius);
+			},
+			[](const ScriptObject& object, float radius)
+			{
+				if (object.IsValid())
+					object.raw->SetCollisionRadius(radius);
+			}));
+
+		lua.set_function("GetCollisionRadius", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetCollisionRadius() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetCollisionRadius() : 0.0f;
+			}));
+
+		lua.set_function("SetCollisionSize", sol::overload(
+			[](float w, float h)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCollisionSize(glm::vec2(w, h));
+			},
+			[](const ScriptObject& object, float w, float h)
+			{
+				if (object.IsValid())
+					object.raw->SetCollisionSize(glm::vec2(w, h));
+			}));
+
+		lua.set_function("GetCollisionSize", sol::overload(
+			[]()
+			{
+				if (!s_CurrentObject)
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec2 s = s_CurrentObject->GetCollisionSize();
+				return std::make_tuple(s.x, s.y);
+			},
+			[](const ScriptObject& object)
+			{
+				if (!object.IsValid())
+					return std::make_tuple(0.0f, 0.0f);
+				glm::vec2 s = object.raw->GetCollisionSize();
+				return std::make_tuple(s.x, s.y);
+			}));
+
+		lua.set_function("SetCapsuleHeight", sol::overload(
+			[](float height)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetCapsuleHeight(height);
+			},
+			[](const ScriptObject& object, float height)
+			{
+				if (object.IsValid())
+					object.raw->SetCapsuleHeight(height);
+			}));
+
+		lua.set_function("GetCapsuleHeight", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetCapsuleHeight() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetCapsuleHeight() : 0.0f;
+			}));
+
+		lua.set_function("SetColliderVertices", sol::overload(
+			[](const sol::table& verts)
+			{
+				if (!s_CurrentObject)
+					return;
+				std::vector<glm::vec2> local;
+				for (size_t i = 1; i <= verts.size() && local.size() < 8; ++i)
+				{
+					sol::optional<sol::table> row = verts[i];
+					if (!row)
+						continue;
+					float x = (*row).get_or("x", (*row).get_or(1, 0.0f));
+					float y = (*row).get_or("y", (*row).get_or(2, 0.0f));
+					local.emplace_back(x, y);
+				}
+				s_CurrentObject->SetColliderVertices(local);
+			},
+			[](const ScriptObject& object, const sol::table& verts)
+			{
+				if (!object.IsValid())
+					return;
+				std::vector<glm::vec2> local;
+				for (size_t i = 1; i <= verts.size() && local.size() < 8; ++i)
+				{
+					sol::optional<sol::table> row = verts[i];
+					if (!row)
+						continue;
+					float x = (*row).get_or("x", (*row).get_or(1, 0.0f));
+					float y = (*row).get_or("y", (*row).get_or(2, 0.0f));
+					local.emplace_back(x, y);
+				}
+				object.raw->SetColliderVertices(local);
+			}));
+
+		lua.set_function("ResetColliderVerticesToBox", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->ResetColliderVerticesToBox();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->ResetColliderVerticesToBox();
+			}));
+
+		lua["COLLIDER_CIRCLE"] = (int)ColliderShape::Circle;
+		lua["COLLIDER_BLOCK"] = (int)ColliderShape::Block;
+		lua["COLLIDER_CAPSULE"] = (int)ColliderShape::Capsule;
+		lua["COLLIDER_POLYGON"] = (int)ColliderShape::Polygon;
 
 		lua.set_function("SetCollisionLayer", sol::overload(
 			[](int layer)
@@ -3100,6 +3801,129 @@ namespace Blaze
 				return object.IsValid() && object.raw->SaveFlipbookAsset();
 			}));
 
+		lua.set_function("SetAnimAsset", sol::overload(
+			[](const std::string& path)
+			{
+				if (!s_CurrentObject) return false;
+				s_CurrentObject->SetAnimAssetPath(path);
+				return s_CurrentObject->HasAnimAsset();
+			},
+			[](const ScriptObject& object, const std::string& path)
+			{
+				if (!object.IsValid()) return false;
+				object.raw->SetAnimAssetPath(path);
+				return object.raw->HasAnimAsset();
+			}));
+		lua.set_function("GetAnimAsset", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAnimAssetPath() : std::string{};
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAnimAssetPath() : std::string{};
+			}));
+		lua.set_function("AnimEnabled", sol::overload(
+			[](bool enabled)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetAnimEnabled(enabled);
+			},
+			[](const ScriptObject& object, bool enabled)
+			{
+				if (object.IsValid())
+					object.raw->SetAnimEnabled(enabled);
+			}));
+		lua.set_function("IsAnimEnabled", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsAnimEnabled();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsAnimEnabled();
+			}));
+		lua.set_function("AnimPlay", sol::overload(
+			[](const std::string& state)
+			{
+				return s_CurrentObject && s_CurrentObject->AnimPlay(state);
+			},
+			[](const ScriptObject& object, const std::string& state)
+			{
+				return object.IsValid() && object.raw->AnimPlay(state);
+			}));
+		lua.set_function("AnimGetState", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAnimState() : std::string{};
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAnimState() : std::string{};
+			}));
+		lua.set_function("AnimSetBool", sol::overload(
+			[](const std::string& name, bool value)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AnimSetBool(name, value);
+			},
+			[](const ScriptObject& object, const std::string& name, bool value)
+			{
+				if (object.IsValid())
+					object.raw->AnimSetBool(name, value);
+			}));
+		lua.set_function("AnimGetBool", sol::overload(
+			[](const std::string& name)
+			{
+				return s_CurrentObject ? s_CurrentObject->AnimGetBool(name) : false;
+			},
+			[](const ScriptObject& object, const std::string& name)
+			{
+				return object.IsValid() ? object.raw->AnimGetBool(name) : false;
+			}));
+		lua.set_function("AnimSetTrigger", sol::overload(
+			[](const std::string& name)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AnimSetTrigger(name);
+			},
+			[](const ScriptObject& object, const std::string& name)
+			{
+				if (object.IsValid())
+					object.raw->AnimSetTrigger(name);
+			}));
+		lua.set_function("AnimSetFloat", sol::overload(
+			[](const std::string& name, float value)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AnimSetFloat(name, value);
+			},
+			[](const ScriptObject& object, const std::string& name, float value)
+			{
+				if (object.IsValid())
+					object.raw->AnimSetFloat(name, value);
+			}));
+		lua.set_function("AnimGetFloat", sol::overload(
+			[](const std::string& name)
+			{
+				return s_CurrentObject ? s_CurrentObject->AnimGetFloat(name) : 0.0f;
+			},
+			[](const ScriptObject& object, const std::string& name)
+			{
+				return object.IsValid() ? object.raw->AnimGetFloat(name) : 0.0f;
+			}));
+		lua.set_function("AnimRestart", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AnimRestart();
+			},
+			[](const ScriptObject& object)
+			{
+				if (object.IsValid())
+					object.raw->AnimRestart();
+			}));
+
 		lua.set_function("CreateSaveObject", sol::overload(
 			[&lua]()
 			{
@@ -3591,7 +4415,7 @@ namespace Blaze
 			return nullptr;
 		for (GameObject* object : s_Renderer->GetObjects())
 		{
-			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
+			if (object && object->IsActive() && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
 				return object;
 		}
 		return nullptr;
@@ -3604,7 +4428,7 @@ namespace Blaze
 			return result;
 		for (GameObject* object : s_Renderer->GetObjects())
 		{
-			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
+			if (object && object->IsActive() && s_LiveObjects.find(object) != s_LiveObjects.end() && object->HasTag(tag))
 				result.push_back(object);
 		}
 		return result;
@@ -3616,7 +4440,7 @@ namespace Blaze
 			return nullptr;
 		for (GameObject* object : s_Renderer->GetObjects())
 		{
-			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->GetName() == name)
+			if (object && object->IsActive() && s_LiveObjects.find(object) != s_LiveObjects.end() && object->GetName() == name)
 				return object;
 		}
 		return nullptr;
@@ -3629,7 +4453,7 @@ namespace Blaze
 			return result;
 		for (GameObject* object : s_Renderer->GetObjects())
 		{
-			if (object && s_LiveObjects.find(object) != s_LiveObjects.end() && object->GetName() == name)
+			if (object && object->IsActive() && s_LiveObjects.find(object) != s_LiveObjects.end() && object->GetName() == name)
 				result.push_back(object);
 		}
 		return result;
@@ -3791,6 +4615,18 @@ namespace Blaze
 			instance.onUpdate = updateObj.as<sol::protected_function>();
 		else if (updateObj.is<sol::function>())
 			instance.onUpdate = updateObj.as<sol::function>();
+
+		sol::object spawnObj = instance.env["OnSpawn"];
+		sol::object despawnObj = instance.env["OnDespawn"];
+		if (spawnObj.is<sol::protected_function>())
+			instance.onSpawn = spawnObj.as<sol::protected_function>();
+		else if (spawnObj.is<sol::function>())
+			instance.onSpawn = spawnObj.as<sol::function>();
+		if (despawnObj.is<sol::protected_function>())
+			instance.onDespawn = despawnObj.as<sol::protected_function>();
+		else if (despawnObj.is<sol::function>())
+			instance.onDespawn = despawnObj.as<sol::function>();
+
 		if (beginObj.is<sol::protected_function>())
 			instance.onCollisionBegin = beginObj.as<sol::protected_function>();
 		else if (beginObj.is<sol::function>())
@@ -3882,6 +4718,26 @@ namespace Blaze
 			object->SetType(ObjectType::Sound);
 			object->AddAudio();
 		}
+		else if (type == "light")
+		{
+			object->SetName(name.empty() ? "Light" : name);
+			object->SetType(ObjectType::Light);
+			object->SetLightKind(LightKind::Point);
+			object->SetLightRadius(300.0f);
+			object->SetLightIntensity(1.0f);
+			object->SetColor(1.0f, 0.92f, 0.75f, 1.0f);
+		}
+		else if (type == "spotlight")
+		{
+			object->SetName(name.empty() ? "Spot Light" : name);
+			object->SetType(ObjectType::Light);
+			object->SetLightKind(LightKind::Spot);
+			object->SetLightRadius(400.0f);
+			object->SetLightIntensity(1.2f);
+			object->SetLightInnerAngle(20.0f);
+			object->SetLightOuterAngle(35.0f);
+			object->SetColor(1.0f, 0.92f, 0.75f, 1.0f);
+		}
 		else if (type == "empty")
 		{
 			object->SetName(name.empty() ? "Empty" : name);
@@ -3932,6 +4788,115 @@ namespace Blaze
 		return object;
 	}
 
+	GameObject* ScriptEngine::InstantiatePrefab(const std::string& path,
+		float x, float y, float z,
+		const std::string& nameOverride,
+		const std::string& tagOverride)
+	{
+		if (!s_Renderer || !s_Ready || path.empty())
+			return nullptr;
+
+		std::string resolved = path;
+		{
+			std::error_code ec;
+			namespace fs = std::filesystem;
+			if (!fs::exists(resolved, ec) && !Project::GetDirectory().empty())
+			{
+				fs::path full = fs::path(Project::GetDirectory()) / path;
+				if (fs::exists(full, ec))
+					resolved = full.generic_string();
+			}
+		}
+
+		std::vector<GameObject*> created;
+		GameObject* root = PrefabAsset::Instantiate(
+			resolved, *s_Renderer, s_DefaultVertices, s_DefaultIndices,
+			glm::vec3(x, y, z), &created);
+		if (!root)
+			return nullptr;
+
+		if (!nameOverride.empty())
+			root->SetName(nameOverride);
+		if (!tagOverride.empty())
+		{
+			if (tagOverride.find(',') != std::string::npos || tagOverride.find(';') != std::string::npos)
+				root->SetTagsFromString(tagOverride);
+			else
+				root->SetTag(tagOverride);
+		}
+
+		for (GameObject* object : created)
+		{
+			if (!object)
+				continue;
+			s_LiveObjects.insert(object);
+			StorePlayTransform(object);
+			if (object->HasScript())
+				AttachRuntimeScript(object, true);
+		}
+
+		return root;
+	}
+
+	void ScriptEngine::RegisterLiveObject(GameObject* object)
+	{
+		if (!object)
+			return;
+		s_LiveObjects.insert(object);
+		StorePlayTransform(object);
+	}
+
+	bool ScriptEngine::AttachScriptIfNeeded(GameObject* object, bool callStart)
+	{
+		if (!object || !object->HasScript())
+			return false;
+		return AttachRuntimeScript(object, callStart);
+	}
+
+	void ScriptEngine::StorePlayTransformPublic(GameObject* object)
+	{
+		StorePlayTransform(object);
+	}
+
+	void ScriptEngine::CallOnSpawn(GameObject* object)
+	{
+		if (!object)
+			return;
+		auto it = s_Instances.find(object);
+		if (it == s_Instances.end() || !it->second.onSpawn.valid())
+			return;
+		GameObject* prev = s_CurrentObject;
+		s_CurrentObject = object;
+		it->second.env["self"] = ScriptObject(object);
+		sol::protected_function_result result = it->second.onSpawn();
+		if (!result.valid())
+		{
+			sol::error err = result;
+			ReportLuaError("OnSpawn", object, object->GetScriptPath(), err.what());
+		}
+		s_CurrentObject = prev;
+		StorePlayTransform(object);
+	}
+
+	void ScriptEngine::CallOnDespawn(GameObject* object)
+	{
+		if (!object)
+			return;
+		auto it = s_Instances.find(object);
+		if (it == s_Instances.end() || !it->second.onDespawn.valid())
+			return;
+		GameObject* prev = s_CurrentObject;
+		s_CurrentObject = object;
+		it->second.env["self"] = ScriptObject(object);
+		sol::protected_function_result result = it->second.onDespawn();
+		if (!result.valid())
+		{
+			sol::error err = result;
+			ReportLuaError("OnDespawn", object, object->GetScriptPath(), err.what());
+		}
+		s_CurrentObject = prev;
+	}
+
 	bool ScriptEngine::IsReady()
 	{
 		return s_Ready;
@@ -3978,6 +4943,7 @@ namespace Blaze
 
 	void ScriptEngine::OnPlayModeStop()
 	{
+		ObjectPool::Clear();
 		s_Instances.clear();
 		s_MapInstance = ScriptInstance{};
 		s_HasMapInstance = false;
@@ -3990,10 +4956,13 @@ namespace Blaze
 		OnScreenDebug::Clear();
 		DebugDraw2D::Clear();
 		ParticleSystem2D::Clear();
+		ParticleSystem2D::OnPlayModeStop();
 		ScriptTimers::ClearAll();
 		s_CameraFollowTarget = nullptr;
 		s_MouseEnabled = false;
 		s_CursorVisible = true;
+		Time::Reset();
+		InputActions::ResetEdges();
 	}
 
 	static bool BindScriptCallbacks(ScriptInstance& instance)
@@ -4016,6 +4985,17 @@ namespace Blaze
 			instance.onUpdate = updateObj.as<sol::protected_function>();
 		else if (updateObj.is<sol::function>())
 			instance.onUpdate = updateObj.as<sol::function>();
+
+		sol::object spawnObj = instance.env["OnSpawn"];
+		sol::object despawnObj = instance.env["OnDespawn"];
+		if (spawnObj.is<sol::protected_function>())
+			instance.onSpawn = spawnObj.as<sol::protected_function>();
+		else if (spawnObj.is<sol::function>())
+			instance.onSpawn = spawnObj.as<sol::function>();
+		if (despawnObj.is<sol::protected_function>())
+			instance.onDespawn = despawnObj.as<sol::protected_function>();
+		else if (despawnObj.is<sol::function>())
+			instance.onDespawn = despawnObj.as<sol::function>();
 
 		if (beginObj.is<sol::protected_function>())
 			instance.onCollisionBegin = beginObj.as<sol::protected_function>();
@@ -4099,8 +5079,13 @@ namespace Blaze
 	{
 		OnPlayModeStop();
 		ClearScriptErrors();
+		Time::Reset();
+		InputActions::EnsureLoaded();
+		Localization::EnsureLoaded();
 		if (!Init())
 			return false;
+
+		ObjectPool::SetContext(s_Renderer, s_Physics, s_DefaultVertices, s_DefaultIndices);
 
 		for (GameObject* object : objects)
 		{
@@ -4283,6 +5268,8 @@ namespace Blaze
 				ScriptInstance& instance = entry.second;
 				if (!instance.onUpdate.valid())
 					continue;
+				if (!instance.object || !instance.object->IsActive())
+					continue;
 
 				s_CurrentObject = instance.object;
 				instance.env["self"] = ScriptObject(instance.object);
@@ -4304,6 +5291,7 @@ namespace Blaze
 
 		OnScreenDebug::Update(dt);
 		DebugDraw2D::Update(dt);
+		ParticleSystem2D::OnPlayModeUpdate(dt);
 		ParticleSystem2D::Update(dt);
 		AudioEngine::Update();
 		ScriptTimers::Update(dt, [](GameObject* owner)
@@ -4321,6 +5309,8 @@ namespace Blaze
 		if (s_LiveObjects.find(instance.object) == s_LiveObjects.end())
 			return;
 		if (s_LiveObjects.find(other) == s_LiveObjects.end())
+			return;
+		if (!instance.object->IsActive() || !other->IsActive())
 			return;
 
 		s_CurrentObject = instance.object;

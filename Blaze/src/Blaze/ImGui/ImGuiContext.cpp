@@ -7,6 +7,7 @@
 #include"Blaze/Core/Application.h"
 #include"Blaze/Core/Project.h"
 #include"Blaze/Scripting/ScriptEngine.h"
+#include"Blaze/ImGui/ParticleEditorWindow.h"
 #include"GLFW/glfw3.h"
 #include <cstdio>
 
@@ -28,6 +29,8 @@ namespace Blaze
 			return true;
 		if (WidgetEditorWindow::IsBlockingMainEditorStatic())
 			return true;
+		if (ParticleEditorWindow::IsBlockingMainEditor())
+			return true;
 		return UIWantTextInput();
 	}
 
@@ -38,7 +41,10 @@ namespace Blaze
 		m_contextWindow = new ContentBrowser();
 		m_scriptEditor = new ScriptEditorWindow();
 		m_widgetEditor = new WidgetEditorWindow();
+		m_locEditor = new LocalizationEditorWindow();
+		m_particleEditor = new ParticleEditorWindow();
 		m_projectSettings = new ProjectSettingsWindow();
+		m_buildSettings = new BuildSettingsWindow();
 		m_objectWindow = new ObjectWindow();
 		m_propWindow = new PropertiesWindow();
 		m_componentsWindow = new ComponentsWindow();
@@ -58,7 +64,10 @@ namespace Blaze
 		delete m_contextWindow;
 		delete m_scriptEditor;
 		delete m_widgetEditor;
+		delete m_locEditor;
+		delete m_particleEditor;
 		delete m_projectSettings;
+		delete m_buildSettings;
 		delete m_propWindow;
 		delete m_componentsWindow;
 		delete m_startWindow;
@@ -238,7 +247,10 @@ namespace Blaze
 		m_contextWindow->OnUpdate();
 		m_scriptEditor->OnUpdate();
 		m_widgetEditor->OnUpdate();
+		m_locEditor->OnUpdate();
+		m_particleEditor->OnUpdate();
 		m_projectSettings->OnUpdate();
+		m_buildSettings->OnUpdate();
 		m_propWindow->OnUpdate();
 		m_componentsWindow->OnUpdate();
 		m_objectWindow->OnUpdate();

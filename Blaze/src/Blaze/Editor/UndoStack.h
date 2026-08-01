@@ -57,6 +57,7 @@ namespace Blaze
 		ColliderShape colliderShape = ColliderShape::Block;
 		float collisionRadius = 50.0f;
 		glm::vec2 collisionSize = glm::vec2(100.0f);
+		std::vector<glm::vec2> colliderVertices;
 		float rbMass = 1.0f;
 		float rbGravity = 1.0f;
 		bool rbKinematic = false;
@@ -69,6 +70,10 @@ namespace Blaze
 		float audioVolume = 1.0f;
 		bool audioLoop = false;
 		bool audioPlayOnStart = true;
+
+		bool hasParticleEmitter = false;
+		std::string particlePath;
+		bool particlePlayOnStart = true;
 
 		bool hasScript = false;
 		std::string scriptPath;
@@ -83,6 +88,8 @@ namespace Blaze
 		std::vector<FlipbookClip> flipClips;
 		int flipActiveClip = -1;
 		std::string flipbookAssetPath;
+		std::string animAssetPath;
+		bool animEnabled = false;
 
 		int tilemapCols = 0;
 		int tilemapRows = 0;

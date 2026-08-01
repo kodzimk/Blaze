@@ -118,6 +118,7 @@ namespace Blaze
 		snap.colliderShape = object.GetColliderShape();
 		snap.collisionRadius = object.GetCollisionRadius();
 		snap.collisionSize = object.GetCollisionSize();
+		snap.colliderVertices = object.GetColliderVertices();
 		snap.rbMass = object.GetRigidbodyMass();
 		snap.rbGravity = object.GetRigidbodyGravityScale();
 		snap.rbKinematic = object.IsRigidbodyKinematic();
@@ -130,6 +131,10 @@ namespace Blaze
 		snap.audioVolume = object.GetAudioVolume();
 		snap.audioLoop = object.GetAudioLoop();
 		snap.audioPlayOnStart = object.GetAudioPlayOnStart();
+
+		snap.hasParticleEmitter = object.HasParticleEmitter();
+		snap.particlePath = object.GetParticlePath();
+		snap.particlePlayOnStart = object.GetParticlePlayOnStart();
 
 		snap.hasScript = object.HasScript();
 		snap.scriptPath = object.GetScriptPath();
@@ -144,6 +149,8 @@ namespace Blaze
 		snap.flipClips = object.GetFlipbookClips();
 		snap.flipActiveClip = object.GetActiveFlipbookClipIndex();
 		snap.flipbookAssetPath = object.GetFlipbookAssetPath();
+		snap.animAssetPath = object.GetAnimAssetPath();
+		snap.animEnabled = object.IsAnimEnabled();
 
 		snap.tilemapCols = object.GetTilemapColumns();
 		snap.tilemapRows = object.GetTilemapRows();
@@ -199,6 +206,8 @@ namespace Blaze
 			object->SetColliderShape(colliderShape);
 			object->SetCollisionRadius(collisionRadius);
 			object->SetCollisionSize(collisionSize);
+			if (colliderShape == ColliderShape::Polygon && !colliderVertices.empty())
+				object->SetColliderVertices(colliderVertices);
 			object->SetRigidbodyMass(rbMass);
 			object->SetRigidbodyGravityScale(rbGravity);
 			object->SetRigidbodyKinematic(rbKinematic);
@@ -215,6 +224,14 @@ namespace Blaze
 			object->SetAudioVolume(audioVolume);
 			object->SetAudioLoop(audioLoop);
 			object->SetAudioPlayOnStart(audioPlayOnStart);
+		}
+
+		if (hasParticleEmitter)
+		{
+			object->AddParticleEmitter();
+			if (!particlePath.empty())
+				object->SetParticlePath(particlePath);
+			object->SetParticlePlayOnStart(particlePlayOnStart);
 		}
 
 		if (hasScript)
@@ -237,6 +254,8 @@ namespace Blaze
 			object->ClearActiveFlipbookClip();
 		object->SetFlipbookFrame(flipFrame);
 		object->SetFlipbookPlaying(flipPlaying);
+		object->SetAnimAssetPath(animAssetPath, true);
+		object->SetAnimEnabled(animEnabled);
 
 		if (object->IsTilemap())
 		{

@@ -37,6 +37,19 @@ namespace Blaze
 			const std::string& tag,
 			float x, float y, float z);
 
+		// Instantiates a .prefab into the live scene (play mode). Returns root or nullptr.
+		static GameObject* InstantiatePrefab(const std::string& path,
+			float x = 0.0f, float y = 0.0f, float z = 0.0f,
+			const std::string& nameOverride = "",
+			const std::string& tagOverride = "");
+
+		// Used by ObjectPool.
+		static void RegisterLiveObject(GameObject* object);
+		static bool AttachScriptIfNeeded(GameObject* object, bool callStart);
+		static void StorePlayTransformPublic(GameObject* object);
+		static void CallOnSpawn(GameObject* object);
+		static void CallOnDespawn(GameObject* object);
+
 		static GameObject* FindByTag(const std::string& tag);
 		static std::vector<GameObject*> FindAllByTag(const std::string& tag);
 		static GameObject* FindByName(const std::string& name);

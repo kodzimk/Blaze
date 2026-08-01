@@ -44,6 +44,8 @@ namespace Blaze
 		{ "Box",    "box",    "Box collider object" },
 		{ "Camera", "camera", "Scene / game camera" },
 		{ "Sound",  "sound",  "Audio source object" },
+		{ "Light",  "light",  "2D point light" },
+		{ "Spot Light", "spotlight", "2D cone / spot light" },
 	};
 
 	PropertiesWindow::PropertiesWindow()
@@ -83,11 +85,17 @@ namespace Blaze
 
 			const bool isSound = (strcmp(type.typeId, "sound") == 0);
 			const bool isCamera = (strcmp(type.typeId, "camera") == 0);
+			const bool isPointLight = (strcmp(type.typeId, "light") == 0);
+			const bool isSpotLight = (strcmp(type.typeId, "spotlight") == 0);
 			unsigned int iconTex = 0;
 			if (isSound)
 				iconTex = Gizmo2D::GetSoundIconTextureID();
 			else if (isCamera)
 				iconTex = Gizmo2D::GetCameraIconTextureID();
+			else if (isPointLight)
+				iconTex = Gizmo2D::GetPointLightIconTextureID();
+			else if (isSpotLight)
+				iconTex = Gizmo2D::GetSpotLightIconTextureID();
 
 			if (iconTex != 0)
 			{

@@ -151,6 +151,8 @@ namespace Blaze
 					*projectSettingsOpen = true;
 				s_FileAction = FileAction::ProjectSettings;
 			}
+			if (ImGui::MenuItem("Build Settings..."))
+				s_FileAction = FileAction::BuildSettings;
 			if (ImGui::MenuItem("Build Project..."))
 				s_FileAction = FileAction::BuildProject;
 			ImGui::Separator();
@@ -179,6 +181,7 @@ namespace Blaze
 
 	ObjectWindow::ObjectWindow()
 		: onFocus(false), m_Selected(nullptr), m_PendingPick(nullptr), m_PendingDelete(nullptr),
+		  m_PendingFocus(nullptr), m_PendingSavePrefab(nullptr), m_PendingDuplicate(nullptr),
 		  m_PendingDeleteFolderId(-1), m_RenamingObject(nullptr), m_RenamingFolderId(-1)
 	{
 	}
@@ -249,6 +252,8 @@ namespace Blaze
 		m_PendingPick = nullptr;
 		m_PendingDelete = nullptr;
 		m_PendingFocus = nullptr;
+		m_PendingSavePrefab = nullptr;
+		m_PendingDuplicate = nullptr;
 		m_PendingDeleteFolderId = -1;
 		m_MapSelected = false;
 		m_RenamingObject = nullptr;
@@ -373,6 +378,20 @@ namespace Blaze
 		GameObject* focus = m_PendingFocus;
 		m_PendingFocus = nullptr;
 		return focus;
+	}
+
+	GameObject* ObjectWindow::ConsumePendingSavePrefab()
+	{
+		GameObject* object = m_PendingSavePrefab;
+		m_PendingSavePrefab = nullptr;
+		return object;
+	}
+
+	GameObject* ObjectWindow::ConsumePendingDuplicate()
+	{
+		GameObject* object = m_PendingDuplicate;
+		m_PendingDuplicate = nullptr;
+		return object;
 	}
 
 	void ObjectWindow::CreateFolder()
@@ -556,8 +575,12 @@ namespace Blaze
 				label += " (Circle)";
 			else if (object->GetType() == ObjectType::Box)
 				label += " (Box)";
-			else if (object->GetType() == ObjectType::Sound)
+			else if (object->IsSound())
 				label += " (Sound)";
+			else if (object->HasParticleEmitter())
+				label += " (Particle)";
+			else if (object->IsLight())
+				label += object->IsSpotLight() ? " (Spot Light)" : " (Light)";
 			else if (object->IsTilemap())
 				label += " (Tilemap)";
 			else if (object->IsText())
@@ -583,6 +606,26 @@ namespace Blaze
 					ImGui::SameLine();
 				}
 			}
+			else if (object->HasParticleEmitter())
+			{
+				unsigned int tex = Gizmo2D::GetParticleIconTextureID();
+				if (tex != 0)
+				{
+					ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+					ImGui::SameLine();
+				}
+			}
+			else if (object->IsLight())
+			{
+				unsigned int tex = object->IsSpotLight()
+					? Gizmo2D::GetSpotLightIconTextureID()
+					: Gizmo2D::GetPointLightIconTextureID();
+				if (tex != 0)
+				{
+					ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+					ImGui::SameLine();
+				}
+			}
 
 			ImGui::Selectable(label.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick);
 			bool hovered = ImGui::IsItemHovered();
@@ -601,6 +644,20 @@ namespace Blaze
 				else if (object->IsSound())
 				{
 					unsigned int tex = Gizmo2D::GetSoundIconTextureID();
+					if (tex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+				}
+				else if (object->HasParticleEmitter())
+				{
+					unsigned int tex = Gizmo2D::GetParticleIconTextureID();
+					if (tex != 0)
+						ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
+				}
+				else if (object->IsLight())
+				{
+					unsigned int tex = object->IsSpotLight()
+						? Gizmo2D::GetSpotLightIconTextureID()
+						: Gizmo2D::GetPointLightIconTextureID();
 					if (tex != 0)
 						ImGui::Image((ImTextureID)(intptr_t)tex, ImVec2(16.0f, 16.0f));
 				}
@@ -654,6 +711,10 @@ namespace Blaze
 				m_PendingFocus = object;
 			if (ImGui::MenuItem("Rename"))
 				StartRenameObject(object);
+			if (ImGui::MenuItem("Duplicate"))
+				m_PendingDuplicate = object;
+			if (ImGui::MenuItem("Save as Prefab..."))
+				m_PendingSavePrefab = object;
 			if (object->GetParent() && ImGui::MenuItem("Unparent"))
 			{
 				GameObject* parent = object->GetParent();

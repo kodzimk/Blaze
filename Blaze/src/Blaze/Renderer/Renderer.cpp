@@ -1,8 +1,10 @@
 #include "Renderer.h"
 #include"Blaze/Renderer/Camera.h"
+#include"Blaze/Renderer/Lighting2D.h"
 #include"Blaze/Core/Window.h"
 #include"Blaze/Audio/AudioEngine.h"
 #include"Blaze/Scripting/ScriptEngine.h"
+#include"Blaze/Renderer/ParticleSystem2D.h"
 #include"glad/glad.h"
 #include <algorithm>
 #include <vector>
@@ -20,6 +22,7 @@ namespace Blaze {
 		{
 			AudioEngine::RemoveObject(m_objects[i]);
 			ScriptEngine::RemoveObject(m_objects[i]);
+			ParticleSystem2D::RemoveObject(m_objects[i]);
 			delete m_objects[i];
 		}
 	}
@@ -30,6 +33,7 @@ namespace Blaze {
 		
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().matrix, uniform_name);
 		m_ShaderProgam.SetUniformMatrix4fv(camera.GetCameraProp().projection, "ortho");
+		Lighting2D::Upload(m_ShaderProgam, m_objects);
 	}
 
 	void Renderer::BeginScene(const glm::mat4& viewMatrix, const char* uniform_name)
@@ -38,6 +42,7 @@ namespace Blaze {
 
 		m_ShaderProgam.SetUniformMatrix4fv(viewMatrix, uniform_name);
 		m_ShaderProgam.SetUniformMatrix4fv(Camera::m_prop.projection, "ortho");
+		Lighting2D::Upload(m_ShaderProgam, m_objects);
 	}
 
 	void Renderer::EndScene()
@@ -49,7 +54,7 @@ namespace Blaze {
 	{
 		for (GameObject* object : m_objects)
 		{
-			if (object)
+			if (object && object->IsActive())
 				object->UpdateAnimation(dt);
 		}
 	}
@@ -75,6 +80,7 @@ namespace Blaze {
 			{
 				AudioEngine::RemoveObject(object);
 				ScriptEngine::RemoveObject(object);
+				ParticleSystem2D::RemoveObject(object);
 				delete *it;
 				m_objects.erase(it);
 				return true;

@@ -28,6 +28,7 @@ namespace Blaze
 
 		static bool ConsumePendingDrop(std::string& outPath);
 		static bool ConsumePendingOpenMap(std::string& outPath);
+		static bool ConsumePendingApplyPreset(std::string& outPath);
 	private:
 		bool IsTextureFile(std::string extension) const;
 		bool IsAudioFile(std::string extension) const;
@@ -37,6 +38,12 @@ namespace Blaze
 		bool IsMapFile(std::string extension) const;
 		bool IsWidgetFile(std::string extension) const;
 		bool IsFlipbookFile(std::string extension) const;
+		bool IsAnimAssetFile(std::string extension) const;
+		bool IsInputActionsFile(std::string extension) const;
+		bool IsLocalizationFile(std::string extension) const;
+		bool IsParticleFile(std::string extension) const;
+		bool IsPrefabFile(std::string extension) const;
+		bool IsComponentPresetFile(std::string extension) const;
 		Texture* GetThumbnail(const std::string& path);
 		void ImportTexture();
 		void ImportAudio();
@@ -47,6 +54,12 @@ namespace Blaze
 		void CreateMap();
 		void CreateWidget();
 		void CreateFlipbook();
+		void CreateAnimAsset();
+		void CreateInputActions();
+		void CreateLocalization();
+		void CreateParticle();
+		void CreatePrefab();
+		void CreateComponentPreset();
 		void CreateFolder();
 		void StartRename(const std::string& path);
 		void CommitRename();
@@ -71,6 +84,7 @@ namespace Blaze
 		static std::string s_DraggingPath;
 		static std::string s_PendingDropPath;
 		static std::string s_PendingOpenMap;
+		static std::string s_PendingApplyPreset;
 	public:
 		static float m_width;
 		static float m_height;

@@ -16,6 +16,7 @@ namespace Blaze
 		SaveAs,
 		CloseProject,
 		ProjectSettings,
+		BuildSettings,
 		BuildProject
 	};
 
@@ -78,6 +79,8 @@ namespace Blaze
 		GameObject* ConsumePickedObject();
 		GameObject* ConsumePendingDelete();
 		GameObject* ConsumePendingFocus();
+		GameObject* ConsumePendingSavePrefab();
+		GameObject* ConsumePendingDuplicate();
 		bool IsMapSelected() const { return m_MapSelected; }
 		void SetMapSelected(bool selected);
 
@@ -115,6 +118,8 @@ namespace Blaze
 		GameObject* m_PendingPick = nullptr;
 		GameObject* m_PendingDelete = nullptr;
 		GameObject* m_PendingFocus = nullptr;
+		GameObject* m_PendingSavePrefab = nullptr;
+		GameObject* m_PendingDuplicate = nullptr;
 		int m_PendingDeleteFolderId = -1;
 		bool m_MapSelected = false;
 

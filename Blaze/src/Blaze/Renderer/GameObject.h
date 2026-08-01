@@ -3,7 +3,9 @@
 #include"Blaze/Renderer/VertexArray.h"
 #include"Blaze/Renderer/Texture.h"
 #include"Blaze/Renderer/FlipbookAsset.h"
+#include"Blaze/Renderer/AnimStateMachineAsset.h"
 #include"glm.hpp"
+#include <unordered_map>
 
 namespace Blaze
 {
@@ -19,7 +21,14 @@ namespace Blaze
 		Box,
 		Sound,
 		Tilemap,
-		Text
+		Text,
+		Light
+	};
+
+	enum class LightKind
+	{
+		Point = 0,
+		Spot = 1
 	};
 
 	enum class CollisionType
@@ -41,7 +50,9 @@ namespace Blaze
 	enum class ColliderShape
 	{
 		Circle = 0,
-		Block
+		Block,
+		Capsule,
+		Polygon
 	};
 
 	//  layer indices (0-7). Mask bits use (1u << layer).
@@ -66,6 +77,7 @@ namespace Blaze
 
 		void Draw(const CameraProp& prop, Shader& const m_Shader);
 		void UpdateAnimation(float dt);
+		void UpdateAnimStateMachine();
 
 		void SetPosition(glm::vec3& pos);
 		void SetLocalPosition(const glm::vec3& pos);
@@ -81,6 +93,8 @@ namespace Blaze
 		void SetName(const std::string& name) { m_Name = name; }
 		void SetVisible(bool visible) { m_Visible = visible; }
 		inline bool IsVisible() const { return m_Visible; }
+		void SetActive(bool active, bool recurseChildren = true);
+		inline bool IsActive() const { return m_Active; }
 
 		bool SetParent(GameObject* parent, bool keepWorld = true);
 		void ClearParent(bool keepWorld = true);
@@ -109,6 +123,11 @@ namespace Blaze
 		void SetColliderShape(ColliderShape shape);
 		void SetCollisionRadius(float radius);
 		void SetCollisionSize(glm::vec2 size);
+		void SetColliderVertices(const std::vector<glm::vec2>& localVerts);
+		void ClearColliderVertices();
+		void ResetColliderVerticesToBox();
+		float GetCapsuleHeight() const; // total height (size.y), clamped >= 2*radius
+		void SetCapsuleHeight(float height);
 		void SetRigidbodyMass(float mass);
 		void SetRigidbodyGravityScale(float scale);
 		void SetRigidbodyKinematic(bool kinematic);
@@ -123,6 +142,14 @@ namespace Blaze
 		void SetAudioVolume(float volume);
 		void SetAudioLoop(bool loop);
 		void SetAudioPlayOnStart(bool playOnStart);
+
+		void AddParticleEmitter();
+		void RemoveParticleEmitter();
+		void SetParticlePath(const std::string& path);
+		void SetParticlePlayOnStart(bool playOnStart);
+		void PlayParticle();
+		void StopParticle();
+		bool IsParticlePlaying() const;
 
 		void AddScript();
 		void RemoveScript();
@@ -203,6 +230,22 @@ namespace Blaze
 		inline bool IsSound() const { return m_Type == ObjectType::Sound; }
 		inline bool IsTilemap() const { return m_Type == ObjectType::Tilemap; }
 		inline bool IsText() const { return m_Type == ObjectType::Text; }
+		inline bool IsLight() const { return m_Type == ObjectType::Light; }
+
+		void SetLightRadius(float radius);
+		void SetLightIntensity(float intensity);
+		void SetLightEnabled(bool enabled);
+		void SetLightKind(LightKind kind);
+		void SetLightInnerAngle(float degrees);
+		void SetLightOuterAngle(float degrees);
+		inline float GetLightRadius() const { return m_LightRadius; }
+		inline float GetLightIntensity() const { return m_LightIntensity; }
+		inline bool IsLightEnabled() const { return m_LightEnabled; }
+		inline LightKind GetLightKind() const { return m_LightKind; }
+		inline bool IsSpotLight() const { return m_Type == ObjectType::Light && m_LightKind == LightKind::Spot; }
+		inline float GetLightInnerAngle() const { return m_LightInnerAngle; }
+		inline float GetLightOuterAngle() const { return m_LightOuterAngle; }
+		glm::vec2 GetLightDirection() const;
 
 		void SetText(const std::string& text);
 		void SetFontSize(float size);
@@ -236,6 +279,7 @@ namespace Blaze
 		inline ColliderShape GetColliderShape() const { return m_ColliderShape; }
 		inline float GetCollisionRadius() const { return m_CollisionRadius; }
 		inline glm::vec2 GetCollisionSize() const { return m_CollisionSize; }
+		const std::vector<glm::vec2>& GetColliderVertices() const { return m_ColliderVertices; }
 		inline float GetRigidbodyMass() const { return m_RigidbodyMass; }
 		inline float GetRigidbodyGravityScale() const { return m_RigidbodyGravityScale; }
 		inline bool IsRigidbodyKinematic() const { return m_RigidbodyKinematic; }
@@ -249,6 +293,10 @@ namespace Blaze
 		inline float GetAudioVolume() const { return m_AudioVolume; }
 		inline bool GetAudioLoop() const { return m_AudioLoop; }
 		inline bool GetAudioPlayOnStart() const { return m_AudioPlayOnStart; }
+
+		inline bool HasParticleEmitter() const { return m_HasParticleEmitter; }
+		inline const std::string& GetParticlePath() const { return m_ParticlePath; }
+		inline bool GetParticlePlayOnStart() const { return m_ParticlePlayOnStart; }
 
 		inline bool HasScript() const { return m_HasScript; }
 		inline const std::string& GetScriptPath() const { return m_ScriptPath; }
@@ -273,6 +321,28 @@ namespace Blaze
 		const std::string& GetFlipbookAssetPath() const { return m_FlipbookAssetPath; }
 		bool HasFlipbookAsset() const { return !m_FlipbookAssetPath.empty(); }
 
+		void SetAnimAssetPath(const std::string& path, bool loadAsset = true);
+		bool ApplyAnimAsset(const AnimStateMachineAsset& asset);
+		bool LoadAnimAsset();
+		bool SaveAnimAsset() const;
+		bool SaveAnimAssetAs(const std::string& path);
+		void SetAnimEnabled(bool enabled);
+		bool AnimPlay(const std::string& stateName);
+		void AnimSetBool(const std::string& name, bool value);
+		void AnimSetTrigger(const std::string& name);
+		void AnimSetFloat(const std::string& name, float value);
+		bool AnimGetBool(const std::string& name) const;
+		float AnimGetFloat(const std::string& name) const;
+		void AnimResetParams();
+		void AnimRestart();
+
+		inline bool HasAnimAsset() const { return !m_AnimAssetPath.empty(); }
+		inline const std::string& GetAnimAssetPath() const { return m_AnimAssetPath; }
+		inline bool IsAnimEnabled() const { return m_AnimEnabled; }
+		inline const std::string& GetAnimState() const { return m_AnimCurrentState; }
+		inline const AnimStateMachineAsset& GetAnimAsset() const { return m_AnimAsset; }
+		AnimStateMachineAsset& GetAnimAssetMutable() { return m_AnimAsset; }
+
 		inline int GetTilemapColumns() const { return m_TilemapColumns; }
 		inline int GetTilemapRows() const { return m_TilemapRows; }
 		inline float GetTileCellSize() const { return m_TileCellSize; }
@@ -296,14 +366,31 @@ namespace Blaze
 		std::string MakeUniqueFlipbookClipName(const std::string& desired) const;
 		glm::vec2 GetFlipbookUVScale() const;
 		glm::vec2 GetFlipbookUVOffset() const;
+		bool EnterAnimState(const std::string& stateName, bool forceRestart);
+		bool TransitionConditionMet(const AnimTransition& transition) const;
+		void ClearConsumedTriggers(const AnimTransition& transition);
 		glm::vec2 GetTilesetUVScale() const;
 		glm::vec2 GetTilesetUVOffset(int tileId) const;
 		void DrawTilemap(const CameraProp& prop, Shader& shader);
+		void EnsureTileLayerMeshes();
+		void DestroyTileLayerMeshes();
+		void MarkTilemapMeshesDirty();
+		void MarkTilemapLayerMeshDirty(int layerIndex);
+		void RebuildTilemapLayerMesh(int layerIndex);
 		void RefreshTextBounds();
 		void EnsureTileLayers();
 		std::vector<int>& ActiveTiles();
 		const std::vector<int>& ActiveTiles() const;
 		bool IsPaintedTileSolid(int tileId) const;
+
+		struct TilemapLayerGpuMesh
+		{
+			unsigned int vao = 0;
+			unsigned int vbo = 0;
+			unsigned int ebo = 0;
+			int indexCount = 0;
+			bool dirty = true;
+		};
 
 		VertexArray m_VertexArray;
 		VertexBuffer m_VertexBuffer;
@@ -324,6 +411,7 @@ namespace Blaze
 		std::vector<std::string> m_Tags;
 		ObjectType m_Type = ObjectType::Sprite;
 		bool m_Visible = true;
+		bool m_Active = true;
 		bool m_DrivesView = false;
 		float m_Zoom = 1.0f;
 
@@ -332,6 +420,7 @@ namespace Blaze
 		ColliderShape m_ColliderShape = ColliderShape::Block;
 		float m_CollisionRadius = 50.0f;
 		glm::vec2 m_CollisionSize = glm::vec2(100.0f, 100.0f);
+		std::vector<glm::vec2> m_ColliderVertices; // local polygon verts (convex)
 		float m_RigidbodyMass = 1.0f;
 		float m_RigidbodyGravityScale = 1.0f;
 		bool m_RigidbodyKinematic = false;
@@ -344,6 +433,10 @@ namespace Blaze
 		float m_AudioVolume = 1.0f;
 		bool m_AudioLoop = false;
 		bool m_AudioPlayOnStart = true;
+
+		bool m_HasParticleEmitter = false;
+		std::string m_ParticlePath;
+		bool m_ParticlePlayOnStart = true;
 
 		bool m_HasScript = false;
 		std::string m_ScriptPath;
@@ -359,6 +452,15 @@ namespace Blaze
 		std::vector<FlipbookClip> m_FlipClips;
 		int m_FlipActiveClip = -1; // -1 = full sheet / global settings
 		std::string m_FlipbookAssetPath;
+		bool m_FlipJustFinished = false;
+
+		bool m_AnimEnabled = false;
+		std::string m_AnimAssetPath;
+		AnimStateMachineAsset m_AnimAsset;
+		std::string m_AnimCurrentState;
+		std::unordered_map<std::string, bool> m_AnimBools;
+		std::unordered_map<std::string, float> m_AnimFloats;
+		std::unordered_map<std::string, bool> m_AnimTriggers;
 
 		int m_TilemapColumns = 0;
 		int m_TilemapRows = 0;
@@ -366,6 +468,7 @@ namespace Blaze
 		int m_TilesetColumns = 1;
 		int m_TilesetRows = 1;
 		std::vector<TilemapLayer> m_TileLayers;
+		std::vector<TilemapLayerGpuMesh> m_TileLayerMeshes;
 		int m_ActiveTileLayer = 0;
 		bool m_TileCollisionEnabled = true;
 		std::vector<uint8_t> m_TilesetSolid; // per tileset tile id; empty/all-zero => all painted tiles solid
@@ -373,5 +476,12 @@ namespace Blaze
 		std::string m_Text = "Text";
 		float m_FontSize = 48.0f;
 		std::string m_FontPath;
+
+		float m_LightRadius = 300.0f;
+		float m_LightIntensity = 1.0f;
+		bool m_LightEnabled = true;
+		LightKind m_LightKind = LightKind::Point;
+		float m_LightInnerAngle = 20.0f; // half-angle degrees from aim direction
+		float m_LightOuterAngle = 35.0f;
 	};
 }

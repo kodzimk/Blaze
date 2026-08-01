@@ -46,6 +46,15 @@
     <Filter Include="src\Blaze\Assets">
       <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EF01-345678901234}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Blaze\Navigation">
+      <UniqueIdentifier>{B7E4C1A2-9D3F-4E8B-A6C5-1F2E3D4C5B6A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\Input">
+      <UniqueIdentifier>{C8F5D2B3-0E4A-5F9C-B7D6-2A3F4E5D6C7B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Blaze\Localization">
+      <UniqueIdentifier>{D9A6E3C4-1F5B-6A0D-C8E7-3B4A5F6E7D8C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Blaze\System">
       <UniqueIdentifier>{3EBD417B-2AB6-60CD-53E8-45523F4040D9}</UniqueIdentifier>
     </Filter>
@@ -111,6 +120,21 @@
     <ClInclude Include="src\Blaze\Core\Project.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Core\Time.h">
+      <Filter>src\Blaze\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Input\InputActions.h">
+      <Filter>src\Blaze\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Input\InputActionsAsset.h">
+      <Filter>src\Blaze\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Localization\Localization.h">
+      <Filter>src\Blaze\Localization</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Localization\LocalizationAsset.h">
+      <Filter>src\Blaze\Localization</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Core\Window.h">
       <Filter>src\Blaze\Core</Filter>
     </ClInclude>
@@ -147,6 +171,9 @@
     <ClInclude Include="src\Blaze\ImGui\ProjectSettingsWindow.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\BuildSettingsWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
@@ -174,6 +201,15 @@
     <ClInclude Include="src\Blaze\Renderer\FlipbookAsset.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\PrefabAsset.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\ComponentPresetAsset.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\AnimStateMachineAsset.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Assets\TiledImporter.h">
       <Filter>src\Blaze\Assets</Filter>
     </ClInclude>
@@ -186,6 +222,15 @@
     <ClInclude Include="src\Blaze\Renderer\ParticleSystem2D.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\ParticleEmitterAsset.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\Lighting2D.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Navigation\Pathfinder2D.h">
+      <Filter>src\Blaze\Navigation</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Editor\UndoStack.h">
       <Filter>src\Blaze\Editor</Filter>
     </ClInclude>
@@ -196,6 +241,12 @@
       <Filter>src\Blaze\UI</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\ImGui\WidgetEditorWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\LocalizationEditorWindow.h">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\ImGui\ParticleEditorWindow.h">
       <Filter>src\Blaze\ImGui</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Physics\PhysicsWorld2D.h">
@@ -214,6 +265,9 @@
       <Filter>src\Blaze\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Scripting\ScriptTimers.h">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Scripting\ObjectPool.h">
       <Filter>src\Blaze\Scripting</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Renderer\Renderer.h">
@@ -1532,6 +1586,21 @@
     <ClCompile Include="src\Blaze\Core\Project.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Core\Time.cpp">
+      <Filter>src\Blaze\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Input\InputActions.cpp">
+      <Filter>src\Blaze\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Input\InputActionsAsset.cpp">
+      <Filter>src\Blaze\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Localization\Localization.cpp">
+      <Filter>src\Blaze\Localization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Localization\LocalizationAsset.cpp">
+      <Filter>src\Blaze\Localization</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Core\Window.cpp">
       <Filter>src\Blaze\Core</Filter>
     </ClCompile>
@@ -1545,6 +1614,9 @@
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ProjectSettingsWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\BuildSettingsWindow.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp">
@@ -1574,6 +1646,15 @@
     <ClCompile Include="src\Blaze\Renderer\FlipbookAsset.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\PrefabAsset.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\ComponentPresetAsset.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\AnimStateMachineAsset.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Assets\TiledImporter.cpp">
       <Filter>src\Blaze\Assets</Filter>
     </ClCompile>
@@ -1583,7 +1664,16 @@
     <ClCompile Include="src\Blaze\Renderer\DebugDraw2D.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Navigation\Pathfinder2D.cpp">
+      <Filter>src\Blaze\Navigation</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\ParticleEmitterAsset.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\Lighting2D.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Editor\UndoStack.cpp">
@@ -1596,6 +1686,12 @@
       <Filter>src\Blaze\UI</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\ImGui\WidgetEditorWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\LocalizationEditorWindow.cpp">
+      <Filter>src\Blaze\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\ImGui\ParticleEditorWindow.cpp">
       <Filter>src\Blaze\ImGui</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Physics\PhysicsWorld2D.cpp">
@@ -1614,6 +1710,9 @@
       <Filter>src\Blaze\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Scripting\ScriptTimers.cpp">
+      <Filter>src\Blaze\Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Scripting\ObjectPool.cpp">
       <Filter>src\Blaze\Scripting</Filter>
     </ClCompile>
     <ClCompile Include="vendor\lua\lapi.c">

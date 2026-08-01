@@ -81,6 +81,7 @@ public:
 
 		physics->Reset();
 		Blaze::AudioEngine::OnPlayModeStart(render->GetObjects());
+		Blaze::ParticleSystem2D::OnPlayModeStart(render->GetObjects());
 		m_Running = true;
 		BZ_INFO("Game started: {0}", Blaze::Project::GetGameName());
 	}
@@ -88,6 +89,7 @@ public:
 	void SwitchMap(const std::string& path)
 	{
 		Blaze::AudioEngine::OnPlayModeStop();
+		Blaze::ParticleSystem2D::OnPlayModeStop();
 		Blaze::ScriptEngine::OnPlayModeStop();
 		physics->Reset();
 		// LoadMap also HideAll() widgets from the previous map.
@@ -110,6 +112,7 @@ public:
 
 		physics->Reset();
 		Blaze::AudioEngine::OnPlayModeStart(render->GetObjects());
+		Blaze::ParticleSystem2D::OnPlayModeStart(render->GetObjects());
 		BZ_INFO("Switched map: {0}", path);
 	}
 
@@ -146,10 +149,12 @@ public:
 			return;
 
 		auto now = std::chrono::steady_clock::now();
-		float dt = std::chrono::duration<float>(now - m_LastTime).count();
+		float rawDt = std::chrono::duration<float>(now - m_LastTime).count();
 		m_LastTime = now;
-		if (dt > 0.1f)
-			dt = 0.1f;
+
+		Blaze::Time::Tick(rawDt);
+		const float dt = Blaze::Time::GetDeltaTime();
+		Blaze::InputActions::Tick();
 
 		auto& window = Blaze::Application::Get().GetWindow();
 		const int width = (int)window.GetWidth();
@@ -171,6 +176,7 @@ public:
 		Blaze::ScriptEngine::OnCollisionEvents(physics->ConsumeCollisionEvents());
 		FlushScriptDestroys();
 		physics->ApplyPlayTransforms(render->GetObjects());
+		Blaze::ScriptEngine::UpdateCameraFollow(dt);
 		render->Update(dt);
 
 		Blaze::GameObject* cameraObject = FindCameraObject();
@@ -185,6 +191,14 @@ public:
 
 		render->Render(*camera);
 		render->EndScene();
+
+		{
+			const glm::mat4 savedView = Blaze::Camera::m_prop.matrix;
+			if (cameraObject)
+				Blaze::Camera::m_prop.matrix = cameraObject->GetCameraViewMatrix();
+			Blaze::ParticleSystem2D::Flush(*camera);
+			Blaze::Camera::m_prop.matrix = savedView;
+		}
 
 		if (!Blaze::UISystem::IsReady())
 			Blaze::UISystem::Init();
@@ -236,21 +250,61 @@ private:
 		"uniform vec2 uv_scale;\n"
 		"uniform vec2 uv_offset;\n"
 		"out vec2 TexCoord;\n"
+		"out vec2 WorldPos;\n"
 		"void main()\n"
 		"{\n"
-		"   gl_Position = vec4(matrix * object_matrix * ortho * vec4(pos,1.0f));\n"
+		"   vec4 local = ortho * vec4(pos, 1.0);\n"
+		"   vec4 world = object_matrix * local;\n"
+		"   WorldPos = world.xy;\n"
+		"   gl_Position = matrix * world;\n"
 		"   TexCoord = texCoord * uv_scale + uv_offset;\n"
 		"}\0";
 
 	const char* fragmentShaderSource =
 		"#version 330 core\n"
 		"uniform vec4 color;\n"
+		"uniform mat4 ortho;\n"
+		"uniform int u_LightingEnabled;\n"
+		"uniform vec3 u_Ambient;\n"
+		"uniform int u_LightCount;\n"
+		"uniform vec2 u_LightPos[16];\n"
+		"uniform vec3 u_LightColor[16];\n"
+		"uniform float u_LightRadius[16];\n"
+		"uniform float u_LightIntensity[16];\n"
+		"uniform float u_LightType[16];\n"
+		"uniform vec2 u_LightDir[16];\n"
+		"uniform float u_LightInnerCos[16];\n"
+		"uniform float u_LightOuterCos[16];\n"
 		"out vec4 FragColor;\n"
 		"in vec2 TexCoord;\n"
+		"in vec2 WorldPos;\n"
 		"uniform sampler2D in_texture;\n"
 		"void main()\n"
 		"{\n"
-		"   FragColor = texture(in_texture,TexCoord) * color;\n"
+		"   vec4 albedo = texture(in_texture, TexCoord) * color;\n"
+		"   if (u_LightingEnabled == 0) {\n"
+		"      FragColor = albedo;\n"
+		"      return;\n"
+		"   }\n"
+		"   vec2 scale = vec2(max(abs(ortho[0][0]), 1e-8), max(abs(ortho[1][1]), 1e-8));\n"
+		"   vec3 lighting = u_Ambient;\n"
+		"   int count = clamp(u_LightCount, 0, 16);\n"
+		"   for (int i = 0; i < 16; ++i) {\n"
+		"      if (i >= count) break;\n"
+		"      vec2 deltaPx = (WorldPos - u_LightPos[i]) / scale;\n"
+		"      float dist = length(deltaPx);\n"
+		"      float r = max(u_LightRadius[i], 1.0);\n"
+		"      float t = clamp(1.0 - dist / r, 0.0, 1.0);\n"
+		"      float atten = t * t * u_LightIntensity[i];\n"
+		"      if (u_LightType[i] > 0.5) {\n"
+		"         vec2 toFrag = (dist > 1e-4) ? (deltaPx / dist) : vec2(0.0);\n"
+		"         float cosTheta = dot(toFrag, normalize(u_LightDir[i]));\n"
+		"         float spot = smoothstep(u_LightOuterCos[i], u_LightInnerCos[i], cosTheta);\n"
+		"         atten *= spot;\n"
+		"      }\n"
+		"      lighting += u_LightColor[i] * atten;\n"
+		"   }\n"
+		"   FragColor = vec4(albedo.rgb * lighting, albedo.a);\n"
 		"}\n\0";
 };
 
