@@ -43,7 +43,7 @@ public:
 			const glm::mat4 savedView = Blaze::Camera::m_prop.matrix;
 			Blaze::Camera::m_prop.matrix = cameraObject->GetCameraViewMatrix();
 			Blaze::DebugDraw2D::Flush(*camera);
-			Blaze::ParticleSystem2D::Flush(*camera);
+			Blaze::ParticleSystem2D::Flush(*camera, *gizmo);
 			Blaze::Camera::m_prop.matrix = savedView;
 		}
 
@@ -51,6 +51,12 @@ public:
 			Blaze::UISystem::Init();
 		Blaze::UISystem::Draw(
 			Blaze::GameWindow::GetFrameWidth(), Blaze::GameWindow::GetFrameHeight());
+
+		Blaze::PostProcess2D::Apply(render->GetObjects(),
+			Blaze::GameWindow::GetColorTexture(),
+			Blaze::GameWindow::GetFramebuffer(),
+			Blaze::GameWindow::GetFrameWidth(),
+			Blaze::GameWindow::GetFrameHeight());
 
 		auto& window = Blaze::Application::Get().GetWindow();
 		Blaze::GameWindow::EndCapture((int)window.GetWidth(), (int)window.GetHeight());
@@ -60,6 +66,7 @@ public:
 	{
 		Blaze::AudioEngine::Shutdown();
 		Blaze::ScriptEngine::Shutdown();
+		Blaze::PostProcess2D::Shutdown();
 		delete physics;
 		delete gizmo;
 		Blaze::UISystem::Shutdown();
@@ -729,6 +736,11 @@ public:
 				object.SetLightOuterAngle(35.0f);
 				object.SetColor(1.0f, 0.92f, 0.75f, 1.0f);
 			}
+			else if (droppedObjectType == "postprocess")
+			{
+				object.SetName("Post Process");
+				object.SetType(Blaze::ObjectType::PostProcess);
+			}
 
 			m_Selected = &object;
 			PushCreatedObject(object);
@@ -935,6 +947,7 @@ public:
 					physics->Reset();
 					Blaze::AudioEngine::OnPlayModeStart(render->GetObjects());
 					Blaze::ParticleSystem2D::OnPlayModeStart(render->GetObjects());
+					Blaze::NavAgentSystem::SetObjects(&render->GetObjects());
 				}
 			}
 
@@ -966,6 +979,7 @@ public:
 			physics->Reset();
 			Blaze::AudioEngine::OnPlayModeStop();
 			Blaze::ParticleSystem2D::OnPlayModeStop();
+			Blaze::NavAgentSystem::Clear();
 			Blaze::ScriptEngine::OnPlayModeStop();
 			Blaze::UISystem::HideAll();
 			m_Selected = nullptr;
@@ -992,16 +1006,25 @@ public:
 
 		if (!Blaze::StartWindow::IsPlaying())
 		{
+			Blaze::NavAgentSystem::SetObjects(&render->GetObjects());
 			render->Update(rawDt);
 			Blaze::ParticleSystem2D::UpdateSceneEmitters(rawDt);
 			Blaze::ParticleSystem2D::Update(rawDt);
+			Blaze::NavAgentSystem::Update(rawDt);
 		}
+
+		auto& window = Blaze::Application::Get().GetWindow();
+		const int winW = (int)window.GetWidth();
+		const int winH = (int)window.GetHeight();
+		const bool gradeEditor = Blaze::PostProcess2D::FindActive(render->GetObjects()) != nullptr;
+		if (gradeEditor)
+			Blaze::PostProcess2D::BeginSceneCapture(winW, winH);
 
 		render->BeginScene(*camera,"matrix");
 		render->Render(*camera);
 		render->EndScene();
 
-		Blaze::ParticleSystem2D::Flush(*camera);
+		Blaze::ParticleSystem2D::Flush(*camera, *gizmo);
 
 		for (Blaze::GameObject* object : render->GetObjects())
 		{
@@ -1020,6 +1043,7 @@ public:
 			if (object->IsLight())
 				gizmo->DrawLightGizmo(*camera, *object);
 			if (object->HasCollision() && !object->IsSound() && !object->IsCamera() && !object->IsLight()
+				&& !object->IsPostProcess()
 				&& !object->HasParticleEmitter())
 				gizmo->DrawCollision(*camera, *object);
 		}
@@ -1029,6 +1053,9 @@ public:
 
 		if (m_Selected && m_Selected->IsTilemap())
 			gizmo->DrawTilemapGrid(*camera, *m_Selected, m_HoverTileX, m_HoverTileY);
+
+		if (gradeEditor)
+			Blaze::PostProcess2D::EndSceneCapturePresent(render->GetObjects(), winW, winH);
 	}
 
 	void OnEvent(Blaze::Event& event) override

@@ -176,6 +176,19 @@ namespace Blaze
 	{
 		ParticleEmitterAsset asset;
 		asset.SetName(name.empty() ? "Particle" : name);
+		asset.SetMode(ParticleEmitMode::Continuous);
+		asset.SetRate(40.0f);
+		asset.SetCount(18);
+		asset.SetSpeedMin(80.0f);
+		asset.SetSpeedMax(220.0f);
+		asset.SetLife(0.55f);
+		asset.SetSizeStart(10.0f);
+		asset.SetSizeEnd(0.0f);
+		asset.SetColorStart(glm::vec4(1.0f, 0.85f, 0.25f, 1.0f));
+		asset.SetColorEnd(glm::vec4(0.5f, 0.2f, 0.05f, 0.0f));
+		asset.SetGravity(glm::vec2(0.0f, -400.0f));
+		asset.SetDirection(90.0f);
+		asset.SetSpread(360.0f);
 		return asset;
 	}
 

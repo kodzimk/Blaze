@@ -203,9 +203,11 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\Renderer\Gizmo.h" />
     <ClInclude Include="src\Blaze\Renderer\DebugDraw2D.h" />
     <ClInclude Include="src\Blaze\Navigation\Pathfinder2D.h" />
+    <ClInclude Include="src\Blaze\Navigation\NavAgentSystem.h" />
     <ClInclude Include="src\Blaze\Renderer\ParticleSystem2D.h" />
     <ClInclude Include="src\Blaze\Renderer\ParticleEmitterAsset.h" />
     <ClInclude Include="src\Blaze\Renderer\Lighting2D.h" />
+    <ClInclude Include="src\Blaze\Renderer\PostProcess2D.h" />
     <ClInclude Include="src\Blaze\Editor\UndoStack.h" />
     <ClInclude Include="src\Blaze\UI\UISystem.h" />
     <ClInclude Include="src\Blaze\UI\WidgetAsset.h" />
@@ -686,9 +688,11 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\Renderer\Gizmo.cpp" />
     <ClCompile Include="src\Blaze\Renderer\DebugDraw2D.cpp" />
     <ClCompile Include="src\Blaze\Navigation\Pathfinder2D.cpp" />
+    <ClCompile Include="src\Blaze\Navigation\NavAgentSystem.cpp" />
     <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp" />
     <ClCompile Include="src\Blaze\Renderer\ParticleEmitterAsset.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Lighting2D.cpp" />
+    <ClCompile Include="src\Blaze\Renderer\PostProcess2D.cpp" />
     <ClCompile Include="src\Blaze\Editor\UndoStack.cpp" />
     <ClCompile Include="src\Blaze\UI\UISystem.cpp" />
     <ClCompile Include="src\Blaze\UI\WidgetAsset.cpp" />

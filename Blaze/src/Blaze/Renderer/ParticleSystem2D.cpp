@@ -26,6 +26,9 @@ namespace Blaze
 	};
 
 	static std::unordered_map<GameObject*, SceneParticleEmitter> s_SceneEmitters;
+	static GameObject* s_QueuedPlay = nullptr;
+	static GameObject* s_QueuedStop = nullptr;
+	static bool s_QueuedPlayPreviewLoop = true;
 
 	static bool LoadEmitterForObject(GameObject* object, ParticleEmitterAsset& out)
 	{
@@ -191,7 +194,11 @@ namespace Blaze
 	void ParticleSystem2D::Flush(const Camera& camera)
 	{
 		static Gizmo2D s_Drawer;
+		Flush(camera, s_Drawer);
+	}
 
+	void ParticleSystem2D::Flush(const Camera& camera, Gizmo2D& drawer)
+	{
 		GLboolean depthWas = glIsEnabled(GL_DEPTH_TEST);
 		GLboolean blendWas = glIsEnabled(GL_BLEND);
 		GLint srcRGB = GL_SRC_ALPHA;
@@ -216,7 +223,7 @@ namespace Blaze
 			if (size < 0.25f || color.a < 0.01f)
 				continue;
 
-			s_Drawer.DrawParticle(camera, p.position, size, color, p.rotation);
+			drawer.DrawParticle(camera, p.position, size, color, p.rotation);
 		}
 
 		glBlendFunc(srcRGB, dstRGB);
@@ -233,6 +240,11 @@ namespace Blaze
 		for (Particle& p : s_Particles)
 			p.alive = false;
 		s_Particles.clear();
+	}
+
+	bool ParticleSystem2D::HasActiveSceneEmitters()
+	{
+		return !s_SceneEmitters.empty();
 	}
 
 	bool ParticleSystem2D::StartSceneEmitter(GameObject* object, bool previewLoop)
@@ -253,8 +265,9 @@ namespace Blaze
 			slot.continuous = true;
 			slot.loopBurst = false;
 			s_SceneEmitters[object] = std::move(slot);
-			// Seed a few particles immediately so Play feels responsive.
-			asset.EmitContinuous(world.x, world.y, 0.05f, s_SceneEmitters[object].accum);
+			// Seed immediately so Components Play is visible on the next flush.
+			float& accum = s_SceneEmitters[object].accum;
+			asset.EmitContinuous(world.x, world.y, 0.35f, accum);
 			return true;
 		}
 
@@ -313,6 +326,38 @@ namespace Blaze
 					slot.burstCooldown = glm::max(slot.asset.GetLife() * 1.25f, 0.35f);
 				}
 			}
+		}
+	}
+
+	void ParticleSystem2D::QueuePlay(GameObject* object)
+	{
+		s_QueuedStop = nullptr;
+		s_QueuedPlay = object;
+		s_QueuedPlayPreviewLoop = true;
+	}
+
+	void ParticleSystem2D::QueueStop(GameObject* object)
+	{
+		s_QueuedPlay = nullptr;
+		s_QueuedStop = object;
+	}
+
+	void ParticleSystem2D::ProcessQueuedCommands()
+	{
+		if (s_QueuedStop)
+		{
+			StopSceneEmitter(s_QueuedStop);
+			s_QueuedStop = nullptr;
+		}
+		if (s_QueuedPlay)
+		{
+			GameObject* object = s_QueuedPlay;
+			s_QueuedPlay = nullptr;
+			if (!StartSceneEmitter(object, s_QueuedPlayPreviewLoop))
+				BZ_CORE_ERROR("Particle Play failed (missing/invalid .particle path) on '{0}'",
+					object ? object->GetName() : "?");
+			else
+				BZ_INFO("Particle Play: {0}", object->GetParticlePath());
 		}
 	}
 

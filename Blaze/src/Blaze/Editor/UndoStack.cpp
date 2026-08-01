@@ -136,6 +136,19 @@ namespace Blaze
 		snap.particlePath = object.GetParticlePath();
 		snap.particlePlayOnStart = object.GetParticlePlayOnStart();
 
+		snap.hasNavAgent = object.HasNavAgent();
+		snap.navSpeed = object.GetNavSpeed();
+		snap.navAllowDiagonal = object.GetNavAllowDiagonal();
+		snap.navStoppingDistance = object.GetNavStoppingDistance();
+		snap.navDebugDraw = object.GetNavDebugDraw();
+
+		snap.ppEnabled = object.IsPostProcessEnabled();
+		snap.ppBrightness = object.GetPostProcessBrightness();
+		snap.ppContrast = object.GetPostProcessContrast();
+		snap.ppSaturation = object.GetPostProcessSaturation();
+		snap.ppVignette = object.GetPostProcessVignette();
+		snap.ppTint = object.GetPostProcessTint();
+
 		snap.hasScript = object.HasScript();
 		snap.scriptPath = object.GetScriptPath();
 
@@ -232,6 +245,25 @@ namespace Blaze
 			if (!particlePath.empty())
 				object->SetParticlePath(particlePath);
 			object->SetParticlePlayOnStart(particlePlayOnStart);
+		}
+
+		if (hasNavAgent)
+		{
+			object->AddNavAgent();
+			object->SetNavSpeed(navSpeed);
+			object->SetNavAllowDiagonal(navAllowDiagonal);
+			object->SetNavStoppingDistance(navStoppingDistance);
+			object->SetNavDebugDraw(navDebugDraw);
+		}
+
+		if (object->IsPostProcess())
+		{
+			object->SetPostProcessEnabled(ppEnabled);
+			object->SetPostProcessBrightness(ppBrightness);
+			object->SetPostProcessContrast(ppContrast);
+			object->SetPostProcessSaturation(ppSaturation);
+			object->SetPostProcessVignette(ppVignette);
+			object->SetPostProcessTint(ppTint);
 		}
 
 		if (hasScript)

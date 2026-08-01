@@ -15,6 +15,7 @@
 #include "Blaze/Renderer/Lighting2D.h"
 #include "Blaze/ImGui/ContentBrowser.h"
 #include "Blaze/ImGui/ParticleEditorWindow.h"
+#include "Blaze/Renderer/ParticleEmitterAsset.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include <filesystem>
 #include <cctype>
@@ -275,6 +276,8 @@ namespace Blaze
 			ImGui::TextDisabled("Type: Sound");
 		else if (m_Selected->IsLight())
 			ImGui::TextDisabled("Type: Light");
+		else if (m_Selected->IsPostProcess())
+			ImGui::TextDisabled("Type: Post Process");
 		else if (m_Selected->IsText())
 			ImGui::TextDisabled("Type: Text");
 		else if (m_Selected->IsTilemap())
@@ -471,6 +474,35 @@ namespace Blaze
 			if (ImGui::Checkbox("Lighting Enabled", &lightingOn))
 				Lighting2D::SetEnabled(lightingOn);
 			ImGui::TextDisabled("Lower Ambient for dark scenes so lights stand out.");
+		}
+		else if (m_Selected->IsPostProcess() && ImGui::CollapsingHeader("Post Process", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			bool enabled = m_Selected->IsPostProcessEnabled();
+			if (ImGui::Checkbox("Enabled", &enabled))
+				m_Selected->SetPostProcessEnabled(enabled);
+
+			float brightness = m_Selected->GetPostProcessBrightness();
+			if (ImGui::DragFloat("Brightness", &brightness, 0.01f, -1.0f, 1.0f, "%.2f"))
+				m_Selected->SetPostProcessBrightness(brightness);
+
+			float contrast = m_Selected->GetPostProcessContrast();
+			if (ImGui::DragFloat("Contrast", &contrast, 0.01f, 0.0f, 3.0f, "%.2f"))
+				m_Selected->SetPostProcessContrast(contrast);
+
+			float saturation = m_Selected->GetPostProcessSaturation();
+			if (ImGui::DragFloat("Saturation", &saturation, 0.01f, 0.0f, 3.0f, "%.2f"))
+				m_Selected->SetPostProcessSaturation(saturation);
+
+			float vignette = m_Selected->GetPostProcessVignette();
+			if (ImGui::DragFloat("Vignette", &vignette, 0.01f, 0.0f, 2.0f, "%.2f"))
+				m_Selected->SetPostProcessVignette(vignette);
+
+			glm::vec3 tint = m_Selected->GetPostProcessTint();
+			float rgb[3] = { tint.r, tint.g, tint.b };
+			if (ImGui::ColorEdit3("Tint", rgb))
+				m_Selected->SetPostProcessTint(rgb[0], rgb[1], rgb[2]);
+
+			ImGui::TextDisabled("Applies live in the editor Scene (and Game / Runtime). First enabled wins.");
 		}
 		else if (m_Selected->IsTilemap() && ImGui::CollapsingHeader("Tilemap", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -844,6 +876,7 @@ namespace Blaze
 			}
 		}
 		else if (!m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight()
+			&& !m_Selected->IsPostProcess()
 			&& !m_Selected->IsTilemap() && !m_Selected->IsText()
 			&& ImGui::CollapsingHeader("Sprite Renderer", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -980,13 +1013,13 @@ namespace Blaze
 			if (ImGui::Checkbox("Playing", &playing))
 				m_Selected->SetFlipbookPlaying(playing);
 
-			if (ImGui::Button("Play"))
+			if (ImGui::Button("Play Flipbook"))
 				m_Selected->PlayFlipbook();
 			ImGui::SameLine();
-			if (ImGui::Button("Pause"))
+			if (ImGui::Button("Pause Flipbook"))
 				m_Selected->PauseFlipbook();
 			ImGui::SameLine();
-			if (ImGui::Button("Stop"))
+			if (ImGui::Button("Stop Flipbook"))
 				m_Selected->StopFlipbook();
 
 			ImGui::Separator();
@@ -1548,6 +1581,7 @@ namespace Blaze
 
 		if (m_Selected->HasAudio())
 		{
+			ImGui::PushID("AudioComponent");
 			if (ImGui::CollapsingHeader("Audio", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				const std::string& audioPath = m_Selected->GetAudioPath();
@@ -1614,10 +1648,10 @@ namespace Blaze
 				if (ImGui::Checkbox("Play On Start", &playOnStart))
 					m_Selected->SetAudioPlayOnStart(playOnStart);
 
-				if (ImGui::Button("Play", ImVec2(80.0f, 0.0f)))
+				if (ImGui::Button("Play Clip", ImVec2(80.0f, 0.0f)))
 					AudioEngine::Play(m_Selected);
 				ImGui::SameLine();
-				if (ImGui::Button("Stop", ImVec2(80.0f, 0.0f)))
+				if (ImGui::Button("Stop Clip", ImVec2(80.0f, 0.0f)))
 					AudioEngine::Stop(m_Selected);
 
 				if (!m_Selected->IsSound() && ImGui::Button("Remove Audio", ImVec2(-1.0f, 0.0f)))
@@ -1626,10 +1660,12 @@ namespace Blaze
 					m_Selected->RemoveAudio();
 				}
 			}
+			ImGui::PopID();
 		}
 
 		if (m_Selected->HasParticleEmitter())
 		{
+			ImGui::PushID("ParticleComponent");
 			if (ImGui::CollapsingHeader("Particle Emitter", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				const std::string& particlePath = m_Selected->GetParticlePath();
@@ -1651,22 +1687,35 @@ namespace Blaze
 
 				ImGui::TextDisabled("Drag .particle from Content Browser");
 
+				ParticleEmitterAsset previewAsset;
+				if (!particlePath.empty() && previewAsset.LoadFromFile(particlePath))
+				{
+					ImGui::Text("Mode: %s",
+						previewAsset.GetMode() == ParticleEmitMode::Continuous
+							? "Continuous (Loop)"
+							: "Burst");
+				}
+
 				bool playOnStart = m_Selected->GetParticlePlayOnStart();
 				if (ImGui::Checkbox("Play On Start", &playOnStart))
 					m_Selected->SetParticlePlayOnStart(playOnStart);
 
-				ImGui::TextDisabled("Continuous assets loop; Burst re-fires while previewing");
-
-				const bool playing = m_Selected->IsParticlePlaying();
-				if (playing)
+				const bool particlePlaying = m_Selected->IsParticlePlaying();
+				if (particlePlaying)
 				{
-					if (ImGui::Button("Stop", ImVec2(80.0f, 0.0f)))
+					if (ImGui::Button("Stop Particles", ImVec2(120.0f, 0.0f)))
+					{
+						BZ_INFO("Components: Stop Particles");
 						m_Selected->StopParticle();
+					}
 				}
 				else
 				{
-					if (ImGui::Button("Play", ImVec2(80.0f, 0.0f)))
+					if (ImGui::Button("Play Particles", ImVec2(120.0f, 0.0f)))
+					{
+						BZ_INFO("Components: Play Particles clicked");
 						m_Selected->PlayParticle();
+					}
 				}
 				ImGui::SameLine();
 				if (!particlePath.empty() && ImGui::Button("Edit Asset"))
@@ -1675,6 +1724,51 @@ namespace Blaze
 				if (ImGui::Button("Remove Particle Emitter", ImVec2(-1.0f, 0.0f)))
 					m_Selected->RemoveParticleEmitter();
 			}
+			ImGui::PopID();
+		}
+
+		if (m_Selected->HasNavAgent())
+		{
+			ImGui::PushID("NavAgentComponent");
+			if (ImGui::CollapsingHeader("Nav Agent", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				float speed = m_Selected->GetNavSpeed();
+				if (ImGui::DragFloat("Speed (px/s)", &speed, 1.0f, 0.0f, 2000.0f))
+					m_Selected->SetNavSpeed(speed);
+
+				bool diagonal = m_Selected->GetNavAllowDiagonal();
+				if (ImGui::Checkbox("Allow Diagonal", &diagonal))
+					m_Selected->SetNavAllowDiagonal(diagonal);
+
+				float stopping = m_Selected->GetNavStoppingDistance();
+				if (ImGui::DragFloat("Stopping Distance", &stopping, 0.5f, 0.0f, 128.0f))
+					m_Selected->SetNavStoppingDistance(stopping);
+
+				bool debugDraw = m_Selected->GetNavDebugDraw();
+				if (ImGui::Checkbox("Debug Draw Path", &debugDraw))
+					m_Selected->SetNavDebugDraw(debugDraw);
+
+				ImGui::TextDisabled("Needs a tilemap with collision / solid tiles");
+				ImGui::Text("Moving: %s", m_Selected->IsNavMoving() ? "yes" : "no");
+
+				static float s_NavDestX = 0.0f;
+				static float s_NavDestY = 0.0f;
+				ImGui::DragFloat("Dest X", &s_NavDestX, 0.01f);
+				ImGui::DragFloat("Dest Y", &s_NavDestY, 0.01f);
+				if (ImGui::Button("Go To Destination", ImVec2(-1.0f, 0.0f)))
+				{
+					if (m_Selected->SetNavDestination(s_NavDestX, s_NavDestY))
+						BZ_INFO("NavAgent path set");
+					else
+						BZ_INFO("NavAgent: no path (press Play for live nav, or check tilemap)");
+				}
+				if (ImGui::Button("Stop Nav", ImVec2(-1.0f, 0.0f)))
+					m_Selected->StopNav();
+
+				if (ImGui::Button("Remove Nav Agent", ImVec2(-1.0f, 0.0f)))
+					m_Selected->RemoveNavAgent();
+			}
+			ImGui::PopID();
 		}
 
 		if (m_Selected->HasScript())
@@ -1824,7 +1918,8 @@ namespace Blaze
 			}
 		}
 
-		if (m_Selected->HasCollision() && !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight())
+		if (m_Selected->HasCollision() && !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight()
+			&& !m_Selected->IsPostProcess())
 		{
 			if (ImGui::CollapsingHeader("Collision", ImGuiTreeNodeFlags_DefaultOpen))
 			{
@@ -1968,7 +2063,8 @@ namespace Blaze
 
 		if (ImGui::BeginPopup("AddComponentPopup"))
 		{
-			const bool canAddCollision = !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight();
+			const bool canAddCollision = !m_Selected->IsSound() && !m_Selected->IsCamera() && !m_Selected->IsLight()
+				&& !m_Selected->IsPostProcess();
 			if (canAddCollision && !m_Selected->HasCollision() && ImGui::MenuItem("Collision"))
 			{
 				m_Selected->AddCollision(CollisionType::Block);
@@ -1994,6 +2090,14 @@ namespace Blaze
 			}
 			if (m_Selected->HasParticleEmitter())
 				ImGui::TextDisabled("Particle Emitter already added");
+
+			if (!m_Selected->HasNavAgent() && ImGui::MenuItem("Nav Agent"))
+			{
+				m_Selected->AddNavAgent();
+				ImGui::CloseCurrentPopup();
+			}
+			if (m_Selected->HasNavAgent())
+				ImGui::TextDisabled("Nav Agent already added");
 
 			if (!m_Selected->HasScript() && ImGui::MenuItem("Script"))
 			{

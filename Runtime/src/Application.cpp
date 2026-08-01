@@ -23,6 +23,7 @@ public:
 		Blaze::UISystem::Shutdown();
 		Blaze::AudioEngine::Shutdown();
 		Blaze::ScriptEngine::Shutdown();
+		Blaze::PostProcess2D::Shutdown();
 		delete physics;
 		delete render;
 		delete camera;
@@ -179,6 +180,8 @@ public:
 		Blaze::ScriptEngine::UpdateCameraFollow(dt);
 		render->Update(dt);
 
+		Blaze::PostProcess2D::BeginSceneCapture(width, height);
+
 		Blaze::GameObject* cameraObject = FindCameraObject();
 		if (cameraObject)
 		{
@@ -203,6 +206,8 @@ public:
 		if (!Blaze::UISystem::IsReady())
 			Blaze::UISystem::Init();
 		Blaze::UISystem::Draw(width, height);
+
+		Blaze::PostProcess2D::EndSceneCapturePresent(render->GetObjects(), width, height);
 	}
 
 	void OnEvent(Blaze::Event& event) override

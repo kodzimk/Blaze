@@ -202,6 +202,7 @@ namespace Blaze
 			m_Dirty = true;
 			ClearPreview();
 			PlayPreviewBurst();
+			SaveFile(); // Mode must hit disk or scene Play/loop won't see it
 		}
 
 		if (m_Asset.GetMode() == ParticleEmitMode::Burst)
@@ -404,6 +405,8 @@ namespace Blaze
 		if (!ImGui::Begin(title.c_str(), &m_Open))
 		{
 			ImGui::End();
+			if (!m_Open && m_Dirty)
+				SaveFile();
 			return;
 		}
 		m_WindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
@@ -438,5 +441,7 @@ namespace Blaze
 		ImGui::Columns(1);
 
 		ImGui::End();
+		if (!m_Open && m_Dirty)
+			SaveFile();
 	}
 }

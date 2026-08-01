@@ -46,6 +46,7 @@ namespace Blaze
 		{ "Sound",  "sound",  "Audio source object" },
 		{ "Light",  "light",  "2D point light" },
 		{ "Spot Light", "spotlight", "2D cone / spot light" },
+		{ "Post Process", "postprocess", "Fullscreen color grade (Game view)" },
 	};
 
 	PropertiesWindow::PropertiesWindow()
@@ -264,7 +265,8 @@ namespace Blaze
 
 	void GameWindow::OnUpdate()
 	{
-		if (!StartWindow::IsPlaying())
+		const bool playing = StartWindow::IsPlaying();
+		if (!playing)
 		{
 			if (s_HideCursor)
 			{
@@ -342,12 +344,12 @@ namespace Blaze
 		const bool overWindow = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows
 			| ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 		const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-		// Hide while the pointer is in the Game view, or while the Game window is focused after a click.
-		s_HideCursor = overImage || (focused && overWindow);
+		// Hide cursor only during real play mode, not particle preview.
+		s_HideCursor = playing && (overImage || (focused && overWindow));
 
 		ImGui::End();
 
-		if (!open)
+		if (playing && !open)
 			StartWindow::SetPlaying(false);
 	}
 

@@ -228,7 +228,13 @@
     <ClInclude Include="src\Blaze\Renderer\Lighting2D.h">
       <Filter>src\Blaze\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Blaze\Renderer\PostProcess2D.h">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="src\Blaze\Navigation\Pathfinder2D.h">
+      <Filter>src\Blaze\Navigation</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Blaze\Navigation\NavAgentSystem.h">
       <Filter>src\Blaze\Navigation</Filter>
     </ClInclude>
     <ClInclude Include="src\Blaze\Editor\UndoStack.h">
@@ -1667,6 +1673,9 @@
     <ClCompile Include="src\Blaze\Navigation\Pathfinder2D.cpp">
       <Filter>src\Blaze\Navigation</Filter>
     </ClCompile>
+    <ClCompile Include="src\Blaze\Navigation\NavAgentSystem.cpp">
+      <Filter>src\Blaze\Navigation</Filter>
+    </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
@@ -1674,6 +1683,9 @@
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Renderer\Lighting2D.cpp">
+      <Filter>src\Blaze\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Blaze\Renderer\PostProcess2D.cpp">
       <Filter>src\Blaze\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Blaze\Editor\UndoStack.cpp">

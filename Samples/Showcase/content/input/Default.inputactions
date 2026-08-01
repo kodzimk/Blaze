@@ -1,0 +1,11 @@
+BlazeInputActions 1
+map Default
+action Move Axis
+bind Move Negative Key A
+bind Move Positive Key D
+bind Move Negative Key Left
+bind Move Positive Key Right
+action Jump Button
+bind Jump Key Space
+action Interact Button
+bind Interact Mouse Left

@@ -75,6 +75,19 @@ namespace Blaze
 		std::string particlePath;
 		bool particlePlayOnStart = true;
 
+		bool hasNavAgent = false;
+		float navSpeed = 180.0f;
+		bool navAllowDiagonal = false;
+		float navStoppingDistance = 8.0f;
+		bool navDebugDraw = false;
+
+		bool ppEnabled = true;
+		float ppBrightness = 0.0f;
+		float ppContrast = 1.0f;
+		float ppSaturation = 1.0f;
+		float ppVignette = 0.0f;
+		glm::vec3 ppTint = glm::vec3(1.0f);
+
 		bool hasScript = false;
 		std::string scriptPath;
 

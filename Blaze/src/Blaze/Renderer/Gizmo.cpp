@@ -499,7 +499,7 @@ namespace Blaze
 		}
 	}
 
-	// Classic folder tab silhouette (white on transparent).
+
 	static unsigned int CreateFolderIconTexture(int size)
 	{
 		std::vector<unsigned char> px((size_t)size * size * 4, 0);
@@ -513,7 +513,7 @@ namespace Blaze
 		return UploadIconTexture(px, size, size);
 	}
 
-	// Document page with folded corner + code lines (cutouts).
+
 	static unsigned int CreateScriptIconTexture(int size)
 	{
 		std::vector<unsigned char> px((size_t)size * size * 4, 0);
@@ -521,7 +521,7 @@ namespace Blaze
 
 		FillIconRoundedRect(px, size, s * 0.22f, s * 0.10f, s * 0.78f, s * 0.90f, s * 0.04f);
 
-		// Folded top-right corner
+	
 		ClearIconRect(px, size, s * 0.58f, s * 0.10f, s * 0.78f, s * 0.30f);
 		FillIconTriangle(px, size,
 			s * 0.58f, s * 0.10f,
@@ -537,7 +537,6 @@ namespace Blaze
 		return UploadIconTexture(px, size, size);
 	}
 
-	// Floppy / save-disk icon — distinct from component script document.
 	static unsigned int CreateSaveScriptIconTexture(int size)
 	{
 		std::vector<unsigned char> px((size_t)size * size * 4, 0);
@@ -562,7 +561,6 @@ namespace Blaze
 		return UploadIconTexture(px, size, size);
 	}
 
-	// UE5-style Level/World icon: mountain landscape on dark background.
 	static unsigned int CreateMapIconTexture(int size)
 	{
 		namespace fs = std::filesystem;
@@ -605,13 +603,13 @@ namespace Blaze
 					out[i * 4 + 1] = 0;
 					out[i * 4 + 2] = 0;
 				}
-				out[i * 4 + 3] = 255; // fully opaque — no transparent checker
+				out[i * 4 + 3] = 255; // fully opaque  no transparent checker
 			}
 			stbi_image_free(data);
 			return UploadIconTexture(out, width, height);
 		}
 
-		// Procedural fallback: dark tile + mountain silhouette
+		
 		std::vector<unsigned char> px((size_t)size * size * 4, 0);
 		for (int i = 0; i < size * size; ++i)
 		{
@@ -1514,7 +1512,7 @@ namespace Blaze
 		m_Shader.Use();
 		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
 		// `size` is in mesh/pixel units (same as collision / debug draw).
-		const float half = glm::max(size * 0.5f, 0.25f);
+		const float half = glm::max(size * 0.5f, 4.0f);
 		DrawQuad(center, glm::vec2(half * sx, half * sy), color, rotationDegrees);
 	}
 

@@ -3,6 +3,7 @@
 #include"Blaze/Renderer/Camera.h"
 #include"Blaze/Renderer/Shader.h"
 #include"Blaze/Renderer/ParticleSystem2D.h"
+#include"Blaze/Navigation/NavAgentSystem.h"
 #include"Blaze/UI/UISystem.h"
 #include<gtc/type_ptr.hpp>
 #include"Blaze/Logging/Log.h"
@@ -59,7 +60,7 @@ namespace Blaze {
 		if (!m_Visible || !m_Active)
 			return;
 		if (m_Type == ObjectType::Camera || m_Type == ObjectType::Sound || m_Type == ObjectType::Light
-			|| m_Type == ObjectType::Empty)
+			|| m_Type == ObjectType::Empty || m_Type == ObjectType::PostProcess)
 			return;
 		if (m_Type == ObjectType::Text)
 		{
@@ -1619,6 +1620,14 @@ namespace Blaze {
 			m_LocalMin = glm::vec2(-24.0f, -24.0f);
 			m_LocalMax = glm::vec2(24.0f, 24.0f);
 		}
+		else if (type == ObjectType::PostProcess)
+		{
+			m_HasCollision = false;
+			m_DrivesView = false;
+			m_PostProcessEnabled = true;
+			m_LocalMin = glm::vec2(-20.0f, -20.0f);
+			m_LocalMax = glm::vec2(20.0f, 20.0f);
+		}
 		else if (type == ObjectType::Tilemap)
 		{
 			m_DrivesView = false;
@@ -1714,6 +1723,41 @@ namespace Blaze {
 	{
 		const float rad = glm::radians(GetWorldRotation());
 		return glm::vec2(glm::cos(rad), glm::sin(rad));
+	}
+
+	void GameObject::SetPostProcessEnabled(bool enabled)
+	{
+		m_PostProcessEnabled = enabled;
+	}
+
+	void GameObject::SetPostProcessBrightness(float brightness)
+	{
+		m_PostProcessBrightness = brightness;
+	}
+
+	void GameObject::SetPostProcessContrast(float contrast)
+	{
+		m_PostProcessContrast = glm::max(contrast, 0.0f);
+	}
+
+	void GameObject::SetPostProcessSaturation(float saturation)
+	{
+		m_PostProcessSaturation = glm::max(saturation, 0.0f);
+	}
+
+	void GameObject::SetPostProcessVignette(float vignette)
+	{
+		m_PostProcessVignette = glm::clamp(vignette, 0.0f, 2.0f);
+	}
+
+	void GameObject::SetPostProcessTint(float r, float g, float b)
+	{
+		m_PostProcessTint = glm::max(glm::vec3(r, g, b), glm::vec3(0.0f));
+	}
+
+	void GameObject::SetPostProcessTint(const glm::vec3& tint)
+	{
+		m_PostProcessTint = glm::max(tint, glm::vec3(0.0f));
 	}
 
 	glm::mat4 GameObject::GetCameraViewMatrix() const
@@ -2040,17 +2084,72 @@ namespace Blaze {
 
 	void GameObject::PlayParticle()
 	{
-		ParticleSystem2D::StartSceneEmitter(this, true);
+		BZ_INFO("Particle Play: {0}", m_ParticlePath.empty() ? "(no path)" : m_ParticlePath);
+		if (!ParticleSystem2D::StartSceneEmitter(this, true))
+			BZ_ERROR("Particle Play failed — check the .particle path / mode");
 	}
 
 	void GameObject::StopParticle()
 	{
+		BZ_INFO("Particle Stop");
 		ParticleSystem2D::StopSceneEmitter(this);
 	}
 
 	bool GameObject::IsParticlePlaying() const
 	{
 		return ParticleSystem2D::IsSceneEmitterActive(const_cast<GameObject*>(this));
+	}
+
+	void GameObject::AddNavAgent()
+	{
+		m_HasNavAgent = true;
+	}
+
+	void GameObject::RemoveNavAgent()
+	{
+		NavAgentSystem::Stop(this);
+		m_HasNavAgent = false;
+	}
+
+	void GameObject::SetNavSpeed(float pixelsPerSecond)
+	{
+		m_NavSpeed = glm::max(pixelsPerSecond, 0.0f);
+		m_HasNavAgent = true;
+	}
+
+	void GameObject::SetNavAllowDiagonal(bool allow)
+	{
+		m_NavAllowDiagonal = allow;
+		m_HasNavAgent = true;
+	}
+
+	void GameObject::SetNavStoppingDistance(float pixels)
+	{
+		m_NavStoppingDistance = glm::max(pixels, 0.0f);
+		m_HasNavAgent = true;
+	}
+
+	void GameObject::SetNavDebugDraw(bool enabled)
+	{
+		m_NavDebugDraw = enabled;
+		m_HasNavAgent = true;
+	}
+
+	bool GameObject::SetNavDestination(float worldX, float worldY)
+	{
+		if (!m_HasNavAgent)
+			AddNavAgent();
+		return NavAgentSystem::SetDestination(this, worldX, worldY);
+	}
+
+	void GameObject::StopNav()
+	{
+		NavAgentSystem::Stop(this);
+	}
+
+	bool GameObject::IsNavMoving() const
+	{
+		return NavAgentSystem::IsMoving(const_cast<GameObject*>(this));
 	}
 
 	void GameObject::AddScript()

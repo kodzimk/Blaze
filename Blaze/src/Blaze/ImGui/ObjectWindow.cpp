@@ -46,28 +46,61 @@ namespace Blaze
 		ImGuiViewport* viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(ImVec2(viewport->GetCenter().x, viewport->GetCenter().y),
 			ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(640.0f, 460.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(720.0f, 560.0f), ImGuiCond_Always);
 
 		ImGui::Begin("Blaze Projects", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
 			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking);
 
 		ImGui::TextUnformatted("Welcome to Blaze");
-		ImGui::TextDisabled("Open one of your projects or create a new one");
+		ImGui::TextDisabled("Open a sample to explore the engine, or start your own project");
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		if (ImGui::Button("Create New Project...", ImVec2(200.0f, 34.0f)))
+		if (ImGui::Button("Create New Project...", ImVec2(220.0f, 34.0f)))
 		{
 			if (Project::NewProject())
 				s_Action = HubAction::CreateProject;
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Open From Disk...", ImVec2(200.0f, 34.0f)))
+		if (ImGui::Button("Open From Disk...", ImVec2(220.0f, 34.0f)))
 		{
 			if (Project::OpenProjectDialog())
 				s_Action = HubAction::LoadProject;
 		}
+
+		ImGui::Spacing();
+		ImGui::TextUnformatted("Samples");
+		ImGui::Separator();
+
+		std::vector<Project::SampleProject> samples = Project::ListSampleProjects();
+		ImGui::BeginChild("HubSampleList", ImVec2(0, 160.0f), true);
+		if (samples.empty())
+		{
+			ImGui::TextDisabled("No samples found. Expected Samples/ next to Sandbox or the repo root.");
+		}
+		else
+		{
+			for (size_t i = 0; i < samples.size(); ++i)
+			{
+				const Project::SampleProject& sample = samples[i];
+				ImGui::PushID((int)i + 1000);
+				bool openClicked = ImGui::Button("Open", ImVec2(60.0f, 0.0f));
+				ImGui::SameLine();
+				ImGui::BeginGroup();
+				ImGui::TextUnformatted(sample.name.c_str());
+				ImGui::TextDisabled("%s", sample.description.c_str());
+				ImGui::EndGroup();
+				if (openClicked || ImGui::IsItemClicked())
+				{
+					Project::SetProjectFromFile(sample.projectFile);
+					s_Action = HubAction::LoadProject;
+				}
+				ImGui::PopID();
+				ImGui::Separator();
+			}
+		}
+		ImGui::EndChild();
 
 		ImGui::Spacing();
 		ImGui::TextUnformatted("Recent Projects");
@@ -581,6 +614,8 @@ namespace Blaze
 				label += " (Particle)";
 			else if (object->IsLight())
 				label += object->IsSpotLight() ? " (Spot Light)" : " (Light)";
+			else if (object->IsPostProcess())
+				label += " (Post Process)";
 			else if (object->IsTilemap())
 				label += " (Tilemap)";
 			else if (object->IsText())

@@ -1,3 +1,5 @@
+D:\kodzimk\Blaze - Copy\Samples\Showcase\Showcase.blaze
+D:\kodzimk\Blaze - Copy\bin\Debug-windows-x86_64\Sandbox\Samples\Showcase\Showcase.blaze
 D:\New folder\kaisar\kaisar.blaze
 D:\New folder\sa\sa.blaze
 D:\New folder\asddasd\asddasd.blaze

@@ -1,0 +1,472 @@
+BlazeMap 1
+mapscript content/scripts/maps/Main_Map.lua
+object
+name Player
+type 0
+pos -320 -20 0
+rot 0
+scale 0.65 0.85
+layer 5
+visible 1
+color 0.3 0.75 1 1
+tags Player
+texture content/texture/container.jpg
+collision 2
+collidershape 1
+collisionradius 45
+collisionsize 65 85
+rbmass 1
+rbgravity 1
+rbkinematic 0
+trigger 0
+collisionlayer 1
+collisionmask 4294967295
+script 1
+scriptpath content/scripts/player_move.lua
+end
+object
+name Main Camera
+type 2
+pos 0 110 0
+rot 0
+scale 1 1
+layer 0
+visible 1
+color 1 1 1 1
+zoom 1
+drives 1
+parent 0
+end
+object
+name Ground
+type 4
+pos 0 -140 0
+rot 0
+scale 10 0.7
+layer 0
+visible 1
+color 0.32 0.38 0.42 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Platform A
+type 4
+pos -180 10 0
+rot 0
+scale 1.6 0.35
+layer 0
+visible 1
+color 0.42 0.48 0.52 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Platform B
+type 4
+pos 40 70 0
+rot 0
+scale 1.5 0.35
+layer 0
+visible 1
+color 0.42 0.48 0.52 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Platform C
+type 4
+pos 280 130 0
+rot 0
+scale 1.7 0.35
+layer 0
+visible 1
+color 0.42 0.48 0.52 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Platform D
+type 4
+pos 480 40 0
+rot 0
+scale 1.4 0.35
+layer 0
+visible 1
+color 0.42 0.48 0.52 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Platform E
+type 4
+pos 700 -20 0
+rot 0
+scale 2.2 0.4
+layer 0
+visible 1
+color 0.5 0.55 0.4 1
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 0
+collisionlayer 5
+collisionmask 4294967295
+end
+object
+name Coin 1
+type 3
+pos -180 70 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+collisionsize 50 50
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 2
+type 3
+pos -40 30 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 3
+type 3
+pos 40 130 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 4
+type 3
+pos 160 40 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 5
+type 3
+pos 280 190 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 6
+type 3
+pos 400 100 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 7
+type 3
+pos 520 100 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Coin 8
+type 3
+pos 700 50 0
+rot 0
+scale 0.35 0.35
+layer 4
+visible 1
+color 1 0.85 0.15 1
+tags Coin
+texture content/texture/container.jpg
+collision 1
+collidershape 0
+collisionradius 28
+trigger 1
+collisionlayer 6
+collisionmask 4294967295
+end
+object
+name Spikes
+type 4
+pos 200 -95 0
+rot 0
+scale 1.2 0.35
+layer 1
+visible 1
+color 0.9 0.2 0.25 1
+tags Hazard
+texture content/texture/wall.jpg
+collision 1
+collidershape 1
+collisionsize 100 100
+trigger 1
+collisionlayer 4
+collisionmask 4294967295
+end
+object
+name Goal
+type 0
+pos 760 40 0
+rot 0
+scale 0.5 1.1
+layer 3
+visible 1
+color 0.25 0.95 0.45 1
+tags Goal
+texture content/texture/container.jpg
+collision 1
+collidershape 1
+collisionsize 80 110
+trigger 1
+collisionlayer 4
+collisionmask 4294967295
+end
+object
+name Goal Label
+type 7
+pos 760 120 0
+rot 0
+scale 1 1
+layer 10
+visible 1
+color 0.4 1 0.55 1
+text GOAL
+fontsize 36
+end
+object
+name HUD Coins
+type 7
+pos -340 220 0
+rot 0
+scale 1 1
+layer 20
+visible 1
+color 1 0.92 0.35 1
+text Coins: 0 / 8
+fontsize 34
+parent 1
+end
+object
+name Title
+type 7
+pos -100 260 0
+rot 0
+scale 1 1
+layer 10
+visible 1
+color 1 0.95 0.85 1
+text Coin Run
+fontsize 48
+end
+object
+name Hint
+type 7
+pos -100 215 0
+rot 0
+scale 1 1
+layer 10
+visible 1
+color 0.75 0.85 1 1
+text A/D move · Space jump · collect coins
+fontsize 24
+end
+object
+name Warm Light
+type 8
+pos 100 80 0
+rot 0
+scale 1 1
+layer 0
+visible 1
+color 1 0.88 0.6 1
+lightradius 520
+lightintensity 1.2
+lightenabled 1
+lightkind point
+end
+object
+name Spot Light
+type 8
+pos 700 220 0
+rot -90
+scale 1 1
+layer 0
+visible 1
+color 0.5 0.85 1 1
+lightradius 420
+lightintensity 1.0
+lightenabled 1
+lightkind spot
+lightinner 16
+lightouter 30
+end
+object
+name Post Process
+type 9
+pos 0 0 0
+rot 0
+scale 1 1
+layer 0
+visible 1
+color 1 1 1 1
+ppenabled 1
+ppbrightness 0.0
+ppcontrast 1.05
+ppsaturation 1.15
+ppvignette 0.35
+pptint 1 0.98 0.94
+end
+object
+name Victory Fire
+type 1
+pos 700 -50 0
+rot 0
+scale 1 1
+layer 6
+visible 1
+color 1 1 1 1
+particle 1
+particlepath content/particles/Fire.particle
+particleplayonstart 1
+end
+object
+name Backdrop
+type 0
+pos 200 40 0
+rot 0
+scale 6 3
+layer -5
+visible 1
+color 0.1 0.12 0.18 1
+texture content/texture/wall.jpg
+end
+hierarchy
+root
+obj 0
+obj 1
+obj 2
+obj 3
+obj 4
+obj 5
+obj 6
+obj 7
+obj 8
+obj 9
+obj 10
+obj 11
+obj 12
+obj 13
+obj 14
+obj 15
+obj 16
+obj 17
+obj 18
+obj 19
+obj 20
+obj 21
+obj 22
+obj 23
+obj 24
+obj 25
+obj 26
+endroot
+endhierarchy

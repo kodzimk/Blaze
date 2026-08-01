@@ -1,0 +1,7 @@
+BlazeLoc 1
+language en
+ui.play Play
+ui.quit Quit
+ui.score Score: {0}
+ui.paused Paused
+world.welcome Welcome to the Blaze Showcase!

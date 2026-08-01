@@ -22,7 +22,8 @@ namespace Blaze
 		Sound,
 		Tilemap,
 		Text,
-		Light
+		Light,
+		PostProcess
 	};
 
 	enum class LightKind
@@ -151,6 +152,16 @@ namespace Blaze
 		void StopParticle();
 		bool IsParticlePlaying() const;
 
+		void AddNavAgent();
+		void RemoveNavAgent();
+		void SetNavSpeed(float pixelsPerSecond);
+		void SetNavAllowDiagonal(bool allow);
+		void SetNavStoppingDistance(float pixels);
+		void SetNavDebugDraw(bool enabled);
+		bool SetNavDestination(float worldX, float worldY);
+		void StopNav();
+		bool IsNavMoving() const;
+
 		void AddScript();
 		void RemoveScript();
 		void SetScriptPath(const std::string& path);
@@ -231,6 +242,7 @@ namespace Blaze
 		inline bool IsTilemap() const { return m_Type == ObjectType::Tilemap; }
 		inline bool IsText() const { return m_Type == ObjectType::Text; }
 		inline bool IsLight() const { return m_Type == ObjectType::Light; }
+		inline bool IsPostProcess() const { return m_Type == ObjectType::PostProcess; }
 
 		void SetLightRadius(float radius);
 		void SetLightIntensity(float intensity);
@@ -246,6 +258,20 @@ namespace Blaze
 		inline float GetLightInnerAngle() const { return m_LightInnerAngle; }
 		inline float GetLightOuterAngle() const { return m_LightOuterAngle; }
 		glm::vec2 GetLightDirection() const;
+
+		void SetPostProcessEnabled(bool enabled);
+		void SetPostProcessBrightness(float brightness);
+		void SetPostProcessContrast(float contrast);
+		void SetPostProcessSaturation(float saturation);
+		void SetPostProcessVignette(float vignette);
+		void SetPostProcessTint(float r, float g, float b);
+		void SetPostProcessTint(const glm::vec3& tint);
+		inline bool IsPostProcessEnabled() const { return m_PostProcessEnabled; }
+		inline float GetPostProcessBrightness() const { return m_PostProcessBrightness; }
+		inline float GetPostProcessContrast() const { return m_PostProcessContrast; }
+		inline float GetPostProcessSaturation() const { return m_PostProcessSaturation; }
+		inline float GetPostProcessVignette() const { return m_PostProcessVignette; }
+		inline glm::vec3 GetPostProcessTint() const { return m_PostProcessTint; }
 
 		void SetText(const std::string& text);
 		void SetFontSize(float size);
@@ -297,6 +323,12 @@ namespace Blaze
 		inline bool HasParticleEmitter() const { return m_HasParticleEmitter; }
 		inline const std::string& GetParticlePath() const { return m_ParticlePath; }
 		inline bool GetParticlePlayOnStart() const { return m_ParticlePlayOnStart; }
+
+		inline bool HasNavAgent() const { return m_HasNavAgent; }
+		inline float GetNavSpeed() const { return m_NavSpeed; }
+		inline bool GetNavAllowDiagonal() const { return m_NavAllowDiagonal; }
+		inline float GetNavStoppingDistance() const { return m_NavStoppingDistance; }
+		inline bool GetNavDebugDraw() const { return m_NavDebugDraw; }
 
 		inline bool HasScript() const { return m_HasScript; }
 		inline const std::string& GetScriptPath() const { return m_ScriptPath; }
@@ -438,6 +470,12 @@ namespace Blaze
 		std::string m_ParticlePath;
 		bool m_ParticlePlayOnStart = true;
 
+		bool m_HasNavAgent = false;
+		float m_NavSpeed = 180.0f;           // pixels / second
+		bool m_NavAllowDiagonal = false;
+		float m_NavStoppingDistance = 8.0f; // pixels
+		bool m_NavDebugDraw = false;
+
 		bool m_HasScript = false;
 		std::string m_ScriptPath;
 
@@ -483,5 +521,12 @@ namespace Blaze
 		LightKind m_LightKind = LightKind::Point;
 		float m_LightInnerAngle = 20.0f; // half-angle degrees from aim direction
 		float m_LightOuterAngle = 35.0f;
+
+		bool m_PostProcessEnabled = true;
+		float m_PostProcessBrightness = 0.0f;
+		float m_PostProcessContrast = 1.0f;
+		float m_PostProcessSaturation = 1.0f;
+		float m_PostProcessVignette = 0.0f;
+		glm::vec3 m_PostProcessTint = glm::vec3(1.0f);
 	};
 }

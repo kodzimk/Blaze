@@ -25,6 +25,7 @@
 #include "Blaze/Renderer/ComponentPresetAsset.h"
 #include "Blaze/Scripting/ObjectPool.h"
 #include "Blaze/Navigation/Pathfinder2D.h"
+#include "Blaze/Navigation/NavAgentSystem.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include "Blaze/Assets/TiledImporter.h"
 #include <filesystem>
@@ -1882,22 +1883,41 @@ namespace Blaze
 				return true;
 			}));
 
-		lua.set_function("SetText", [](const std::string& text)
-		{
-			if (s_CurrentObject && s_CurrentObject->IsText())
-				s_CurrentObject->SetText(text);
-		});
-		lua.set_function("GetText", []() -> std::string
-		{
-			if (s_CurrentObject && s_CurrentObject->IsText())
-				return s_CurrentObject->GetText();
-			return {};
-		});
-		lua.set_function("SetFontSize", [](float size)
-		{
-			if (s_CurrentObject && s_CurrentObject->IsText())
-				s_CurrentObject->SetFontSize(size);
-		});
+		lua.set_function("SetText", sol::overload(
+			[](const std::string& text)
+			{
+				if (s_CurrentObject && s_CurrentObject->IsText())
+					s_CurrentObject->SetText(text);
+			},
+			[](const ScriptObject& object, const std::string& text)
+			{
+				if (object.IsValid() && object.raw->IsText())
+					object.raw->SetText(text);
+			}));
+		lua.set_function("GetText", sol::overload(
+			[]() -> std::string
+			{
+				if (s_CurrentObject && s_CurrentObject->IsText())
+					return s_CurrentObject->GetText();
+				return {};
+			},
+			[](const ScriptObject& object) -> std::string
+			{
+				if (object.IsValid() && object.raw->IsText())
+					return object.raw->GetText();
+				return {};
+			}));
+		lua.set_function("SetFontSize", sol::overload(
+			[](float size)
+			{
+				if (s_CurrentObject && s_CurrentObject->IsText())
+					s_CurrentObject->SetFontSize(size);
+			},
+			[](const ScriptObject& object, float size)
+			{
+				if (object.IsValid() && object.raw->IsText())
+					object.raw->SetFontSize(size);
+			}));
 		lua.set_function("SetFontPath", sol::overload(
 			[](const std::string& path)
 			{
@@ -2319,6 +2339,138 @@ namespace Blaze
 			[](const ScriptObject& object)
 			{
 				return object.IsValid() ? object.raw->GetLightOuterAngle() : 0.0f;
+			}));
+
+		lua.set_function("IsPostProcess", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsPostProcess();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsPostProcess();
+			}));
+		lua.set_function("SetPostProcessEnabled", sol::overload(
+			[](bool enabled)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessEnabled(enabled);
+			},
+			[](ScriptObject object, bool enabled)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessEnabled(enabled);
+			}));
+		lua.set_function("IsPostProcessEnabled", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->IsPostProcessEnabled();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->IsPostProcessEnabled();
+			}));
+		lua.set_function("SetPostProcessBrightness", sol::overload(
+			[](float v)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessBrightness(v);
+			},
+			[](ScriptObject object, float v)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessBrightness(v);
+			}));
+		lua.set_function("GetPostProcessBrightness", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetPostProcessBrightness() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetPostProcessBrightness() : 0.0f;
+			}));
+		lua.set_function("SetPostProcessContrast", sol::overload(
+			[](float v)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessContrast(v);
+			},
+			[](ScriptObject object, float v)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessContrast(v);
+			}));
+		lua.set_function("GetPostProcessContrast", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetPostProcessContrast() : 1.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetPostProcessContrast() : 1.0f;
+			}));
+		lua.set_function("SetPostProcessSaturation", sol::overload(
+			[](float v)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessSaturation(v);
+			},
+			[](ScriptObject object, float v)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessSaturation(v);
+			}));
+		lua.set_function("GetPostProcessSaturation", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetPostProcessSaturation() : 1.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetPostProcessSaturation() : 1.0f;
+			}));
+		lua.set_function("SetPostProcessVignette", sol::overload(
+			[](float v)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessVignette(v);
+			},
+			[](ScriptObject object, float v)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessVignette(v);
+			}));
+		lua.set_function("GetPostProcessVignette", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetPostProcessVignette() : 0.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetPostProcessVignette() : 0.0f;
+			}));
+		lua.set_function("SetPostProcessTint", sol::overload(
+			[](float r, float g, float b)
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->SetPostProcessTint(r, g, b);
+			},
+			[](ScriptObject object, float r, float g, float b)
+			{
+				if (object.IsValid())
+					object.raw->SetPostProcessTint(r, g, b);
+			}));
+		lua.set_function("GetPostProcessTint", sol::overload(
+			[]()
+			{
+				glm::vec3 t = s_CurrentObject ? s_CurrentObject->GetPostProcessTint() : glm::vec3(1.0f);
+				return std::make_tuple(t.r, t.g, t.b);
+			},
+			[](const ScriptObject& object)
+			{
+				glm::vec3 t = object.IsValid() ? object.raw->GetPostProcessTint() : glm::vec3(1.0f);
+				return std::make_tuple(t.r, t.g, t.b);
 			}));
 
 		lua.set_function("SetLocation", sol::overload(
@@ -2823,6 +2975,68 @@ namespace Blaze
 					aOpt.value_or(1.0f));
 				Pathfinder2D::DrawPath(path, durationOpt.value_or(0.0f), color);
 			});
+
+		lua.set_function("SetDestination", sol::overload(
+			[](float x, float y) -> bool
+			{
+				if (!s_CurrentObject)
+					return false;
+				if (s_Renderer)
+					NavAgentSystem::SetObjects(&s_Renderer->GetObjects());
+				if (!s_CurrentObject->HasNavAgent())
+					s_CurrentObject->AddNavAgent();
+				return s_CurrentObject->SetNavDestination(x, y);
+			},
+			[](ScriptObject object, float x, float y) -> bool
+			{
+				if (!object.IsValid())
+					return false;
+				if (s_Renderer)
+					NavAgentSystem::SetObjects(&s_Renderer->GetObjects());
+				if (!object.raw->HasNavAgent())
+					object.raw->AddNavAgent();
+				return object.raw->SetNavDestination(x, y);
+			}));
+
+		lua.set_function("StopNav", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->StopNav();
+			},
+			[](ScriptObject object)
+			{
+				if (object.IsValid())
+					object.raw->StopNav();
+			}));
+
+		lua.set_function("IsNavMoving", sol::overload(
+			[]() -> bool
+			{
+				return s_CurrentObject && s_CurrentObject->IsNavMoving();
+			},
+			[](ScriptObject object) -> bool
+			{
+				return object.IsValid() && object.raw->IsNavMoving();
+			}));
+
+		lua.set_function("SetNavSpeed", sol::overload(
+			[](float speed)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasNavAgent())
+					s_CurrentObject->AddNavAgent();
+				s_CurrentObject->SetNavSpeed(speed);
+			},
+			[](ScriptObject object, float speed)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasNavAgent())
+					object.raw->AddNavAgent();
+				object.raw->SetNavSpeed(speed);
+			}));
 
 		lua.set_function("OverlapPoint",
 			[&lua](float x, float y, sol::optional<uint32_t> layerMaskOpt) -> sol::table
@@ -4738,6 +4952,11 @@ namespace Blaze
 			object->SetLightOuterAngle(35.0f);
 			object->SetColor(1.0f, 0.92f, 0.75f, 1.0f);
 		}
+		else if (type == "postprocess")
+		{
+			object->SetName(name.empty() ? "Post Process" : name);
+			object->SetType(ObjectType::PostProcess);
+		}
 		else if (type == "empty")
 		{
 			object->SetName(name.empty() ? "Empty" : name);
@@ -4957,6 +5176,7 @@ namespace Blaze
 		DebugDraw2D::Clear();
 		ParticleSystem2D::Clear();
 		ParticleSystem2D::OnPlayModeStop();
+		NavAgentSystem::Clear();
 		ScriptTimers::ClearAll();
 		s_CameraFollowTarget = nullptr;
 		s_MouseEnabled = false;
@@ -5293,6 +5513,9 @@ namespace Blaze
 		DebugDraw2D::Update(dt);
 		ParticleSystem2D::OnPlayModeUpdate(dt);
 		ParticleSystem2D::Update(dt);
+		if (s_Renderer)
+			NavAgentSystem::SetObjects(&s_Renderer->GetObjects());
+		NavAgentSystem::Update(dt);
 		AudioEngine::Update();
 		ScriptTimers::Update(dt, [](GameObject* owner)
 		{

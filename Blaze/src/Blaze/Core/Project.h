@@ -58,6 +58,15 @@ namespace Blaze
 		static std::vector<std::string> GetRecentProjects();
 		static void RegisterRecentProject(const std::string& projectFile);
 
+		struct SampleProject
+		{
+			std::string name;
+			std::string description;
+			std::string projectFile;
+		};
+		// Bundled samples under Samples/ (next to the exe or repo root).
+		static std::vector<SampleProject> ListSampleProjects();
+
 		struct GameObjectWriteFlags
 		{
 			bool objectMarkers = true; // "object" / "end"
@@ -69,6 +78,7 @@ namespace Blaze
 			bool camera = true;
 			bool cameraDrives = true;
 			bool light = true;
+			bool postprocess = true;
 			bool texture = true;
 			bool flipbook = true;
 			bool anim = true;
@@ -78,6 +88,7 @@ namespace Blaze
 			bool collision = true;
 			bool audio = true;
 			bool particle = true;
+			bool navagent = true;
 			bool script = true;
 
 			static GameObjectWriteFlags All();

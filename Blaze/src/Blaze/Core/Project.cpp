@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <vector>
+#include <unordered_set>
 
 #define NOMINMAX
 #include <windows.h>
@@ -599,6 +600,99 @@ namespace Blaze
 			out << path << "\n";
 	}
 
+	static void CollectSampleRoots(std::vector<fs::path>& roots)
+	{
+		EnsureOriginalCwd();
+		std::error_code ec;
+
+		char modulePath[MAX_PATH] = {};
+		if (GetModuleFileNameA(nullptr, modulePath, MAX_PATH))
+		{
+			fs::path exeDir = fs::path(modulePath).parent_path();
+			roots.push_back(exeDir / "Samples");
+			// bin/Debug-windows-x86_64/Sandbox → repo root Samples
+			roots.push_back(exeDir / ".." / ".." / ".." / "Samples");
+		}
+
+		if (!s_OriginalCwd.empty())
+		{
+			roots.push_back(fs::path(s_OriginalCwd) / "Samples");
+			roots.push_back(fs::path(s_OriginalCwd) / ".." / "Samples");
+		}
+	}
+
+	static std::string ReadSampleDescription(const fs::path& sampleDir)
+	{
+		std::error_code ec;
+		fs::path descPath = sampleDir / "description.txt";
+		if (!fs::exists(descPath, ec))
+			return "Sample project";
+
+		std::ifstream in(descPath);
+		std::string line;
+		if (in && std::getline(in, line))
+		{
+			while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
+				line.pop_back();
+			if (!line.empty())
+				return line;
+		}
+		return "Sample project";
+	}
+
+	std::vector<Project::SampleProject> Project::ListSampleProjects()
+	{
+		std::vector<SampleProject> samples;
+		std::unordered_set<std::string> seen;
+		std::vector<fs::path> roots;
+		CollectSampleRoots(roots);
+
+		std::error_code ec;
+		for (const fs::path& root : roots)
+		{
+			fs::path canonical = fs::weakly_canonical(root, ec);
+			if (ec || !fs::is_directory(canonical, ec))
+				continue;
+
+			for (const fs::directory_entry& entry : fs::directory_iterator(canonical, ec))
+			{
+				if (ec || !entry.is_directory(ec))
+					continue;
+
+				const fs::path sampleDir = entry.path();
+				std::string blazeFile;
+				for (const fs::directory_entry& file : fs::directory_iterator(sampleDir, ec))
+				{
+					if (ec || !file.is_regular_file(ec))
+						continue;
+					if (file.path().extension() == ".blaze")
+					{
+						blazeFile = file.path().string();
+						break;
+					}
+				}
+				if (blazeFile.empty())
+					continue;
+
+				std::string key = fs::weakly_canonical(blazeFile, ec).string();
+				if (key.empty())
+					key = blazeFile;
+				if (!seen.insert(key).second)
+					continue;
+
+				SampleProject sample;
+				sample.name = sampleDir.filename().string();
+				sample.description = ReadSampleDescription(sampleDir);
+				sample.projectFile = blazeFile;
+				samples.push_back(std::move(sample));
+			}
+		}
+
+		std::sort(samples.begin(), samples.end(),
+			[](const SampleProject& a, const SampleProject& b) { return a.name < b.name; });
+		return samples;
+	}
+
 	void Project::SetProjectFromFile(const std::string& projectFile)
 	{
 		fs::path file(projectFile);
@@ -835,6 +929,17 @@ namespace Blaze
 			}
 		}
 
+		if (flags.postprocess && object->IsPostProcess())
+		{
+			out << "ppenabled " << (object->IsPostProcessEnabled() ? 1 : 0) << "\n";
+			out << "ppbrightness " << object->GetPostProcessBrightness() << "\n";
+			out << "ppcontrast " << object->GetPostProcessContrast() << "\n";
+			out << "ppsaturation " << object->GetPostProcessSaturation() << "\n";
+			out << "ppvignette " << object->GetPostProcessVignette() << "\n";
+			const glm::vec3 tint = object->GetPostProcessTint();
+			out << "pptint " << tint.r << " " << tint.g << " " << tint.b << "\n";
+		}
+
 		if (flags.texture && !object->GetTexturePath().empty())
 			out << "texture " << StoreTexturePath(object->GetTexturePath()) << "\n";
 
@@ -961,6 +1066,15 @@ namespace Blaze
 			if (!object->GetParticlePath().empty())
 				out << "particlepath " << StoreTexturePath(object->GetParticlePath()) << "\n";
 			out << "particleplayonstart " << (object->GetParticlePlayOnStart() ? 1 : 0) << "\n";
+		}
+
+		if (flags.navagent && object->HasNavAgent())
+		{
+			out << "navagent 1\n";
+			out << "navspeed " << object->GetNavSpeed() << "\n";
+			out << "navdiagonal " << (object->GetNavAllowDiagonal() ? 1 : 0) << "\n";
+			out << "navstopping " << object->GetNavStoppingDistance() << "\n";
+			out << "navdebug " << (object->GetNavDebugDraw() ? 1 : 0) << "\n";
 		}
 
 		if (flags.script && object->HasScript())
@@ -1151,6 +1265,54 @@ namespace Blaze
 			if (current->GetType() != ObjectType::Light)
 				current->SetType(ObjectType::Light);
 			current->SetLightOuterAngle(angle);
+		}
+		else if (key == "ppenabled")
+		{
+			int enabled = 1;
+			stream >> enabled;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessEnabled(enabled != 0);
+		}
+		else if (key == "ppbrightness")
+		{
+			float v = 0.0f;
+			stream >> v;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessBrightness(v);
+		}
+		else if (key == "ppcontrast")
+		{
+			float v = 1.0f;
+			stream >> v;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessContrast(v);
+		}
+		else if (key == "ppsaturation")
+		{
+			float v = 1.0f;
+			stream >> v;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessSaturation(v);
+		}
+		else if (key == "ppvignette")
+		{
+			float v = 0.0f;
+			stream >> v;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessVignette(v);
+		}
+		else if (key == "pptint")
+		{
+			float r = 1.0f, g = 1.0f, b = 1.0f;
+			stream >> r >> g >> b;
+			if (current->GetType() != ObjectType::PostProcess)
+				current->SetType(ObjectType::PostProcess);
+			current->SetPostProcessTint(r, g, b);
 		}
 		else if (key == "texture" && line.size() > 8)
 		{
@@ -1480,6 +1642,34 @@ namespace Blaze
 			int play = 1;
 			stream >> play;
 			current->SetParticlePlayOnStart(play != 0);
+		}
+		else if (key == "navagent")
+		{
+			current->AddNavAgent();
+		}
+		else if (key == "navspeed")
+		{
+			float speed = 180.0f;
+			stream >> speed;
+			current->SetNavSpeed(speed);
+		}
+		else if (key == "navdiagonal")
+		{
+			int d = 0;
+			stream >> d;
+			current->SetNavAllowDiagonal(d != 0);
+		}
+		else if (key == "navstopping")
+		{
+			float stop = 8.0f;
+			stream >> stop;
+			current->SetNavStoppingDistance(stop);
+		}
+		else if (key == "navdebug")
+		{
+			int d = 0;
+			stream >> d;
+			current->SetNavDebugDraw(d != 0);
 		}
 		else if (key == "script")
 		{

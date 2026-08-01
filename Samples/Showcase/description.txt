@@ -1,0 +1,1 @@
+Mini platformer — collect coins, avoid spikes, reach the goal.

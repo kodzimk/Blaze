@@ -41,7 +41,9 @@ namespace Blaze
 
 		static void Update(float dt);
 		static void Flush(const Camera& camera);
+		static void Flush(const Camera& camera, class Gizmo2D& drawer);
 		static void Clear();
+		static bool HasActiveSceneEmitters();
 
 		// Scene Particle Emitter component.
 		// Continuous assets keep emitting until StopSceneEmitter / play stop.
@@ -50,6 +52,11 @@ namespace Blaze
 		static void StopSceneEmitter(GameObject* object);
 		static bool IsSceneEmitterActive(GameObject* object);
 		static void UpdateSceneEmitters(float dt);
+
+		// Deferred so ImGui Play runs before the next scene flush (same-frame visible).
+		static void QueuePlay(GameObject* object);
+		static void QueueStop(GameObject* object);
+		static void ProcessQueuedCommands();
 
 		static void OnPlayModeStart(const std::vector<GameObject*>& objects);
 		static void OnPlayModeUpdate(float dt);

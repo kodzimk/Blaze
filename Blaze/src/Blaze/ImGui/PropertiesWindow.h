@@ -42,6 +42,8 @@ namespace Blaze
 		static void BeginCapture();
 		static void EndCapture(int windowWidth, int windowHeight);
 
+		static unsigned int GetColorTexture() { return s_TextureId; }
+		static unsigned int GetFramebuffer() { return s_Framebuffer; }
 		static int GetFrameWidth() { return s_FrameWidth; }
 		static int GetFrameHeight() { return s_FrameHeight; }
 		static bool WindowToGamePixel(float windowX, float windowY, float& outGameX, float& outGameY);

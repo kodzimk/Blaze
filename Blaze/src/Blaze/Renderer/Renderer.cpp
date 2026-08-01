@@ -5,6 +5,7 @@
 #include"Blaze/Audio/AudioEngine.h"
 #include"Blaze/Scripting/ScriptEngine.h"
 #include"Blaze/Renderer/ParticleSystem2D.h"
+#include"Blaze/Navigation/NavAgentSystem.h"
 #include"glad/glad.h"
 #include <algorithm>
 #include <vector>
@@ -23,6 +24,7 @@ namespace Blaze {
 			AudioEngine::RemoveObject(m_objects[i]);
 			ScriptEngine::RemoveObject(m_objects[i]);
 			ParticleSystem2D::RemoveObject(m_objects[i]);
+			NavAgentSystem::RemoveObject(m_objects[i]);
 			delete m_objects[i];
 		}
 	}
@@ -81,6 +83,7 @@ namespace Blaze {
 				AudioEngine::RemoveObject(object);
 				ScriptEngine::RemoveObject(object);
 				ParticleSystem2D::RemoveObject(object);
+				NavAgentSystem::RemoveObject(object);
 				delete *it;
 				m_objects.erase(it);
 				return true;
