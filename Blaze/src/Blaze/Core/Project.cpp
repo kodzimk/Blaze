@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <vector>
-#include <unordered_set>
 
 #define NOMINMAX
 #include <windows.h>
@@ -598,99 +597,6 @@ namespace Blaze
 		std::ofstream out(s_RecentProjectsPath, std::ios::trunc);
 		for (const std::string& path : projects)
 			out << path << "\n";
-	}
-
-	static void CollectSampleRoots(std::vector<fs::path>& roots)
-	{
-		EnsureOriginalCwd();
-		std::error_code ec;
-
-		char modulePath[MAX_PATH] = {};
-		if (GetModuleFileNameA(nullptr, modulePath, MAX_PATH))
-		{
-			fs::path exeDir = fs::path(modulePath).parent_path();
-			roots.push_back(exeDir / "Samples");
-			// bin/Debug-windows-x86_64/Sandbox → repo root Samples
-			roots.push_back(exeDir / ".." / ".." / ".." / "Samples");
-		}
-
-		if (!s_OriginalCwd.empty())
-		{
-			roots.push_back(fs::path(s_OriginalCwd) / "Samples");
-			roots.push_back(fs::path(s_OriginalCwd) / ".." / "Samples");
-		}
-	}
-
-	static std::string ReadSampleDescription(const fs::path& sampleDir)
-	{
-		std::error_code ec;
-		fs::path descPath = sampleDir / "description.txt";
-		if (!fs::exists(descPath, ec))
-			return "Sample project";
-
-		std::ifstream in(descPath);
-		std::string line;
-		if (in && std::getline(in, line))
-		{
-			while (!line.empty() && (line.back() == '\r' || line.back() == '\n'))
-				line.pop_back();
-			if (!line.empty())
-				return line;
-		}
-		return "Sample project";
-	}
-
-	std::vector<Project::SampleProject> Project::ListSampleProjects()
-	{
-		std::vector<SampleProject> samples;
-		std::unordered_set<std::string> seen;
-		std::vector<fs::path> roots;
-		CollectSampleRoots(roots);
-
-		std::error_code ec;
-		for (const fs::path& root : roots)
-		{
-			fs::path canonical = fs::weakly_canonical(root, ec);
-			if (ec || !fs::is_directory(canonical, ec))
-				continue;
-
-			for (const fs::directory_entry& entry : fs::directory_iterator(canonical, ec))
-			{
-				if (ec || !entry.is_directory(ec))
-					continue;
-
-				const fs::path sampleDir = entry.path();
-				std::string blazeFile;
-				for (const fs::directory_entry& file : fs::directory_iterator(sampleDir, ec))
-				{
-					if (ec || !file.is_regular_file(ec))
-						continue;
-					if (file.path().extension() == ".blaze")
-					{
-						blazeFile = file.path().string();
-						break;
-					}
-				}
-				if (blazeFile.empty())
-					continue;
-
-				std::string key = fs::weakly_canonical(blazeFile, ec).string();
-				if (key.empty())
-					key = blazeFile;
-				if (!seen.insert(key).second)
-					continue;
-
-				SampleProject sample;
-				sample.name = sampleDir.filename().string();
-				sample.description = ReadSampleDescription(sampleDir);
-				sample.projectFile = blazeFile;
-				samples.push_back(std::move(sample));
-			}
-		}
-
-		std::sort(samples.begin(), samples.end(),
-			[](const SampleProject& a, const SampleProject& b) { return a.name < b.name; });
-		return samples;
 	}
 
 	void Project::SetProjectFromFile(const std::string& projectFile)

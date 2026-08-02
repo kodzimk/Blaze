@@ -1,4 +1,4 @@
-#include "ComponentsWindow.h"
+﻿#include "ComponentsWindow.h"
 
 #include "../vendor/imgui/src/imgui.h"
 #include "Blaze/Renderer/GameObject.h"
@@ -292,14 +292,6 @@ namespace Blaze
 		{
 			const bool playLocked = StartWindow::IsPlaying();
 			if (playLocked)
-				ImGui::TextDisabled("Locked while playing — edit in Game view only");
-
-			if (GameObject* parent = m_Selected->GetParent())
-				ImGui::TextDisabled("Parent: %s", parent->GetName().c_str());
-			else
-				ImGui::TextDisabled("Parent: (none)");
-
-			if (playLocked)
 				ImGui::BeginDisabled();
 
 			auto pushTransformIfChanged = [this]()
@@ -355,14 +347,9 @@ namespace Blaze
 			if (ImGui::IsItemDeactivatedAfterEdit())
 				pushTransformIfChanged();
 
-			glm::vec3 worldPos = m_Selected->GetWorldPosition();
-			ImGui::TextDisabled("World: %.1f, %.1f  rot %.1f", worldPos.x, worldPos.y, m_Selected->GetWorldRotation());
-
 			int layer = m_Selected->GetLayer();
 			if (ImGui::InputInt("Layer", &layer))
 				m_Selected->SetLayer(layer);
-			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("Higher layers render in front");
 
 			if (playLocked)
 				ImGui::EndDisabled();
@@ -406,7 +393,6 @@ namespace Blaze
 				m_Selected->AddTag(name);
 			}
 			ImGui::SameLine();
-			ImGui::TextDisabled("Add tag");
 		}
 
 		if (m_Selected->IsCamera())
@@ -421,8 +407,6 @@ namespace Blaze
 					else
 						m_Selected->SetDrivesView(false);
 				}
-				if (isMain)
-					ImGui::TextDisabled("Renders Game view. Parent under an object to follow it.");
 
 				float zoom = m_Selected->GetZoom();
 				if (ImGui::InputFloat("Zoom", &zoom, 0.0f, 0.0f, "%.3f"))
@@ -456,7 +440,6 @@ namespace Blaze
 				float outer = m_Selected->GetLightOuterAngle();
 				if (ImGui::DragFloat("Outer Angle", &outer, 0.5f, 0.5f, 179.0f, "%.1f deg"))
 					m_Selected->SetLightOuterAngle(outer);
-				ImGui::TextDisabled("Aim with Rotation. Inner = full bright, Outer = cutoff.");
 			}
 
 			glm::vec4 color = m_Selected->GetColor();
@@ -473,7 +456,6 @@ namespace Blaze
 			bool lightingOn = Lighting2D::IsEnabled();
 			if (ImGui::Checkbox("Lighting Enabled", &lightingOn))
 				Lighting2D::SetEnabled(lightingOn);
-			ImGui::TextDisabled("Lower Ambient for dark scenes so lights stand out.");
 		}
 		else if (m_Selected->IsPostProcess() && ImGui::CollapsingHeader("Post Process", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -502,7 +484,6 @@ namespace Blaze
 			if (ImGui::ColorEdit3("Tint", rgb))
 				m_Selected->SetPostProcessTint(rgb[0], rgb[1], rgb[2]);
 
-			ImGui::TextDisabled("Applies live in the editor Scene (and Game / Runtime). First enabled wins.");
 		}
 		else if (m_Selected->IsTilemap() && ImGui::CollapsingHeader("Tilemap", ImGuiTreeNodeFlags_DefaultOpen))
 		{
@@ -542,7 +523,6 @@ namespace Blaze
 				ImGui::TextDisabled("No tileset");
 			else
 				ImGui::TextWrapped("%s", path.c_str());
-			ImGui::TextDisabled("Drag a sprite sheet from Content Browser");
 			ImGui::EndGroup();
 
 			ImGui::Separator();
@@ -604,34 +584,28 @@ namespace Blaze
 					m_Selected->SetTileLayerOpacity(li, opacity);
 				ImGui::PopID();
 			}
-			ImGui::TextDisabled("Active layer is used by the paint brush.");
 
 			ImGui::Separator();
 			bool tileCol = m_Selected->IsTileCollisionEnabled();
 			if (ImGui::Checkbox("Tile Collision", &tileCol))
 				m_Selected->SetTileCollisionEnabled(tileCol);
-			ImGui::TextDisabled("Solid painted tiles become static boxes in play.");
 			if (ImGui::Button("Mark All Solid"))
 				m_Selected->SetAllTilesetSolid(true);
 			ImGui::SameLine();
 			if (ImGui::Button("Clear Solids"))
 				m_Selected->SetAllTilesetSolid(false);
-			ImGui::TextDisabled("Tileset: LMB paint brush, RMB toggle solid.");
 
 			ImGui::Separator();
 			ImGui::TextUnformatted("Paint brush");
 			bool paintMode = s_TilePaintMode;
 			if (ImGui::Checkbox("Lock paint (B)", &paintMode))
 				s_TilePaintMode = paintMode;
-			ImGui::TextDisabled("Click/drag map to paint. RMB erases.");
-			ImGui::TextDisabled("Grab red/green arrows to move (unless locked).");
 
 			int& s_PaintTile = s_TilePaintBrush;
 			const int tileCount = m_Selected->GetTilesetTileCount();
 			if (ImGui::SliderInt("Tile ID", &s_PaintTile, -1, glm::max(tileCount - 1, 0)))
 			{
 			}
-			ImGui::TextDisabled("-1 = erase");
 			if (ImGui::Button("Fill"))
 			{
 				std::vector<TileChange> changes;
@@ -716,7 +690,6 @@ namespace Blaze
 			}
 
 			ImGui::TextUnformatted("Paint grid (hold & drag)");
-			ImGui::TextDisabled("LMB paint  |  RMB erase");
 			ImGui::BeginChild("TilePaintGrid", ImVec2(0.0f, 220.0f), true,
 				ImGuiWindowFlags_NoMove);
 			const float cellBtn = 18.0f;
@@ -813,7 +786,6 @@ namespace Blaze
 					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::TextDisabled("Drag from Content Browser or Select...");
 				if (ImGui::Button("Select Font...", ImVec2(-1.0f, 0.0f)))
 					ImGui::OpenPopup("ContentBrowserFontPicker");
 
@@ -917,7 +889,6 @@ namespace Blaze
 			else
 				ImGui::TextWrapped("%s", path.c_str());
 
-			ImGui::TextDisabled("Drag from Content Browser");
 			if (ImGui::Button("Select..."))
 				ImGui::OpenPopup("ContentBrowserTexturePicker");
 
@@ -982,7 +953,6 @@ namespace Blaze
 
 			ImGui::Separator();
 			ImGui::Text("Flipbook / Sprite Sheet");
-			ImGui::TextDisabled("Grid on the texture (left-to-right, top-to-bottom)");
 
 			int cols = m_Selected->GetFlipbookColumns();
 			int rows = m_Selected->GetFlipbookRows();
@@ -998,11 +968,8 @@ namespace Blaze
 				m_Selected->SetFlipbookRows(rows);
 			if (ImGui::InputInt("Frame Count", &frameCount))
 				m_Selected->SetFlipbookFrameCount(frameCount);
-			ImGui::TextDisabled("0 = use Columns x Rows");
 			if (ImGui::InputFloat("Default FPS", &fps, 1.0f, 5.0f, "%.1f"))
 				m_Selected->SetFlipbookFps(fps);
-			ImGui::SameLine();
-			ImGui::TextDisabled("(clips can override)");
 			if (ImGui::Checkbox("Default Loop", &loop))
 				m_Selected->SetFlipbookLoop(loop);
 
@@ -1024,7 +991,6 @@ namespace Blaze
 
 			ImGui::Separator();
 			ImGui::Text("Flipbook Asset");
-			ImGui::TextDisabled("Saveable animation set (.flipbook) — not a GameObject");
 			{
 				const std::string& assetPath = m_Selected->GetFlipbookAssetPath();
 				if (assetPath.empty())
@@ -1136,7 +1102,7 @@ namespace Blaze
 
 			ImGui::Separator();
 			ImGui::Text("Animations (Clips)");
-			ImGui::TextDisabled("Named ranges — saved on .flipbook asset when assigned");
+			ImGui::TextDisabled("Named ranges вЂ” saved on .flipbook asset when assigned");
 
 			auto PersistFlipbookIfNeeded = [&]()
 			{
@@ -1176,7 +1142,7 @@ namespace Blaze
 
 			if (clips.empty())
 			{
-				ImGui::TextDisabled("No clips — plays full sheet / Frame Count");
+				ImGui::TextDisabled("No clips вЂ” plays full sheet / Frame Count");
 			}
 			else
 			{
@@ -1280,7 +1246,6 @@ namespace Blaze
 
 			ImGui::Separator();
 			ImGui::Text("Anim State Machine");
-			ImGui::TextDisabled("Graph (.animasset) drives which flipbook clip plays");
 			{
 				bool animOn = m_Selected->IsAnimEnabled();
 				if (ImGui::Checkbox("Anim Enabled", &animOn))
@@ -1601,7 +1566,6 @@ namespace Blaze
 					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::TextDisabled("Drag .wav/.mp3/.ogg from Content Browser");
 				if (ImGui::Button("Select Clip..."))
 					ImGui::OpenPopup("ContentBrowserAudioPicker");
 
@@ -1685,7 +1649,6 @@ namespace Blaze
 					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::TextDisabled("Drag .particle from Content Browser");
 
 				ParticleEmitterAsset previewAsset;
 				if (!particlePath.empty() && previewAsset.LoadFromFile(particlePath))
@@ -1748,7 +1711,6 @@ namespace Blaze
 				if (ImGui::Checkbox("Debug Draw Path", &debugDraw))
 					m_Selected->SetNavDebugDraw(debugDraw);
 
-				ImGui::TextDisabled("Needs a tilemap with collision / solid tiles");
 				ImGui::Text("Moving: %s", m_Selected->IsNavMoving() ? "yes" : "no");
 
 				static float s_NavDestX = 0.0f;
@@ -1792,7 +1754,6 @@ namespace Blaze
 					ImGui::EndDragDropTarget();
 				}
 
-				ImGui::TextDisabled("Drag .lua from Content Browser");
 				if (ImGui::Button("Select Script..."))
 					ImGui::OpenPopup("ContentBrowserScriptPicker");
 				ImGui::SameLine();
@@ -1810,8 +1771,8 @@ namespace Blaze
 				{
 					ImGui::TextUnformatted("Choose script type");
 					ImGui::Separator();
-					ImGui::TextWrapped("Component Script — attaches to this GameObject.");
-					ImGui::TextWrapped("Save Script — SaveObject data class (not attached).");
+					ImGui::TextWrapped("Component Script вЂ” attaches to this GameObject.");
+					ImGui::TextWrapped("Save Script вЂ” SaveObject data class (not attached).");
 					ImGui::Spacing();
 
 					auto MakeScriptPath = [&](const char* baseName) -> fs::path
@@ -1912,7 +1873,6 @@ namespace Blaze
 					ImGui::EndPopup();
 				}
 
-				ImGui::TextDisabled("Runs OnStart / OnUpdate while playing");
 				if (ImGui::Button("Remove Script", ImVec2(-1.0f, 0.0f)))
 					m_Selected->RemoveScript();
 			}
@@ -1977,7 +1937,6 @@ namespace Blaze
 						float height = m_Selected->GetCapsuleHeight();
 						if (ImGui::InputFloat("Height", &height, 0.0f, 0.0f, "%.3f"))
 							m_Selected->SetCapsuleHeight(height);
-						ImGui::TextDisabled("Vertical capsule (height >= 2 * radius)");
 					}
 					else if (shape == ColliderShape::Polygon)
 					{
@@ -2028,7 +1987,6 @@ namespace Blaze
 				bool isTrigger = m_Selected->IsTrigger();
 				if (ImGui::Checkbox("Is Trigger", &isTrigger))
 					m_Selected->SetIsTrigger(isTrigger);
-				ImGui::TextDisabled("Triggers overlap only (no bounce). Use OnTriggerBegin");
 
 				const char* layerNames[] = {
 					"0 Default", "1 Player", "2 Enemy", "3 Projectile",

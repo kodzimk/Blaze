@@ -14,7 +14,6 @@ namespace Blaze
 		bool loop = true;
 	};
 
-	// Saveable flipbook sheet + named animation clips (UE-style asset, not a GameObject).
 	class BLAZE_API FlipbookAsset
 	{
 	public:

@@ -11,7 +11,6 @@ namespace Blaze
 		Continuous = 1
 	};
 
-	// Saveable particle emitter preset (.particle / BlazeParticle 1).
 	class BLAZE_API ParticleEmitterAsset
 	{
 	public:

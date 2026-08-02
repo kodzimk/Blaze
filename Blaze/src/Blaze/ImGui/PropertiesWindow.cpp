@@ -37,16 +37,16 @@ namespace Blaze
 
 	static const GameObjectType s_AvailableTypes[] =
 	{
-		{ "Sprite", "sprite", "Textured 2D quad" },
-		{ "Text", "text", "World-space text label" },
-		{ "Tilemap", "tilemap", "Tileset grid map" },
-		{ "Circle", "circle", "Circle collider object" },
-		{ "Box",    "box",    "Box collider object" },
-		{ "Camera", "camera", "Scene / game camera" },
-		{ "Sound",  "sound",  "Audio source object" },
-		{ "Light",  "light",  "2D point light" },
-		{ "Spot Light", "spotlight", "2D cone / spot light" },
-		{ "Post Process", "postprocess", "Fullscreen color grade (Game view)" },
+		{ "Sprite", "sprite", "" },
+		{ "Text", "text", "" },
+		{ "Tilemap", "tilemap", "" },
+		{ "Circle", "circle", "" },
+		{ "Box",    "box",    "" },
+		{ "Camera", "camera", "" },
+		{ "Sound",  "sound",  "" },
+		{ "Light",  "light",  "" },
+		{ "Spot Light", "spotlight", "" },
+		{ "Post Process", "postprocess", "" },
 	};
 
 	PropertiesWindow::PropertiesWindow()
@@ -71,7 +71,6 @@ namespace Blaze
 		onFocus = ImGui::IsWindowFocused();
 
 		ImGui::TextUnformatted("Available Objects");
-		ImGui::TextDisabled("Drag onto the scene to create");
 		ImGui::Separator();
 
 		const float thumbSize = 72.0f;
@@ -118,7 +117,7 @@ namespace Blaze
 				ImGui::EndDragDropSource();
 			}
 
-			if (ImGui::IsItemHovered())
+			if (ImGui::IsItemHovered() && type.description && type.description[0])
 				ImGui::SetTooltip("%s", type.description);
 
 			ImGui::TextWrapped("%s", type.displayName);

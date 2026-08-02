@@ -51,7 +51,6 @@ namespace Blaze
 		AnimFloatCmp floatCmp = AnimFloatCmp::GreaterEqual;
 	};
 
-	// Saveable animation graph (.animasset). States reference flipbook clip names.
 	class BLAZE_API AnimStateMachineAsset
 	{
 	public:
