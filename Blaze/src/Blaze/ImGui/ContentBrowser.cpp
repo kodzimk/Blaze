@@ -22,6 +22,7 @@
 #include "Blaze/Logging/Log.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include "Blaze/Assets/TiledImporter.h"
+#include "Blaze/ImGui/SceneWindow.h"
 #include <filesystem>
 #include <cctype>
 #include <cstring>
@@ -1439,7 +1440,9 @@ namespace Blaze
 
 		if (!s_DraggingPath.empty() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 		{
-			if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+			const bool overEmpty = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+			const bool overScene = SceneWindow::IsMouseOverSceneView();
+			if (overEmpty || overScene)
 			{
 				std::string ext = fs::path(s_DraggingPath).extension().string();
 				for (auto& c : ext)

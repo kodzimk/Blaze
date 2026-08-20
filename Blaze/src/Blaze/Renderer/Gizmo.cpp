@@ -1083,6 +1083,31 @@ namespace Blaze
 		DrawQuad(pos, glm::vec2(s_CenterHalf * sx, s_CenterHalf * sy), s_ColorCenter);
 	}
 
+	void Gizmo2D::DrawSelection(const Camera& camera, const GameObject& object)
+	{
+		CameraProp prop = camera.GetCameraProp();
+		glm::vec2 mn, mx;
+		object.GetWorldAABB(prop, mn, mx);
+		const float padX = 4.0f * std::abs(prop.projection[0][0]);
+		const float padY = 4.0f * std::abs(prop.projection[1][1]);
+		mn.x -= padX; mn.y -= padY;
+		mx.x += padX; mx.y += padY;
+
+		m_Shader.Use();
+		m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+
+		const glm::vec4 color(1.0f, 0.55f, 0.15f, 0.95f);
+		const float t = 1.5f * std::abs(prop.projection[0][0]);
+		const float cx = (mn.x + mx.x) * 0.5f;
+		const float cy = (mn.y + mx.y) * 0.5f;
+		const float hw = (mx.x - mn.x) * 0.5f;
+		const float hh = (mx.y - mn.y) * 0.5f;
+		DrawQuad(glm::vec2(cx, mn.y), glm::vec2(hw, t), color);
+		DrawQuad(glm::vec2(cx, mx.y), glm::vec2(hw, t), color);
+		DrawQuad(glm::vec2(mn.x, cy), glm::vec2(t, hh), color);
+		DrawQuad(glm::vec2(mx.x, cy), glm::vec2(t, hh), color);
+	}
+
 	void Gizmo2D::DrawTilemapGrid(const Camera& camera, const GameObject& tilemap, int hoverX, int hoverY)
 	{
 		if (!tilemap.IsTilemap())
@@ -1274,13 +1299,23 @@ namespace Blaze
 	void Gizmo2D::DrawSoundIcon(const Camera& camera, const GameObject& soundObject)
 	{
 		EnsureSoundIcon();
-		if (!m_SoundIconTex)
-			return;
-
 		CameraProp prop = camera.GetCameraProp();
 		float sx = prop.projection[0][0];
 		float sy = prop.projection[1][1];
 		glm::vec2 center(soundObject.GetPosition());
+
+		if (soundObject.GetAudioFalloff() && glm::abs(sx) > 1e-8f && glm::abs(sy) > 1e-8f)
+		{
+			m_Shader.Use();
+			m_Shader.SetUniformMatrix4fv(prop.matrix, "matrix");
+			const float minDist = glm::max(soundObject.GetAudioMinDistance(), 0.0f);
+			const float maxDist = glm::max(soundObject.GetAudioMaxDistance(), minDist);
+			DrawRing(center, glm::vec2(minDist * sx, minDist * sy), glm::vec4(0.35f, 0.85f, 1.0f, 0.7f));
+			DrawRing(center, glm::vec2(maxDist * sx, maxDist * sy), glm::vec4(0.2f, 0.45f, 0.9f, 0.45f));
+		}
+
+		if (!m_SoundIconTex)
+			return;
 
 		const float halfPx = 22.0f;
 		DrawTexturedIcon(prop.matrix, center, glm::vec2(halfPx * sx, halfPx * sy), m_SoundIconTex);

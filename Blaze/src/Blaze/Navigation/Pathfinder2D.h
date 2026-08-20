@@ -14,8 +14,6 @@ namespace Blaze
 		float y = 0.0f;
 	};
 
-	// Grid A* over tilemap collision (IsSolidAt). Waypoints are script world space
-	// (same as GetLocation / SetLocation / TileCenter).
 	class BLAZE_API Pathfinder2D
 	{
 	public:

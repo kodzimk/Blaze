@@ -6,6 +6,7 @@
 #include "miniaudio.h"
 
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 
@@ -27,6 +28,8 @@ namespace Blaze
 	static bool s_Ready = false;
 	static std::unordered_map<GameObject*, SoundSlot> s_Sounds;
 	static std::vector<OneShotSlot> s_OneShots;
+	static float s_ListenerX = 0.0f;
+	static float s_ListenerY = 0.0f;
 
 	bool AudioEngine::Init()
 	{
@@ -58,6 +61,42 @@ namespace Blaze
 	bool AudioEngine::IsReady()
 	{
 		return s_Ready;
+	}
+
+	void AudioEngine::SetListenerPosition(float x, float y)
+	{
+		s_ListenerX = x;
+		s_ListenerY = y;
+	}
+
+	float AudioEngine::ComputeFalloffVolume(GameObject* object)
+	{
+		if (!object)
+			return 0.0f;
+
+		const float base = object->GetAudioVolume();
+		if (!object->GetAudioFalloff())
+			return base;
+
+		float minDist = object->GetAudioMinDistance();
+		float maxDist = object->GetAudioMaxDistance();
+		if (maxDist < minDist)
+			std::swap(minDist, maxDist);
+		if (maxDist <= 1e-6f)
+			return base;
+
+		const glm::vec3 pos = object->GetPosition();
+		const float dx = pos.x - s_ListenerX;
+		const float dy = pos.y - s_ListenerY;
+		const float dist = std::sqrt(dx * dx + dy * dy);
+
+		if (dist <= minDist)
+			return base;
+		if (dist >= maxDist)
+			return 0.0f;
+
+		const float t = (dist - minDist) / (maxDist - minDist);
+		return base * (1.0f - t);
 	}
 
 	static void DestroySlot(SoundSlot& slot)
@@ -116,6 +155,17 @@ namespace Blaze
 
 	void AudioEngine::Update()
 	{
+		for (auto& entry : s_Sounds)
+		{
+			GameObject* object = entry.first;
+			SoundSlot& slot = entry.second;
+			if (!object || !slot.initialized)
+				continue;
+			if (ma_sound_is_playing(&slot.sound) != MA_TRUE)
+				continue;
+			ma_sound_set_volume(&slot.sound, ComputeFalloffVolume(object));
+		}
+
 		if (s_OneShots.empty())
 			return;
 
@@ -150,7 +200,7 @@ namespace Blaze
 		auto it = s_Sounds.find(object);
 		if (it == s_Sounds.end() || !it->second.initialized)
 			return;
-		ma_sound_set_volume(&it->second.sound, object->GetAudioVolume());
+		ma_sound_set_volume(&it->second.sound, ComputeFalloffVolume(object));
 	}
 
 	void AudioEngine::SyncLoop(GameObject* object)
@@ -193,7 +243,7 @@ namespace Blaze
 		}
 
 		slot.initialized = true;
-		ma_sound_set_volume(&slot.sound, object->GetAudioVolume());
+		ma_sound_set_volume(&slot.sound, ComputeFalloffVolume(object));
 		ma_sound_set_looping(&slot.sound, object->GetAudioLoop() ? MA_TRUE : MA_FALSE);
 		ma_sound_start(&slot.sound);
 	}

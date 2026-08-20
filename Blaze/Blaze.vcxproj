@@ -184,6 +184,7 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\ImGui\ImGuiContext.h" />
     <ClInclude Include="src\Blaze\ImGui\ObjectWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\PropertiesWindow.h" />
+    <ClInclude Include="src\Blaze\ImGui\SceneWindow.h" />
     <ClInclude Include="src\Blaze\ImGui\ComponentsWindow.h" />
     <ClInclude Include="src\Blaze\Core\Project.h" />
     <ClInclude Include="src\Blaze\Core\Time.h" />
@@ -204,6 +205,7 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClInclude Include="src\Blaze\Renderer\DebugDraw2D.h" />
     <ClInclude Include="src\Blaze\Navigation\Pathfinder2D.h" />
     <ClInclude Include="src\Blaze\Navigation\NavAgentSystem.h" />
+    <ClInclude Include="src\Blaze\Navigation\EnemyAISystem.h" />
     <ClInclude Include="src\Blaze\Renderer\ParticleSystem2D.h" />
     <ClInclude Include="src\Blaze\Renderer\ParticleEmitterAsset.h" />
     <ClInclude Include="src\Blaze\Renderer\Lighting2D.h" />
@@ -669,6 +671,7 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\ImGui\ImGuiContext.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ObjectWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\PropertiesWindow.cpp" />
+    <ClCompile Include="src\Blaze\ImGui\SceneWindow.cpp" />
     <ClCompile Include="src\Blaze\ImGui\ComponentsWindow.cpp" />
     <ClCompile Include="src\Blaze\Core\Project.cpp" />
     <ClCompile Include="src\Blaze\Core\Time.cpp" />
@@ -689,6 +692,7 @@ copy /Y ..\bin\Dist-windows-x86_64\Blaze\Blaze.dll ..\bin\Dist-windows-x86_64\Ru
     <ClCompile Include="src\Blaze\Renderer\DebugDraw2D.cpp" />
     <ClCompile Include="src\Blaze\Navigation\Pathfinder2D.cpp" />
     <ClCompile Include="src\Blaze\Navigation\NavAgentSystem.cpp" />
+    <ClCompile Include="src\Blaze\Navigation\EnemyAISystem.cpp" />
     <ClCompile Include="src\Blaze\Renderer\ParticleSystem2D.cpp" />
     <ClCompile Include="src\Blaze\Renderer\ParticleEmitterAsset.cpp" />
     <ClCompile Include="src\Blaze\Renderer\Lighting2D.cpp" />

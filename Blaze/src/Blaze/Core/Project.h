@@ -80,6 +80,7 @@ namespace Blaze
 			bool audio = true;
 			bool particle = true;
 			bool navagent = true;
+			bool enemyai = true;
 			bool script = true;
 
 			static GameObjectWriteFlags All();

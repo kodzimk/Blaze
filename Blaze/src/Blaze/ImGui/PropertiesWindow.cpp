@@ -12,6 +12,7 @@
 #include"Blaze/Scripting/OnScreenDebug.h"
 #include"Blaze/Scripting/ScriptEngine.h"
 #include"Blaze/UI/UISystem.h"
+#include"Blaze/ImGui/SceneWindow.h"
 #include "GLFW/glfw3.h"
 #include <cstring>
 
@@ -130,7 +131,9 @@ namespace Blaze
 
 		if (!s_DraggingType.empty() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
 		{
-			if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+			const bool overEmpty = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+			const bool overScene = SceneWindow::IsMouseOverSceneView();
+			if (overEmpty || overScene)
 			{
 				s_PendingDropType = s_DraggingType;
 				BZ_INFO("GameObject type dropped on scene: {0}", s_PendingDropType);
@@ -316,7 +319,6 @@ namespace Blaze
 			overImage = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem)
 				|| IsMouseOverGameView();
 
-			// UI input must run here: image rect is current and mouse is in ImGui space.
 			{
 				float gx = 0.0f, gy = 0.0f;
 				const bool over = TryGetMouseGamePixel(gx, gy);
@@ -343,7 +345,6 @@ namespace Blaze
 		const bool overWindow = ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows
 			| ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
 		const bool focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
-		// Hide cursor only during real play mode, not particle preview.
 		s_HideCursor = playing && (overImage || (focused && overWindow));
 
 		ImGui::End();
@@ -384,7 +385,6 @@ namespace Blaze
 		const float dh = s_ImageMaxY - s_ImageMinY;
 		if (dw <= 1.0f || dh <= 1.0f)
 			return false;
-		// UISystem uses top-left pixel space (ortho 0,W,H,0). ImGui image Y also grows downward.
 		outGameX = (windowX - s_ImageMinX) / dw * (float)s_FrameWidth;
 		outGameY = (windowY - s_ImageMinY) / dh * (float)s_FrameHeight;
 		return true;

@@ -1,22 +1,46 @@
-<div align="center">
-<pre>
-Blaze Engine
----------------------------------------------------
-Engine based on fast-2d game development<br>
-</pre>
-</div>
+# Blaze Engine
 
-# About
+Windows **x64** 2D game engine — OpenGL / ImGui editor (**Sandbox**), **Lua** scripting, and a packaged **Runtime** player.
 
-Blaze Engine focused on fast creating of 2d games.Optimized and easier approach to game development.<br>
+## Quick start
 
-# Building
-***Compatible only with Win64(but i will make the project crossplatform)***
+### Run editor (Debug)
 
-
-```sh
-git clone --recursive link of project
-go to scripts and
-start /Setup.py
-Then just go to project .sin or run .exe file
+```powershell
+cd Sandbox
+..\bin\Debug-windows-x86_64\Sandbox\Sandbox.exe
 ```
+
+Working directory must be `Sandbox` (or your game project folder) so `content/` loads.
+
+### Build Debug
+
+```powershell
+msbuild Blaze.sln /p:Configuration=Debug /p:Platform=x64
+```
+
+### Build Release + offline package
+
+```powershell
+powershell -File scripts\PrepareInstaller.ps1 -Build
+```
+
+Creates `dist\Blaze-Windows-x64.zip` (`Blaze.exe`, `Blaze.dll`, `Runtime.exe`, docs).  
+Users unzip and run `Blaze.exe` — no Visual Studio required.
+
+## Docs
+
+Full reference: **[DOCUMENTATION.md](DOCUMENTATION.md)**
+
+## Targets
+
+| Project | Output | Role |
+|---------|--------|------|
+| Blaze | `Blaze.dll` | Engine |
+| Sandbox | `Sandbox.exe` | Editor |
+| Runtime | `Runtime.exe` | Ship games |
+
+## Requirements
+
+- Windows 64-bit
+- Visual Studio with C++ desktop workload (to build from source)

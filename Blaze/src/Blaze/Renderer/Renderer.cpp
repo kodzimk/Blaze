@@ -6,6 +6,7 @@
 #include"Blaze/Scripting/ScriptEngine.h"
 #include"Blaze/Renderer/ParticleSystem2D.h"
 #include"Blaze/Navigation/NavAgentSystem.h"
+#include"Blaze/Navigation/EnemyAISystem.h"
 #include"glad/glad.h"
 #include <algorithm>
 #include <vector>
@@ -25,6 +26,7 @@ namespace Blaze {
 			ScriptEngine::RemoveObject(m_objects[i]);
 			ParticleSystem2D::RemoveObject(m_objects[i]);
 			NavAgentSystem::RemoveObject(m_objects[i]);
+			EnemyAISystem::RemoveObject(m_objects[i]);
 			delete m_objects[i];
 		}
 	}
@@ -84,6 +86,7 @@ namespace Blaze {
 				ScriptEngine::RemoveObject(object);
 				ParticleSystem2D::RemoveObject(object);
 				NavAgentSystem::RemoveObject(object);
+				EnemyAISystem::RemoveObject(object);
 				delete *it;
 				m_objects.erase(it);
 				return true;

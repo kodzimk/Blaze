@@ -36,7 +36,6 @@ namespace Blaze
 		{
 			if (!InBounds(map, x, y))
 				return false;
-			// Allow standing on / targeting a currently solid cell (edge cases).
 			if ((x == startX && y == startY) || (x == endX && y == endY))
 				return true;
 			return !map.IsSolidAt(x, y);
@@ -168,7 +167,6 @@ namespace Blaze
 				if (!IsWalkable(tilemap, nx, ny, startTX, startTY, endTX, endTY))
 					continue;
 
-				// No corner cutting on diagonals.
 				if (allowDiagonal && dx[n] != 0 && dy[n] != 0)
 				{
 					if (!IsWalkable(tilemap, cx + dx[n], cy, startTX, startTY, endTX, endTY) ||

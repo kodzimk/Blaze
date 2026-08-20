@@ -129,7 +129,7 @@ $readmeLines = @(
     "or any extra redistributables.",
     "",
     "1. Double-click Blaze.exe to open the editor.",
-    "2. Create or open a project from the Project Hub.",
+    "2. Create a project or open one from disk from the Project Hub.",
     "3. File -> Build Project packages your game (uses Runtime.exe here).",
     "",
     "Everything required is already next to Blaze.exe."

@@ -4,6 +4,7 @@
 #include"Blaze/Renderer/Shader.h"
 #include"Blaze/Renderer/ParticleSystem2D.h"
 #include"Blaze/Navigation/NavAgentSystem.h"
+#include"Blaze/Navigation/EnemyAISystem.h"
 #include"Blaze/UI/UISystem.h"
 #include<gtc/type_ptr.hpp>
 #include"Blaze/Logging/Log.h"
@@ -2059,6 +2060,28 @@ namespace Blaze {
 		m_AudioPlayOnStart = playOnStart;
 	}
 
+	void GameObject::SetAudioFalloff(bool enabled)
+	{
+		m_AudioFalloff = enabled;
+		m_HasAudio = true;
+	}
+
+	void GameObject::SetAudioMinDistance(float distance)
+	{
+		m_AudioMinDistance = glm::max(distance, 0.0f);
+		if (m_AudioMaxDistance < m_AudioMinDistance)
+			m_AudioMaxDistance = m_AudioMinDistance;
+		m_HasAudio = true;
+	}
+
+	void GameObject::SetAudioMaxDistance(float distance)
+	{
+		m_AudioMaxDistance = glm::max(distance, 0.0f);
+		if (m_AudioMaxDistance < m_AudioMinDistance)
+			m_AudioMinDistance = m_AudioMaxDistance;
+		m_HasAudio = true;
+	}
+
 	void GameObject::AddParticleEmitter()
 	{
 		m_HasParticleEmitter = true;
@@ -2150,6 +2173,102 @@ namespace Blaze {
 	bool GameObject::IsNavMoving() const
 	{
 		return NavAgentSystem::IsMoving(const_cast<GameObject*>(this));
+	}
+
+	void GameObject::AddEnemyAI()
+	{
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::RemoveEnemyAI()
+	{
+		EnemyAISystem::RemoveObject(this);
+		m_HasEnemyAI = false;
+	}
+
+	void GameObject::SetEnemyAIEnabled(bool enabled)
+	{
+		m_EnemyAIEnabled = enabled;
+		m_HasEnemyAI = true;
+		if (!enabled)
+			StopNav();
+	}
+
+	void GameObject::SetEnemyDetectRange(float pixels)
+	{
+		m_EnemyDetectRange = glm::max(pixels, 0.0f);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyLoseRange(float pixels)
+	{
+		m_EnemyLoseRange = glm::max(pixels, m_EnemyDetectRange);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyPatrolSpeed(float pixelsPerSecond)
+	{
+		m_EnemyPatrolSpeed = glm::max(pixelsPerSecond, 0.0f);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyChaseSpeed(float pixelsPerSecond)
+	{
+		m_EnemyChaseSpeed = glm::max(pixelsPerSecond, 0.0f);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyTargetTag(const std::string& tag)
+	{
+		m_EnemyTargetTag = tag;
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyWaypointWait(float seconds)
+	{
+		m_EnemyWaypointWait = glm::max(seconds, 0.0f);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyRepathInterval(float seconds)
+	{
+		m_EnemyRepathInterval = glm::max(seconds, 0.05f);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::ClearEnemyPatrolPoints()
+	{
+		m_EnemyPatrolPoints.clear();
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::AddEnemyPatrolPoint(float x, float y)
+	{
+		m_EnemyPatrolPoints.emplace_back(x, y);
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyPatrolPoints(const std::vector<glm::vec2>& points)
+	{
+		m_EnemyPatrolPoints = points;
+		m_HasEnemyAI = true;
+	}
+
+	void GameObject::SetEnemyPatrolPoint(int index, float x, float y)
+	{
+		if (index < 0 || index >= static_cast<int>(m_EnemyPatrolPoints.size()))
+			return;
+		m_EnemyPatrolPoints[static_cast<size_t>(index)] = glm::vec2(x, y);
+		m_HasEnemyAI = true;
+	}
+
+	bool GameObject::RemoveEnemyPatrolPoint(int index)
+	{
+		if (index < 0 || index >= static_cast<int>(m_EnemyPatrolPoints.size()))
+			return false;
+		m_EnemyPatrolPoints.erase(m_EnemyPatrolPoints.begin() + index);
+		m_HasEnemyAI = true;
+		return true;
 	}
 
 	void GameObject::AddScript()

@@ -111,17 +111,28 @@ namespace Blaze
 
 		for (const auto& entry : pendingParents)
 		{
-			if (!entry.first)
+			if (!entry.first || entry.first == root)
 				continue;
 			if (entry.second < 0 || entry.second >= (int)created.size())
 				continue;
-			entry.first->SetParent(created[entry.second], false);
+			GameObject* parent = created[entry.second];
+			if (!parent || parent == entry.first)
+				continue;
+			entry.first->SetParent(parent, false);
 		}
 
 		if (root)
 		{
 			glm::vec3 pos = worldPos;
 			root->SetPosition(pos);
+		}
+
+		for (GameObject* object : created)
+		{
+			if (!object)
+				continue;
+			// Force matrix refresh after parenting + root placement.
+			object->SetLocalPosition(object->GetLocalPosition());
 		}
 
 		if (outCreated)
@@ -248,13 +259,36 @@ namespace Blaze
 		if (!root)
 			return nullptr;
 
-		std::stringstream ss;
-		WriteSubtree(ss, root);
-		ss.clear();
-		ss.seekg(0);
+		std::ostringstream out;
+		WriteSubtree(out, root);
+		std::istringstream in(out.str());
 
-		glm::vec3 spawn = root->GetPosition() + worldOffset;
-		return InstantiateFromStream(ss, renderer, vertices, indices, spawn, outCreated);
+		GameObject* originalParent = root->GetParent();
+		const glm::vec3 originalWorld = root->GetPosition();
+
+		// Spawn on top of the original first, then nudge — keeps parenting correct.
+		GameObject* copy = InstantiateFromStream(in, renderer, vertices, indices, originalWorld, outCreated);
+		if (!copy)
+			return nullptr;
+
+		if (originalParent)
+			copy->SetParent(originalParent, true);
+
+		glm::vec3 nudged = copy->GetPosition() + worldOffset;
+		copy->SetPosition(nudged);
+
+		if (outCreated)
+		{
+			for (GameObject* object : *outCreated)
+			{
+				if (object)
+					object->SetLocalPosition(object->GetLocalPosition());
+			}
+		}
+		else
+			copy->SetLocalPosition(copy->GetLocalPosition());
+
+		return copy;
 	}
 
 	PrefabAsset PrefabAsset::CreateDefault(const std::string& name)

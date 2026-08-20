@@ -70,6 +70,9 @@ namespace Blaze
 		float audioVolume = 1.0f;
 		bool audioLoop = false;
 		bool audioPlayOnStart = true;
+		bool audioFalloff = true;
+		float audioMinDistance = 100.0f;
+		float audioMaxDistance = 500.0f;
 
 		bool hasParticleEmitter = false;
 		std::string particlePath;
@@ -80,6 +83,17 @@ namespace Blaze
 		bool navAllowDiagonal = false;
 		float navStoppingDistance = 8.0f;
 		bool navDebugDraw = false;
+
+		bool hasEnemyAI = false;
+		bool enemyAIEnabled = true;
+		float enemyDetectRange = 220.0f;
+		float enemyLoseRange = 360.0f;
+		float enemyPatrolSpeed = 110.0f;
+		float enemyChaseSpeed = 170.0f;
+		std::string enemyTargetTag = "Player";
+		float enemyWaypointWait = 0.4f;
+		float enemyRepathInterval = 0.35f;
+		std::vector<glm::vec2> enemyPatrolPoints;
 
 		bool ppEnabled = true;
 		float ppBrightness = 0.0f;
@@ -175,6 +189,24 @@ namespace Blaze
 		GameObject* m_Object = nullptr;
 		LocalTransformSnap m_Before;
 		LocalTransformSnap m_After;
+	};
+
+	class BLAZE_API MultiTransformCommand : public IUndoCommand
+	{
+	public:
+		struct Entry
+		{
+			GameObject* object = nullptr;
+			LocalTransformSnap before;
+			LocalTransformSnap after;
+		};
+
+		explicit MultiTransformCommand(std::vector<Entry> entries);
+		void Undo() override;
+		void Redo() override;
+		const char* GetName() const override { return "Transform"; }
+	private:
+		std::vector<Entry> m_Entries;
 	};
 
 	class BLAZE_API TileStrokeCommand : public IUndoCommand

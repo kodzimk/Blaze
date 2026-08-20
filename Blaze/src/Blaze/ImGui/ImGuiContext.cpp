@@ -52,12 +52,14 @@ namespace Blaze
 		m_ViewPort = new ViewPort();
 		m_menuBar = new MenuBar();
 		m_gameWindow = new GameWindow();
+		m_sceneWindow = new SceneWindow();
 		m_projectHub = new ProjectHub();
 	}
 
 	Context::~Context()
 	{	
 		delete m_projectHub;
+		delete m_sceneWindow;
 		delete m_gameWindow;
 		delete m_menuBar;
 		delete m_objectWindow;
@@ -132,7 +134,7 @@ namespace Blaze
 		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
 
-		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.0f, 0.0f, 0.f, 0.0f);
+		colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.08f, 0.08f, 0.09f, 1.0f);
 		colors[ImGuiCol_DockingPreview] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
 	}
 
@@ -169,6 +171,7 @@ namespace Blaze
 		ImGui::DockBuilderDockWindow("Content Browser", dockBottom);
 		ImGui::DockBuilderDockWindow("Components", dockRight);
 		ImGui::DockBuilderDockWindow("GameObject", dockRight);
+		ImGui::DockBuilderDockWindow("Scene", dockMain);
 
 		ImGui::DockBuilderFinish(dockspaceId);
 	}
@@ -242,7 +245,8 @@ namespace Blaze
 			m_propWindow->GetOpenPtr(),
 			m_componentsWindow->GetOpenPtr(),
 			m_startWindow->GetOpenPtr(),
-			m_projectSettings->GetOpenPtr());
+			m_projectSettings->GetOpenPtr(),
+			m_sceneWindow->GetOpenPtr());
 		m_startWindow->OnUpdate();
 		m_contextWindow->OnUpdate();
 		m_scriptEditor->OnUpdate();
@@ -254,6 +258,7 @@ namespace Blaze
 		m_propWindow->OnUpdate();
 		m_componentsWindow->OnUpdate();
 		m_objectWindow->OnUpdate();
+		m_sceneWindow->OnUpdate();
 		m_gameWindow->OnUpdate();
 		ScriptEngine::DrawErrorWindow();
 		GameWindow::ApplyPlayCursor();

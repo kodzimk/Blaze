@@ -6,7 +6,6 @@ namespace Blaze
 {
 	class GameObject;
 
-	// Runtime path-following for GameObjects with a Nav Agent component.
 	class BLAZE_API NavAgentSystem
 	{
 	public:

@@ -131,6 +131,9 @@ namespace Blaze
 		snap.audioVolume = object.GetAudioVolume();
 		snap.audioLoop = object.GetAudioLoop();
 		snap.audioPlayOnStart = object.GetAudioPlayOnStart();
+		snap.audioFalloff = object.GetAudioFalloff();
+		snap.audioMinDistance = object.GetAudioMinDistance();
+		snap.audioMaxDistance = object.GetAudioMaxDistance();
 
 		snap.hasParticleEmitter = object.HasParticleEmitter();
 		snap.particlePath = object.GetParticlePath();
@@ -141,6 +144,17 @@ namespace Blaze
 		snap.navAllowDiagonal = object.GetNavAllowDiagonal();
 		snap.navStoppingDistance = object.GetNavStoppingDistance();
 		snap.navDebugDraw = object.GetNavDebugDraw();
+
+		snap.hasEnemyAI = object.HasEnemyAI();
+		snap.enemyAIEnabled = object.IsEnemyAIEnabled();
+		snap.enemyDetectRange = object.GetEnemyDetectRange();
+		snap.enemyLoseRange = object.GetEnemyLoseRange();
+		snap.enemyPatrolSpeed = object.GetEnemyPatrolSpeed();
+		snap.enemyChaseSpeed = object.GetEnemyChaseSpeed();
+		snap.enemyTargetTag = object.GetEnemyTargetTag();
+		snap.enemyWaypointWait = object.GetEnemyWaypointWait();
+		snap.enemyRepathInterval = object.GetEnemyRepathInterval();
+		snap.enemyPatrolPoints = object.GetEnemyPatrolPoints();
 
 		snap.ppEnabled = object.IsPostProcessEnabled();
 		snap.ppBrightness = object.GetPostProcessBrightness();
@@ -237,6 +251,9 @@ namespace Blaze
 			object->SetAudioVolume(audioVolume);
 			object->SetAudioLoop(audioLoop);
 			object->SetAudioPlayOnStart(audioPlayOnStart);
+			object->SetAudioFalloff(audioFalloff);
+			object->SetAudioMinDistance(audioMinDistance);
+			object->SetAudioMaxDistance(audioMaxDistance);
 		}
 
 		if (hasParticleEmitter)
@@ -254,6 +271,20 @@ namespace Blaze
 			object->SetNavAllowDiagonal(navAllowDiagonal);
 			object->SetNavStoppingDistance(navStoppingDistance);
 			object->SetNavDebugDraw(navDebugDraw);
+		}
+
+		if (hasEnemyAI)
+		{
+			object->AddEnemyAI();
+			object->SetEnemyAIEnabled(enemyAIEnabled);
+			object->SetEnemyDetectRange(enemyDetectRange);
+			object->SetEnemyLoseRange(enemyLoseRange);
+			object->SetEnemyPatrolSpeed(enemyPatrolSpeed);
+			object->SetEnemyChaseSpeed(enemyChaseSpeed);
+			object->SetEnemyTargetTag(enemyTargetTag);
+			object->SetEnemyWaypointWait(enemyWaypointWait);
+			object->SetEnemyRepathInterval(enemyRepathInterval);
+			object->SetEnemyPatrolPoints(enemyPatrolPoints);
 		}
 
 		if (object->IsPostProcess())
@@ -339,6 +370,29 @@ namespace Blaze
 	{
 		if (IsObjectLive(m_Object))
 			m_After.Apply(*m_Object);
+	}
+
+	MultiTransformCommand::MultiTransformCommand(std::vector<Entry> entries)
+		: m_Entries(std::move(entries))
+	{
+	}
+
+	void MultiTransformCommand::Undo()
+	{
+		for (Entry& e : m_Entries)
+		{
+			if (IsObjectLive(e.object))
+				e.before.Apply(*e.object);
+		}
+	}
+
+	void MultiTransformCommand::Redo()
+	{
+		for (Entry& e : m_Entries)
+		{
+			if (IsObjectLive(e.object))
+				e.after.Apply(*e.object);
+		}
 	}
 
 	TileStrokeCommand::TileStrokeCommand(GameObject* object, std::vector<TileChange> changes)

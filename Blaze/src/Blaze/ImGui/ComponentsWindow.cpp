@@ -16,6 +16,7 @@
 #include "Blaze/ImGui/ContentBrowser.h"
 #include "Blaze/ImGui/ParticleEditorWindow.h"
 #include "Blaze/Renderer/ParticleEmitterAsset.h"
+#include "Blaze/Navigation/EnemyAISystem.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include <filesystem>
 #include <cctype>
@@ -1602,7 +1603,10 @@ namespace Blaze
 
 				float volume = m_Selected->GetAudioVolume();
 				if (ImGui::SliderFloat("Volume", &volume, 0.0f, 1.0f, "%.2f"))
+				{
 					m_Selected->SetAudioVolume(volume);
+					AudioEngine::SyncVolume(m_Selected);
+				}
 
 				bool loop = m_Selected->GetAudioLoop();
 				if (ImGui::Checkbox("Loop", &loop))
@@ -1611,6 +1615,29 @@ namespace Blaze
 				bool playOnStart = m_Selected->GetAudioPlayOnStart();
 				if (ImGui::Checkbox("Play On Start", &playOnStart))
 					m_Selected->SetAudioPlayOnStart(playOnStart);
+
+				bool falloff = m_Selected->GetAudioFalloff();
+				if (ImGui::Checkbox("Falloff", &falloff))
+				{
+					m_Selected->SetAudioFalloff(falloff);
+					AudioEngine::SyncVolume(m_Selected);
+				}
+				if (falloff)
+				{
+					float minDist = m_Selected->GetAudioMinDistance();
+					if (ImGui::DragFloat("Min Distance", &minDist, 1.0f, 0.0f, 100000.0f, "%.1f"))
+					{
+						m_Selected->SetAudioMinDistance(minDist);
+						AudioEngine::SyncVolume(m_Selected);
+					}
+					float maxDist = m_Selected->GetAudioMaxDistance();
+					if (ImGui::DragFloat("Max Distance", &maxDist, 1.0f, 0.0f, 100000.0f, "%.1f"))
+					{
+						m_Selected->SetAudioMaxDistance(maxDist);
+						AudioEngine::SyncVolume(m_Selected);
+					}
+					ImGui::TextDisabled("Full volume inside min; silent past max.");
+				}
 
 				if (ImGui::Button("Play Clip", ImVec2(80.0f, 0.0f)))
 					AudioEngine::Play(m_Selected);
@@ -1729,6 +1756,78 @@ namespace Blaze
 
 				if (ImGui::Button("Remove Nav Agent", ImVec2(-1.0f, 0.0f)))
 					m_Selected->RemoveNavAgent();
+			}
+			ImGui::PopID();
+		}
+
+		if (m_Selected->HasEnemyAI())
+		{
+			ImGui::PushID("EnemyAIComponent");
+			if (ImGui::CollapsingHeader("Enemy AI", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				bool enabled = m_Selected->IsEnemyAIEnabled();
+				if (ImGui::Checkbox("Enabled", &enabled))
+					m_Selected->SetEnemyAIEnabled(enabled);
+
+				ImGui::Text("State: %s", EnemyAISystem::GetStateName(m_Selected));
+
+				float detect = m_Selected->GetEnemyDetectRange();
+				if (ImGui::DragFloat("Detect Range", &detect, 1.0f, 1.0f, 4000.0f))
+					m_Selected->SetEnemyDetectRange(detect);
+
+				float lose = m_Selected->GetEnemyLoseRange();
+				if (ImGui::DragFloat("Lose Range", &lose, 1.0f, 1.0f, 4000.0f))
+					m_Selected->SetEnemyLoseRange(lose);
+
+				float patrolSpeed = m_Selected->GetEnemyPatrolSpeed();
+				if (ImGui::DragFloat("Patrol Speed", &patrolSpeed, 1.0f, 0.0f, 2000.0f))
+					m_Selected->SetEnemyPatrolSpeed(patrolSpeed);
+
+				float chaseSpeed = m_Selected->GetEnemyChaseSpeed();
+				if (ImGui::DragFloat("Chase Speed", &chaseSpeed, 1.0f, 0.0f, 2000.0f))
+					m_Selected->SetEnemyChaseSpeed(chaseSpeed);
+
+				char tagBuf[128];
+				std::snprintf(tagBuf, sizeof(tagBuf), "%s", m_Selected->GetEnemyTargetTag().c_str());
+				if (ImGui::InputText("Target Tag", tagBuf, sizeof(tagBuf)))
+					m_Selected->SetEnemyTargetTag(tagBuf);
+
+				float wait = m_Selected->GetEnemyWaypointWait();
+				if (ImGui::DragFloat("Waypoint Wait", &wait, 0.01f, 0.0f, 10.0f))
+					m_Selected->SetEnemyWaypointWait(wait);
+
+				float repath = m_Selected->GetEnemyRepathInterval();
+				if (ImGui::DragFloat("Repath Interval", &repath, 0.01f, 0.05f, 5.0f))
+					m_Selected->SetEnemyRepathInterval(repath);
+
+				ImGui::Separator();
+				ImGui::Text("Patrol Points (%d)", (int)m_Selected->GetEnemyPatrolPoints().size());
+				if (ImGui::Button("Add Point At Position"))
+				{
+					const glm::vec3 p = m_Selected->GetWorldPosition();
+					m_Selected->AddEnemyPatrolPoint(p.x, p.y);
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Clear Points"))
+					m_Selected->ClearEnemyPatrolPoints();
+
+				const auto& points = m_Selected->GetEnemyPatrolPoints();
+				for (int i = 0; i < (int)points.size(); ++i)
+				{
+					ImGui::PushID(i);
+					float xy[2] = { points[(size_t)i].x, points[(size_t)i].y };
+					if (ImGui::DragFloat2("##pt", xy, 0.01f))
+						m_Selected->SetEnemyPatrolPoint(i, xy[0], xy[1]);
+					ImGui::SameLine();
+					if (ImGui::Button("X"))
+						m_Selected->RemoveEnemyPatrolPoint(i);
+					ImGui::PopID();
+				}
+
+				ImGui::TextDisabled("Tip: add Nav Agent for pathfinding chase.");
+
+				if (ImGui::Button("Remove Enemy AI", ImVec2(-1.0f, 0.0f)))
+					m_Selected->RemoveEnemyAI();
 			}
 			ImGui::PopID();
 		}
@@ -2056,6 +2155,14 @@ namespace Blaze
 			}
 			if (m_Selected->HasNavAgent())
 				ImGui::TextDisabled("Nav Agent already added");
+
+			if (!m_Selected->HasEnemyAI() && ImGui::MenuItem("Enemy AI"))
+			{
+				m_Selected->AddEnemyAI();
+				ImGui::CloseCurrentPopup();
+			}
+			if (m_Selected->HasEnemyAI())
+				ImGui::TextDisabled("Enemy AI already added");
 
 			if (!m_Selected->HasScript() && ImGui::MenuItem("Script"))
 			{

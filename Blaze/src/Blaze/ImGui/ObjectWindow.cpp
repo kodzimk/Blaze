@@ -46,7 +46,7 @@ namespace Blaze
 		ImGuiViewport* viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(ImVec2(viewport->GetCenter().x, viewport->GetCenter().y),
 			ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-		ImGui::SetNextWindowSize(ImVec2(640.0f, 460.0f), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(640.0f, 520.0f), ImGuiCond_Always);
 
 		ImGui::Begin("Blaze Projects", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
@@ -125,7 +125,7 @@ namespace Blaze
 		return action;
 	}
 
-	void MenuBar::OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen)
+	void MenuBar::OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen, bool* sceneOpen)
 	{
 		if (!ImGui::BeginMainMenuBar())
 			return;
@@ -162,6 +162,8 @@ namespace Blaze
 
 		if (ImGui::BeginMenu("Window"))
 		{
+			if (sceneOpen)
+				ImGui::MenuItem("Scene", nullptr, sceneOpen);
 			if (contentBrowserOpen)
 				ImGui::MenuItem("Content Browser", nullptr, contentBrowserOpen);
 			if (objectsOpen)
@@ -227,7 +229,21 @@ namespace Blaze
 	void ObjectWindow::SetSelectedObject(GameObject* object)
 	{
 		m_Selected = object;
+		m_MultiSelected.clear();
 		if (object)
+		{
+			m_MultiSelected.push_back(object);
+			m_MapSelected = false;
+		}
+	}
+
+	void ObjectWindow::SetSelectedObjects(const std::vector<GameObject*>& objects, GameObject* primary)
+	{
+		m_MultiSelected = objects;
+		m_Selected = primary;
+		if (!m_Selected && !m_MultiSelected.empty())
+			m_Selected = m_MultiSelected.back();
+		if (m_Selected)
 			m_MapSelected = false;
 	}
 
@@ -237,7 +253,9 @@ namespace Blaze
 		if (selected)
 		{
 			m_Selected = nullptr;
+			m_MultiSelected.clear();
 			m_PendingPick = nullptr;
+			m_PendingPickAdditive = false;
 			m_PendingFocus = nullptr;
 		}
 	}
@@ -248,7 +266,9 @@ namespace Blaze
 		m_RootObjects.clear();
 		m_NextFolderId = 1;
 		m_Selected = nullptr;
+		m_MultiSelected.clear();
 		m_PendingPick = nullptr;
+		m_PendingPickAdditive = false;
 		m_PendingDelete = nullptr;
 		m_PendingFocus = nullptr;
 		m_PendingSavePrefab = nullptr;
@@ -363,6 +383,13 @@ namespace Blaze
 		GameObject* picked = m_PendingPick;
 		m_PendingPick = nullptr;
 		return picked;
+	}
+
+	bool ObjectWindow::ConsumePickedAdditive()
+	{
+		const bool additive = m_PendingPickAdditive;
+		m_PendingPickAdditive = false;
+		return additive;
 	}
 
 	GameObject* ObjectWindow::ConsumePendingDelete()
@@ -551,6 +578,17 @@ namespace Blaze
 
 		ImGui::PushID(object);
 		bool selected = (object == m_Selected);
+		if (!selected)
+		{
+			for (GameObject* sel : m_MultiSelected)
+			{
+				if (sel == object)
+				{
+					selected = true;
+					break;
+				}
+			}
+		}
 
 		if (m_RenamingObject == object)
 		{
@@ -692,12 +730,14 @@ namespace Blaze
 			{
 				m_Selected = object;
 				m_PendingPick = object;
+				m_PendingPickAdditive = ImGui::GetIO().KeyCtrl;
 				m_MapSelected = false;
 			}
 			if (doubleClicked)
 			{
 				m_Selected = object;
 				m_PendingPick = object;
+				m_PendingPickAdditive = false;
 				m_PendingFocus = object;
 				m_MapSelected = false;
 			}

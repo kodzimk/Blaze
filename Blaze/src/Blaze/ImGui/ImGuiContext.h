@@ -13,6 +13,7 @@
 #include"ProjectSettingsWindow.h"
 #include"BuildSettingsWindow.h"
 #include"ViewPort.h"
+#include"SceneWindow.h"
 
 struct ImGuiViewport;
 typedef unsigned int ImGuiID;
@@ -59,6 +60,7 @@ namespace Blaze
 		ViewPort* m_ViewPort;
 		MenuBar* m_menuBar;
 		GameWindow* m_gameWindow;
+		SceneWindow* m_sceneWindow;
 		ProjectHub* m_projectHub;
 	};
 }

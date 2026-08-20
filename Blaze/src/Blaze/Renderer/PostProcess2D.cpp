@@ -73,7 +73,6 @@ void main()
 		s_Shader.LinkProgram();
 
 		const float verts[] = {
-			// pos      uv
 			-1.0f, -1.0f, 0.0f, 0.0f,
 			 1.0f, -1.0f, 1.0f, 0.0f,
 			 1.0f,  1.0f, 1.0f, 1.0f,
@@ -177,7 +176,6 @@ void main()
 	{
 		for (GameObject* object : objects)
 		{
-			// Visible is for scene sprites — PP is a settings object, so ignore it.
 			if (object && object->IsPostProcess() && object->IsActive()
 				&& object->IsPostProcessEnabled())
 				return object;
@@ -197,12 +195,10 @@ void main()
 
 		EnsureResources(width, height);
 
-		// Copy src → ping (safe when src is attached to dest).
 		glBindFramebuffer(GL_FRAMEBUFFER, s_PingFbo);
 		glViewport(0, 0, width, height);
 		DrawFullscreen(srcTexture, false, nullptr);
 
-		// Grade ping → dest.
 		glBindFramebuffer(GL_FRAMEBUFFER, destFramebuffer);
 		glViewport(0, 0, width, height);
 		DrawFullscreen(s_PingTex, true, settings);
@@ -256,7 +252,6 @@ void main()
 		if (settings)
 		{
 			EnsureResources(s_SceneW, s_SceneH);
-			// Copy scene → ping at scene resolution, then grade into default FB stretched to window.
 			glBindFramebuffer(GL_FRAMEBUFFER, s_PingFbo);
 			glViewport(0, 0, s_SceneW, s_SceneH);
 			DrawFullscreen(s_SceneTex, false, nullptr);

@@ -97,7 +97,8 @@ namespace Blaze
 
 		const float sx = Camera::m_prop.projection[0][0];
 		const float sy = Camera::m_prop.projection[1][1];
-		const float scale = 0.5f * (std::abs(sx) + std::abs(sy));
+		(void)sx;
+		(void)sy;
 
 		for (auto it = s_Runtime.begin(); it != s_Runtime.end(); )
 		{
@@ -117,8 +118,8 @@ namespace Blaze
 
 			const float speedPx = glm::max(agent->GetNavSpeed(), 0.0f);
 			const float stopPx = glm::max(agent->GetNavStoppingDistance(), 1.0f);
-			const float speedWorld = speedPx * scale;
-			const float stopWorld = stopPx * scale;
+			const float speedWorld = speedPx;
+			const float stopWorld = stopPx;
 
 			const PathPoint& wp = state.path[(size_t)state.waypoint];
 			glm::vec3 pos = agent->GetWorldPosition();

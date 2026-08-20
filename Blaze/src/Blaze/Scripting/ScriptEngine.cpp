@@ -26,6 +26,7 @@
 #include "Blaze/Scripting/ObjectPool.h"
 #include "Blaze/Navigation/Pathfinder2D.h"
 #include "Blaze/Navigation/NavAgentSystem.h"
+#include "Blaze/Navigation/EnemyAISystem.h"
 #include "Blaze/Scripting/SaveObject.h"
 #include "Blaze/Assets/TiledImporter.h"
 #include <filesystem>
@@ -3038,6 +3039,188 @@ namespace Blaze
 				object.raw->SetNavSpeed(speed);
 			}));
 
+		lua.set_function("AddEnemyAI", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->AddEnemyAI();
+			},
+			[](ScriptObject object)
+			{
+				if (object.IsValid())
+					object.raw->AddEnemyAI();
+			}));
+
+		lua.set_function("RemoveEnemyAI", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->RemoveEnemyAI();
+			},
+			[](ScriptObject object)
+			{
+				if (object.IsValid())
+					object.raw->RemoveEnemyAI();
+			}));
+
+		lua.set_function("HasEnemyAI", sol::overload(
+			[]() -> bool
+			{
+				return s_CurrentObject && s_CurrentObject->HasEnemyAI();
+			},
+			[](ScriptObject object) -> bool
+			{
+				return object.IsValid() && object.raw->HasEnemyAI();
+			}));
+
+		lua.set_function("SetEnemyAIEnabled", sol::overload(
+			[](bool enabled)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyAIEnabled(enabled);
+			},
+			[](ScriptObject object, bool enabled)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyAIEnabled(enabled);
+			}));
+
+		lua.set_function("GetEnemyAIState", sol::overload(
+			[]() -> const char*
+			{
+				return EnemyAISystem::GetStateName(s_CurrentObject);
+			},
+			[](ScriptObject object) -> const char*
+			{
+				return EnemyAISystem::GetStateName(object.IsValid() ? object.raw : nullptr);
+			}));
+
+		lua.set_function("SetEnemyDetectRange", sol::overload(
+			[](float pixels)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyDetectRange(pixels);
+			},
+			[](ScriptObject object, float pixels)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyDetectRange(pixels);
+			}));
+
+		lua.set_function("SetEnemyLoseRange", sol::overload(
+			[](float pixels)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyLoseRange(pixels);
+			},
+			[](ScriptObject object, float pixels)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyLoseRange(pixels);
+			}));
+
+		lua.set_function("SetEnemyPatrolSpeed", sol::overload(
+			[](float speed)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyPatrolSpeed(speed);
+			},
+			[](ScriptObject object, float speed)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyPatrolSpeed(speed);
+			}));
+
+		lua.set_function("SetEnemyChaseSpeed", sol::overload(
+			[](float speed)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyChaseSpeed(speed);
+			},
+			[](ScriptObject object, float speed)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyChaseSpeed(speed);
+			}));
+
+		lua.set_function("SetEnemyTargetTag", sol::overload(
+			[](const std::string& tag)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->SetEnemyTargetTag(tag);
+			},
+			[](ScriptObject object, const std::string& tag)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->SetEnemyTargetTag(tag);
+			}));
+
+		lua.set_function("ClearEnemyPatrolPoints", sol::overload(
+			[]()
+			{
+				if (s_CurrentObject)
+					s_CurrentObject->ClearEnemyPatrolPoints();
+			},
+			[](ScriptObject object)
+			{
+				if (object.IsValid())
+					object.raw->ClearEnemyPatrolPoints();
+			}));
+
+		lua.set_function("AddEnemyPatrolPoint", sol::overload(
+			[](float x, float y)
+			{
+				if (!s_CurrentObject)
+					return;
+				if (!s_CurrentObject->HasEnemyAI())
+					s_CurrentObject->AddEnemyAI();
+				s_CurrentObject->AddEnemyPatrolPoint(x, y);
+			},
+			[](ScriptObject object, float x, float y)
+			{
+				if (!object.IsValid())
+					return;
+				if (!object.raw->HasEnemyAI())
+					object.raw->AddEnemyAI();
+				object.raw->AddEnemyPatrolPoint(x, y);
+			}));
+
 		lua.set_function("OverlapPoint",
 			[&lua](float x, float y, sol::optional<uint32_t> layerMaskOpt) -> sol::table
 			{
@@ -3653,6 +3836,84 @@ namespace Blaze
 			[](const ScriptObject& object)
 			{
 				return object.IsValid() ? object.raw->GetAudioVolume() : 1.0f;
+			}));
+
+		lua.set_function("SetAudioFalloff", sol::overload(
+			[](bool enabled)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetAudioFalloff(enabled);
+				AudioEngine::SyncVolume(s_CurrentObject);
+			},
+			[](const ScriptObject& object, bool enabled)
+			{
+				if (!object.IsValid())
+					return;
+				object.raw->SetAudioFalloff(enabled);
+				AudioEngine::SyncVolume(object.raw);
+			}));
+
+		lua.set_function("GetAudioFalloff", sol::overload(
+			[]()
+			{
+				return s_CurrentObject && s_CurrentObject->GetAudioFalloff();
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() && object.raw->GetAudioFalloff();
+			}));
+
+		lua.set_function("SetAudioMinDistance", sol::overload(
+			[](float distance)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetAudioMinDistance(distance);
+				AudioEngine::SyncVolume(s_CurrentObject);
+			},
+			[](const ScriptObject& object, float distance)
+			{
+				if (!object.IsValid())
+					return;
+				object.raw->SetAudioMinDistance(distance);
+				AudioEngine::SyncVolume(object.raw);
+			}));
+
+		lua.set_function("GetAudioMinDistance", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAudioMinDistance() : 100.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAudioMinDistance() : 100.0f;
+			}));
+
+		lua.set_function("SetAudioMaxDistance", sol::overload(
+			[](float distance)
+			{
+				if (!s_CurrentObject)
+					return;
+				s_CurrentObject->SetAudioMaxDistance(distance);
+				AudioEngine::SyncVolume(s_CurrentObject);
+			},
+			[](const ScriptObject& object, float distance)
+			{
+				if (!object.IsValid())
+					return;
+				object.raw->SetAudioMaxDistance(distance);
+				AudioEngine::SyncVolume(object.raw);
+			}));
+
+		lua.set_function("GetAudioMaxDistance", sol::overload(
+			[]()
+			{
+				return s_CurrentObject ? s_CurrentObject->GetAudioMaxDistance() : 500.0f;
+			},
+			[](const ScriptObject& object)
+			{
+				return object.IsValid() ? object.raw->GetAudioMaxDistance() : 500.0f;
 			}));
 
 		lua.set_function("SetAudioLoop", sol::overload(
@@ -5176,6 +5437,7 @@ namespace Blaze
 		DebugDraw2D::Clear();
 		ParticleSystem2D::Clear();
 		ParticleSystem2D::OnPlayModeStop();
+		EnemyAISystem::Clear();
 		NavAgentSystem::Clear();
 		ScriptTimers::ClearAll();
 		s_CameraFollowTarget = nullptr;
@@ -5514,8 +5776,24 @@ namespace Blaze
 		ParticleSystem2D::OnPlayModeUpdate(dt);
 		ParticleSystem2D::Update(dt);
 		if (s_Renderer)
+		{
+			EnemyAISystem::SetObjects(&s_Renderer->GetObjects());
 			NavAgentSystem::SetObjects(&s_Renderer->GetObjects());
+		}
+		EnemyAISystem::Update(dt);
 		NavAgentSystem::Update(dt);
+		if (s_Renderer)
+		{
+			for (GameObject* object : s_Renderer->GetObjects())
+			{
+				if (object && object->IsCamera() && object->DrivesView())
+				{
+					const glm::vec3 pos = object->GetPosition();
+					AudioEngine::SetListenerPosition(pos.x, pos.y);
+					break;
+				}
+			}
+		}
 		AudioEngine::Update();
 		ScriptTimers::Update(dt, [](GameObject* owner)
 		{

@@ -34,6 +34,7 @@ namespace Blaze
 		GizmoMode GetMode() const { return m_Mode; }
 
 		void Draw(const Camera& camera, const GameObject& object);
+		void DrawSelection(const Camera& camera, const GameObject& object);
 		void DrawCameraRange(const Camera& camera, const GameObject& cameraObject);
 		void DrawCameraIcon(const Camera& camera, const GameObject& cameraObject);
 		void DrawSoundIcon(const Camera& camera, const GameObject& soundObject);

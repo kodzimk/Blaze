@@ -36,7 +36,6 @@ namespace Blaze
 		virtual ~GameWindow();
 
 		void OnUpdate();
-		// Call after all ImGui windows so nothing overrides the cursor this frame.
 		static void ApplyPlayCursor();
 
 		static void BeginCapture();
@@ -48,7 +47,6 @@ namespace Blaze
 		static int GetFrameHeight() { return s_FrameHeight; }
 		static bool WindowToGamePixel(float windowX, float windowY, float& outGameX, float& outGameY);
 		static bool IsMouseOverGameView();
-		// Maps current ImGui mouse into game framebuffer pixels (OpenGL Y-up). False if not over the Game image.
 		static bool TryGetMouseGamePixel(float& outGameX, float& outGameY);
 	private:
 		static unsigned int s_Framebuffer;

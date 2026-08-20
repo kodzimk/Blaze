@@ -48,7 +48,7 @@ namespace Blaze
 		MenuBar();
 		virtual ~MenuBar();
 
-		void OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen = nullptr);
+		void OnUpdate(bool* contentBrowserOpen, bool* objectsOpen, bool* gameObjectOpen, bool* componentsOpen, bool* toolbarOpen, bool* projectSettingsOpen = nullptr, bool* sceneOpen = nullptr);
 		bool OnFocus() const { return onFocus; }
 
 		static FileAction ConsumeFileAction();
@@ -72,11 +72,13 @@ namespace Blaze
 
 		void SetObjects(const std::vector<GameObject*>& objects);
 		void SetSelectedObject(GameObject* object);
+		void SetSelectedObjects(const std::vector<GameObject*>& objects, GameObject* primary);
 		void ClearHierarchy();
 		void SaveHierarchy(std::ostream& out) const;
 		void LoadHierarchy(std::istream& in, const std::vector<GameObject*>& objects);
 
 		GameObject* ConsumePickedObject();
+		bool ConsumePickedAdditive();
 		GameObject* ConsumePendingDelete();
 		GameObject* ConsumePendingFocus();
 		GameObject* ConsumePendingSavePrefab();
@@ -115,7 +117,9 @@ namespace Blaze
 		int m_NextFolderId = 1;
 
 		GameObject* m_Selected = nullptr;
+		std::vector<GameObject*> m_MultiSelected;
 		GameObject* m_PendingPick = nullptr;
+		bool m_PendingPickAdditive = false;
 		GameObject* m_PendingDelete = nullptr;
 		GameObject* m_PendingFocus = nullptr;
 		GameObject* m_PendingSavePrefab = nullptr;

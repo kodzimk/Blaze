@@ -237,16 +237,8 @@ namespace Blaze {
 				WindowProp& prop = *(WindowProp*)glfwGetWindowUserPointer(window);
 				MouseScrolledEvent e((float)Xoffset, (float)Yoffset);
 				prop.m_callback(e);
-
-
-				if (Blaze::UIBlocksMainEditor() || Blaze::UIWantCaptureMouse() || Blaze::StartWindow::IsPlaying())
-					return;
-
-				if (Blaze::Camera::zoom + Yoffset / 20.f > 0)
-				{
-					Blaze::Camera::zoom += Yoffset / 20.f;
-					Blaze::Camera::ScaleCamera();
-				}
+				// Editor zoom is handled in Application (Ctrl+Scroll over Scene).
+				// Plain scroll is left for ImGui panels.
 		});
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow* window) 

@@ -23,7 +23,10 @@ namespace Blaze
 		// Fire-and-forget clip (no Sound GameObject required).
 		static bool PlayOneShot(const std::string& path, float volume = 1.0f);
 		static void StopOneShots();
-		static void Update(); // frees finished one-shots
+		static void Update(); // frees finished one-shots + applies falloff
+
+		static void SetListenerPosition(float x, float y);
+		static float ComputeFalloffVolume(GameObject* object);
 
 		static void OnPlayModeStart(const std::vector<GameObject*>& objects);
 		static void OnPlayModeStop();

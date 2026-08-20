@@ -56,7 +56,6 @@ namespace Blaze
 		Polygon
 	};
 
-	//  layer indices (0-7). Mask bits use (1u << layer).
 	enum CollisionLayer : int
 	{
 		CollisionLayer_Default = 0,
@@ -143,6 +142,9 @@ namespace Blaze
 		void SetAudioVolume(float volume);
 		void SetAudioLoop(bool loop);
 		void SetAudioPlayOnStart(bool playOnStart);
+		void SetAudioFalloff(bool enabled);
+		void SetAudioMinDistance(float distance);
+		void SetAudioMaxDistance(float distance);
 
 		void AddParticleEmitter();
 		void RemoveParticleEmitter();
@@ -161,6 +163,22 @@ namespace Blaze
 		bool SetNavDestination(float worldX, float worldY);
 		void StopNav();
 		bool IsNavMoving() const;
+
+		void AddEnemyAI();
+		void RemoveEnemyAI();
+		void SetEnemyAIEnabled(bool enabled);
+		void SetEnemyDetectRange(float pixels);
+		void SetEnemyLoseRange(float pixels);
+		void SetEnemyPatrolSpeed(float pixelsPerSecond);
+		void SetEnemyChaseSpeed(float pixelsPerSecond);
+		void SetEnemyTargetTag(const std::string& tag);
+		void SetEnemyWaypointWait(float seconds);
+		void SetEnemyRepathInterval(float seconds);
+		void ClearEnemyPatrolPoints();
+		void AddEnemyPatrolPoint(float x, float y);
+		void SetEnemyPatrolPoints(const std::vector<glm::vec2>& points);
+		void SetEnemyPatrolPoint(int index, float x, float y);
+		bool RemoveEnemyPatrolPoint(int index);
 
 		void AddScript();
 		void RemoveScript();
@@ -319,6 +337,9 @@ namespace Blaze
 		inline float GetAudioVolume() const { return m_AudioVolume; }
 		inline bool GetAudioLoop() const { return m_AudioLoop; }
 		inline bool GetAudioPlayOnStart() const { return m_AudioPlayOnStart; }
+		inline bool GetAudioFalloff() const { return m_AudioFalloff; }
+		inline float GetAudioMinDistance() const { return m_AudioMinDistance; }
+		inline float GetAudioMaxDistance() const { return m_AudioMaxDistance; }
 
 		inline bool HasParticleEmitter() const { return m_HasParticleEmitter; }
 		inline const std::string& GetParticlePath() const { return m_ParticlePath; }
@@ -329,6 +350,17 @@ namespace Blaze
 		inline bool GetNavAllowDiagonal() const { return m_NavAllowDiagonal; }
 		inline float GetNavStoppingDistance() const { return m_NavStoppingDistance; }
 		inline bool GetNavDebugDraw() const { return m_NavDebugDraw; }
+
+		inline bool HasEnemyAI() const { return m_HasEnemyAI; }
+		inline bool IsEnemyAIEnabled() const { return m_EnemyAIEnabled; }
+		inline float GetEnemyDetectRange() const { return m_EnemyDetectRange; }
+		inline float GetEnemyLoseRange() const { return m_EnemyLoseRange; }
+		inline float GetEnemyPatrolSpeed() const { return m_EnemyPatrolSpeed; }
+		inline float GetEnemyChaseSpeed() const { return m_EnemyChaseSpeed; }
+		inline const std::string& GetEnemyTargetTag() const { return m_EnemyTargetTag; }
+		inline float GetEnemyWaypointWait() const { return m_EnemyWaypointWait; }
+		inline float GetEnemyRepathInterval() const { return m_EnemyRepathInterval; }
+		inline const std::vector<glm::vec2>& GetEnemyPatrolPoints() const { return m_EnemyPatrolPoints; }
 
 		inline bool HasScript() const { return m_HasScript; }
 		inline const std::string& GetScriptPath() const { return m_ScriptPath; }
@@ -465,6 +497,9 @@ namespace Blaze
 		float m_AudioVolume = 1.0f;
 		bool m_AudioLoop = false;
 		bool m_AudioPlayOnStart = true;
+		bool m_AudioFalloff = true;
+		float m_AudioMinDistance = 100.0f;
+		float m_AudioMaxDistance = 500.0f;
 
 		bool m_HasParticleEmitter = false;
 		std::string m_ParticlePath;
@@ -475,6 +510,17 @@ namespace Blaze
 		bool m_NavAllowDiagonal = false;
 		float m_NavStoppingDistance = 8.0f; // pixels
 		bool m_NavDebugDraw = false;
+
+		bool m_HasEnemyAI = false;
+		bool m_EnemyAIEnabled = true;
+		float m_EnemyDetectRange = 220.0f;  // pixels
+		float m_EnemyLoseRange = 360.0f;
+		float m_EnemyPatrolSpeed = 110.0f;
+		float m_EnemyChaseSpeed = 170.0f;
+		std::string m_EnemyTargetTag = "Player";
+		float m_EnemyWaypointWait = 0.4f;
+		float m_EnemyRepathInterval = 0.35f;
+		std::vector<glm::vec2> m_EnemyPatrolPoints;
 
 		bool m_HasScript = false;
 		std::string m_ScriptPath;

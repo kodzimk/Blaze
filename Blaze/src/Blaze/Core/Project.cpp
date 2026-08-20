@@ -964,6 +964,9 @@ namespace Blaze
 			out << "audiovolume " << object->GetAudioVolume() << "\n";
 			out << "audioloop " << (object->GetAudioLoop() ? 1 : 0) << "\n";
 			out << "audioplayonstart " << (object->GetAudioPlayOnStart() ? 1 : 0) << "\n";
+			out << "audiofalloff " << (object->GetAudioFalloff() ? 1 : 0) << "\n";
+			out << "audiomindist " << object->GetAudioMinDistance() << "\n";
+			out << "audiomaxdist " << object->GetAudioMaxDistance() << "\n";
 		}
 
 		if (flags.particle && object->HasParticleEmitter())
@@ -981,6 +984,21 @@ namespace Blaze
 			out << "navdiagonal " << (object->GetNavAllowDiagonal() ? 1 : 0) << "\n";
 			out << "navstopping " << object->GetNavStoppingDistance() << "\n";
 			out << "navdebug " << (object->GetNavDebugDraw() ? 1 : 0) << "\n";
+		}
+
+		if (flags.enemyai && object->HasEnemyAI())
+		{
+			out << "enemyai 1\n";
+			out << "enemyaienabled " << (object->IsEnemyAIEnabled() ? 1 : 0) << "\n";
+			out << "enemydetect " << object->GetEnemyDetectRange() << "\n";
+			out << "enemylose " << object->GetEnemyLoseRange() << "\n";
+			out << "enemypatrolspeed " << object->GetEnemyPatrolSpeed() << "\n";
+			out << "enemychasespeed " << object->GetEnemyChaseSpeed() << "\n";
+			out << "enemytargettag " << object->GetEnemyTargetTag() << "\n";
+			out << "enemywait " << object->GetEnemyWaypointWait() << "\n";
+			out << "enemyrepath " << object->GetEnemyRepathInterval() << "\n";
+			for (const glm::vec2& p : object->GetEnemyPatrolPoints())
+				out << "enemypatrolpoint " << p.x << " " << p.y << "\n";
 		}
 
 		if (flags.script && object->HasScript())
@@ -1521,6 +1539,24 @@ namespace Blaze
 			stream >> play;
 			current->SetAudioPlayOnStart(play != 0);
 		}
+		else if (key == "audiofalloff")
+		{
+			int enabled = 1;
+			stream >> enabled;
+			current->SetAudioFalloff(enabled != 0);
+		}
+		else if (key == "audiomindist")
+		{
+			float distance = 100.0f;
+			stream >> distance;
+			current->SetAudioMinDistance(distance);
+		}
+		else if (key == "audiomaxdist")
+		{
+			float distance = 500.0f;
+			stream >> distance;
+			current->SetAudioMaxDistance(distance);
+		}
 		else if (key == "particle")
 		{
 			current->AddParticleEmitter();
@@ -1576,6 +1612,63 @@ namespace Blaze
 			int d = 0;
 			stream >> d;
 			current->SetNavDebugDraw(d != 0);
+		}
+		else if (key == "enemyai")
+		{
+			current->AddEnemyAI();
+			current->ClearEnemyPatrolPoints();
+		}
+		else if (key == "enemyaienabled")
+		{
+			int e = 1;
+			stream >> e;
+			current->SetEnemyAIEnabled(e != 0);
+		}
+		else if (key == "enemydetect")
+		{
+			float v = 220.0f;
+			stream >> v;
+			current->SetEnemyDetectRange(v);
+		}
+		else if (key == "enemylose")
+		{
+			float v = 360.0f;
+			stream >> v;
+			current->SetEnemyLoseRange(v);
+		}
+		else if (key == "enemypatrolspeed")
+		{
+			float v = 110.0f;
+			stream >> v;
+			current->SetEnemyPatrolSpeed(v);
+		}
+		else if (key == "enemychasespeed")
+		{
+			float v = 170.0f;
+			stream >> v;
+			current->SetEnemyChaseSpeed(v);
+		}
+		else if (key == "enemytargettag" && line.size() > 15)
+		{
+			current->SetEnemyTargetTag(line.substr(15));
+		}
+		else if (key == "enemywait")
+		{
+			float v = 0.4f;
+			stream >> v;
+			current->SetEnemyWaypointWait(v);
+		}
+		else if (key == "enemyrepath")
+		{
+			float v = 0.35f;
+			stream >> v;
+			current->SetEnemyRepathInterval(v);
+		}
+		else if (key == "enemypatrolpoint")
+		{
+			float x = 0.0f, y = 0.0f;
+			stream >> x >> y;
+			current->AddEnemyPatrolPoint(x, y);
 		}
 		else if (key == "script")
 		{
